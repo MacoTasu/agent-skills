@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "macotasu-agent-skills",
+  "description": "AI エージェント向けのレビュー知識パック集。コードの書き方ではなく「その差分が SaaS として満たすべき性質」を見る観点を育てる。",
+  "owner": {
+    "name": "MacoTasu",
+    "url": "https://github.com/MacoTasu"
+  },
+  "plugins": [
+    {
+      "name": "saas-review",
+      "description": "SaaS プロダクトの PR レビュー観点パック。テナント境界 / 課金・メータリング / 権限・監査ログ / データ保持と削除 / API 後方互換 / 観測性と運用 の6軸を、検出方法つきのチェックリストとして提供する。",
+      "source": "./plugins/saas-review",
+      "category": "review"
+    }
+  ]
+}
