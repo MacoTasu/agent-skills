@@ -1,12 +1,19 @@
 {
   "name": "saas-review",
-  "version": "0.4.0",
-  "description": "SaaS プロダクトの PR レビュー観点パック。コードの書き方ではなく、差分が SaaS として満たすべき性質(テナント分離・課金の冪等性・監査証跡・論理削除とマスタの版管理・削除の波及・後方互換・outbox とトランザクション整合・可観測性・個社要件の混入)を検査する。",
+  "version": "0.5.0",
+  "description": "SaaS プロダクトの PR レビュー観点パック。コードの書き方ではなく、差分が SaaS として満たすべき性質(テナント分離・課金の冪等性・監査証跡・論理削除とマスタの版管理・削除やマスキングの波及・後方互換・可観測性・個社要件の混入)を検査する。",
   "author": {
     "name": "MacoTasu",
     "url": "https://github.com/MacoTasu"
   },
   "repository": "https://github.com/MacoTasu/agent-skills",
   "license": "MIT",
-  "keywords": ["saas", "code-review", "multi-tenancy", "billing", "audit-log", "migration"]
+  "keywords": [
+    "saas",
+    "code-review",
+    "multi-tenancy",
+    "billing",
+    "audit-log",
+    "migration"
+  ]
 }

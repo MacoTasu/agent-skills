@@ -1,0 +1,12 @@
+{
+  "name": "architecture-review",
+  "version": "0.1.0",
+  "description": "分散システムの整合性レビュー観点パック。DB と外部サービスの二重書き込み(outbox)、部分失敗の後始末、冪等性、順序保証への依存、外部障害との可用性結合を検査する。事業形態を問わず、外部 API 呼び出しや非同期処理を含む変更に適用できる。",
+  "author": {
+    "name": "MacoTasu",
+    "url": "https://github.com/MacoTasu"
+  },
+  "repository": "https://github.com/MacoTasu/agent-skills",
+  "license": "MIT",
+  "keywords": ["architecture", "code-review", "outbox", "idempotency", "distributed-systems", "consistency"]
+}

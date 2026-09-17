@@ -12,19 +12,23 @@ AI エージェント向けのレビュー知識パック集。
 
 | プラグイン | 内容 |
 |---|---|
-| `saas-review` | SaaS の PR レビュー観点8軸（テナント境界 / 課金・メータリング / 権限・監査ログ / データ保持と削除 / API 後方互換 / 外部連携とトランザクション整合 / 観測性と運用 / 個社要件と汎用性） |
+| `saas-review` | **SaaS という事業形態に固有**の観点7軸（テナント境界 / 課金・メータリング / 権限・監査ログ / データ保持と削除・マスキング / API 後方互換 / 観測性と運用 / 個社要件と汎用性） |
+| `architecture-review` | **事業形態に依存しない**分散システムの整合性（outbox / 部分失敗 / 冪等性 / 順序保証 / 外部障害との可用性結合） |
 
 ## インストール（Claude Code）
 
 ```
 /plugin marketplace add MacoTasu/agent-skills
 /plugin install saas-review@macotasu-agent-skills
+/plugin install architecture-review@macotasu-agent-skills
 ```
+
+必要なほうだけ入れればよい。SaaS のバックエンドを触るなら両方が効く。
 
 ## Claude Code 以外で使う
 
 中身は [Agent Skills](https://code.claude.com/docs/en/skills) 形式の素の Markdown で、
-特定のランタイムに依存する記述を本文に持たない。`plugins/saas-review/skills/saas-review/` を
+特定のランタイムに依存する記述を本文に持たない。`plugins/*/skills/*/` を
 そのままコピーするか、`checklists/*.md` を任意のエージェントのコンテキストに渡せば使える。
 プラグイン／マーケットプレイスの仕組みだけが Claude Code 固有。
 
