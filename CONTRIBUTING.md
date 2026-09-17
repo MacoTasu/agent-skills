@@ -43,7 +43,11 @@ PR 説明に書くこと。
 
 ## バージョニング
 
-`plugins/<name>/.claude-plugin/plugin.json` の `version` を semver で更新する。
+**初版を公開するまでは `0.1.0` のまま据え置く。** 誰も参照していない間のバージョン更新は
+何の情報も持たない。「公開した」= 各プラグインが `/plugin install` で導入可能になり、
+かつ実際の PR で一度使われた状態を指す。
+
+それ以降は `plugins/<name>/.claude-plugin/plugin.json` の `version` を semver で更新する。
 
 - 観点・軸の追加 → minor
 - 文言の修正・表現の改善 → patch

@@ -1,6 +1,6 @@
 {
   "name": "architecture-review",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "description": "事業形態に依存しないアーキテクチャレビュー観点パック。DB と外部サービスの二重書き込み(outbox)、部分失敗、冪等性、順序保証、外部障害との可用性結合、API とスキーマの後方互換(expand/contract)、観測性と障害時の運用を検査する。",
   "author": {
     "name": "MacoTasu",
