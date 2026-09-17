@@ -4,10 +4,12 @@ description: |
   SaaS プロダクトの差分(PR / 実装直後のコード)を、プロダクトとして満たすべき性質の観点でレビューするスキル。
   テナント境界とデータ分離、課金・プラン制限・使用量メータリング、権限(RBAC)と監査ログ、
   データ保持・削除・エクスポート(論理削除/マスタの版管理/保持期間/バックアップ)、
-  API とスキーマの後方互換、観測性と障害時の運用、個社要件と汎用性 の7軸を、
+  API とスキーマの後方互換、外部連携とトランザクション整合(outbox / 冪等性 / 順序保証)、
+  観測性と障害時の運用、個社要件と汎用性 の8軸を、
   それぞれ「どう検出するか」つきのチェックリストとして持つ。
   マルチテナント / 課金 / 権限 / 退会・削除 / マスターデータ / マイグレーション / webhook /
-  非同期ジョブ / 特定顧客向けの機能 に触れる変更をレビューするとき、および設計時に見落としを洗い出すときに使う。
+  非同期ジョブ / メール送信・決済などの外部API連携 / 特定顧客向けの機能 に
+  触れる変更をレビューするとき、および設計時に見落としを洗い出すときに使う。
   コードの書き方(命名・型設計・テスト網羅・コメント・エラーハンドリングの握り潰し)は対象外。
 ---
 
@@ -41,7 +43,8 @@ pr-test-analyzer / silent-failure-hunter / type-design-analyzer）は、いず�
 | 権限(RBAC)・監査ログ | `checklists/authz-audit-log.md` | エンドポイント追加 / ロール変更 / 招待 / メンバー削除 | draft |
 | データ保持・削除・エクスポート | `checklists/data-retention-deletion.md` | 削除処理 / 退会・解約 / マスターデータ変更 / 新テーブル追加 / 外部へのデータ同期 | draft |
 | API・スキーマの後方互換と移行 | `checklists/api-compatibility.md` | レスポンス型変更 / DB マイグレーション / 送信する webhook | draft |
-| 観測性と障害時の運用 | `checklists/observability-operations.md` | 外部API呼び出し / 非同期ジョブ / リトライ / 新機能の投入 | draft |
+| 外部連携とトランザクション整合 | `checklists/external-integration-consistency.md` | メール送信 / 決済 / 通知 / 送信する webhook / 非同期ジョブ / キュー | draft |
+| 観測性と障害時の運用 | `checklists/observability-operations.md` | 外部API呼び出し / 非同期ジョブ / 新機能の投入 | draft |
 | 個社要件と汎用性 | `checklists/product-genericity.md` | 特定顧客由来の機能 / 条件分岐つきの挙動 / 設定項目の追加 | draft |
 
 `status` は `draft`（書いたが実PRでの検証を経ていない）/ `verified`（実際の PR で使い、
@@ -62,3 +65,7 @@ pr-test-analyzer / silent-failure-hunter / type-design-analyzer）は、いず�
 
 オンボーディング・トライアル / 通知・メール配信 / レート制限 / フィーチャーフラグ運用。
 必要になった時点で軸を追加する。
+
+なお、分散システムの整合性・境界・依存方向といったアーキテクチャ観点が増えてきたら、
+`architecture-review` として別スキルに切り出すことを検討する（現時点では発火条件が
+SaaS のバックエンド変更とほぼ一致するため、この軸として保持している）。
