@@ -1,7 +1,7 @@
 {
   "name": "saas-review",
-  "version": "0.5.0",
-  "description": "SaaS プロダクトの PR レビュー観点パック。コードの書き方ではなく、差分が SaaS として満たすべき性質(テナント分離・課金の冪等性・監査証跡・論理削除とマスタの版管理・削除やマスキングの波及・後方互換・可観測性・個社要件の混入)を検査する。",
+  "version": "0.6.0",
+  "description": "マルチテナント SaaS に固有の PR レビュー観点パック。テナント分離・課金とメータリング・権限と監査ログ・退会時の削除やマスキング・個社要件の混入を検査する。分散システム一般の整合性や後方互換は architecture-review にある。",
   "author": {
     "name": "MacoTasu",
     "url": "https://github.com/MacoTasu"
@@ -14,6 +14,6 @@
     "multi-tenancy",
     "billing",
     "audit-log",
-    "migration"
+    "gdpr"
   ]
 }
