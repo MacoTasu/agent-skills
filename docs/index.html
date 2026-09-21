@@ -1,0 +1,995 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>macotasu-agent-skills</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+:root {
+  --ground:      #F4F6F9;
+  --surface:     #FFFFFF;
+  --sunk:        #EAEEF4;
+  --ink:         #10161F;
+  --ink-soft:    #3D4757;
+  --muted:       #697588;
+  --rule:        #D5DCE6;
+  --rule-strong: #B4BFCE;
+  --accent:      #1F3A5F;
+  --accent-lift: #2F5C93;
+  --pass:        #2C6E49;
+  --retry:       #8A6100;
+  --reject:      #A4231C;
+  --escalate:    #5B4B8A;
+  --shadow:      0 1px 2px rgba(16,22,31,.05), 0 8px 24px -12px rgba(16,22,31,.18);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:      #0D1219;
+    --surface:     #141B25;
+    --sunk:        #1B232F;
+    --ink:         #E8EDF4;
+    --ink-soft:    #BAC5D4;
+    --muted:       #8695A9;
+    --rule:        #26313F;
+    --rule-strong: #3A4757;
+    --accent:      #9FC1EA;
+    --accent-lift: #C2D8F3;
+    --pass:        #6FBF95;
+    --retry:       #D9AE52;
+    --reject:      #E88B84;
+    --escalate:    #AC9BE0;
+    --shadow:      0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"] {
+  --ground:      #0D1219;
+  --surface:     #141B25;
+  --sunk:        #1B232F;
+  --ink:         #E8EDF4;
+  --ink-soft:    #BAC5D4;
+  --muted:       #8695A9;
+  --rule:        #26313F;
+  --rule-strong: #3A4757;
+  --accent:      #9FC1EA;
+  --accent-lift: #C2D8F3;
+  --pass:        #6FBF95;
+  --retry:       #D9AE52;
+  --reject:      #E88B84;
+  --escalate:    #AC9BE0;
+  --shadow:      0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: "Noto Sans JP", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 0 1.5rem 6rem;
+}
+
+/* ---------- masthead ---------- */
+
+.masthead {
+  border-bottom: 2px solid var(--ink);
+  padding: 4.5rem 0 2rem;
+  margin-bottom: 3.5rem;
+}
+.eyebrow {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: .78rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 1.25rem;
+}
+h1 {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: clamp(1.9rem, 5vw, 3rem);
+  letter-spacing: -.02em;
+  line-height: 1.15;
+  margin: 0 0 1.5rem;
+  text-wrap: balance;
+}
+.thesis {
+  font-family: "Zen Old Mincho", serif;
+  font-weight: 600;
+  font-size: clamp(1.15rem, 2.6vw, 1.5rem);
+  line-height: 1.7;
+  max-width: 34em;
+  margin: 0 0 1.25rem;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.standfirst {
+  max-width: 40em;
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+/* ---------- sections ---------- */
+
+section { margin-bottom: 4.5rem; }
+
+h2 {
+  font-family: "Zen Old Mincho", serif;
+  font-weight: 700;
+  font-size: 1.6rem;
+  letter-spacing: .01em;
+  line-height: 1.4;
+  margin: 0 0 .5rem;
+  padding-bottom: .75rem;
+  border-bottom: 1px solid var(--rule-strong);
+  text-wrap: balance;
+}
+h2 + .section-note {
+  color: var(--muted);
+  font-size: .92rem;
+  margin: 0 0 2rem;
+  max-width: 46em;
+}
+h3 {
+  font-family: "Noto Sans JP", sans-serif;
+  font-weight: 700;
+  font-size: 1.02rem;
+  margin: 0 0 .5rem;
+  letter-spacing: .01em;
+}
+p { max-width: 42em; }
+
+code, .mono {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: .88em;
+}
+:not(pre) > code {
+  background: var(--sunk);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: .1em .35em;
+}
+a { color: var(--accent-lift); text-decoration-thickness: 1px; text-underline-offset: .2em; }
+a:hover { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent-lift); outline-offset: 3px; border-radius: 2px; }
+
+/* ---------- plugin register ---------- */
+
+.register { display: flex; flex-direction: column; gap: 0; }
+.entry {
+  display: grid;
+  grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+  gap: .5rem 2.5rem;
+  padding: 1.75rem 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: start;
+}
+.entry:first-child { border-top: 1px solid var(--rule); }
+.entry-name {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--ink);
+  word-break: break-word;
+}
+.entry-meta {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: .76rem;
+  color: var(--muted);
+  margin-top: .35rem;
+  font-variant-numeric: tabular-nums;
+}
+.entry-body { color: var(--ink-soft); font-size: .95rem; }
+.entry-body strong { color: var(--ink); font-weight: 700; }
+.needs {
+  margin-top: .6rem;
+  font-size: .82rem;
+  color: var(--muted);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+.needs b { color: var(--ink-soft); font-weight: 500; }
+
+@media (max-width: 40rem) {
+  .entry { grid-template-columns: 1fr; gap: .4rem; }
+}
+
+.group-label {
+  font-family: "Zen Old Mincho", serif;
+  font-weight: 700;
+  font-size: 1.02rem;
+  color: var(--ink);
+  margin: 2.75rem 0 .75rem;
+  max-width: none;
+}
+.register + .group-label { margin-top: 3.25rem; }
+
+/* ---------- court diagram ---------- */
+
+.court {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 2rem 1.5rem 1.5rem;
+  box-shadow: var(--shadow);
+  overflow-x: auto;
+}
+.court svg { display: block; min-width: 34rem; width: 100%; height: auto; }
+.court-caption {
+  margin: 1.25rem 0 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
+  font-size: .88rem;
+  color: var(--muted);
+  max-width: none;
+}
+.svg-label { font-family: "Noto Sans JP", sans-serif; font-size: 12px; fill: var(--ink-soft); }
+.svg-name  { font-family: "JetBrains Mono", monospace; font-size: 11.5px; fill: var(--ink); font-weight: 500; }
+.svg-role  { font-family: "Zen Old Mincho", serif; font-size: 15px; fill: var(--ink); font-weight: 700; }
+.svg-note  { font-family: "Noto Sans JP", sans-serif; font-size: 10.5px; fill: var(--muted); }
+
+.roles {
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--surface);
+  margin-bottom: 1.25rem;
+}
+.role-row {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1.35fr) minmax(0, 1fr);
+  border-bottom: 1px solid var(--rule);
+  font-size: .9rem;
+}
+.role-row:last-child { border-bottom: 0; }
+.role-name {
+  font-family: "Zen Old Mincho", serif;
+  font-weight: 700;
+  padding: .85rem 1rem;
+  background: var(--sunk);
+  border-right: 1px solid var(--rule);
+  color: var(--ink);
+}
+.role-who   { padding: .85rem 1rem; color: var(--ink-soft); border-right: 1px solid var(--rule); }
+.role-lacks { padding: .85rem 1rem; color: var(--ink-soft); }
+.role-lacks strong { color: var(--ink); }
+.roles-note { font-size: .88rem; color: var(--muted); max-width: 46em; margin: 0 0 2.5rem; }
+
+@media (max-width: 46rem) {
+  .role-row { grid-template-columns: 1fr; }
+  .role-name  { border-right: 0; border-bottom: 1px solid var(--rule); padding: .5rem 1rem; }
+  .role-who   { border-right: 0; padding-bottom: .3rem; }
+  .role-lacks { padding-top: .3rem; }
+}
+
+/* ---------- verdicts ---------- */
+
+.verdicts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  margin-top: 1.5rem;
+}
+.verdict { background: var(--surface); padding: 1rem 1.15rem; }
+.verdict-name {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 700;
+  font-size: .85rem;
+  letter-spacing: .06em;
+  margin-bottom: .3rem;
+}
+.verdict p { font-size: .84rem; color: var(--muted); margin: 0; line-height: 1.6; }
+.v-pass     .verdict-name { color: var(--pass); }
+.v-retry    .verdict-name { color: var(--retry); }
+.v-reject   .verdict-name { color: var(--reject); }
+.v-escalate .verdict-name { color: var(--escalate); }
+
+/* ---------- schema ---------- */
+
+.schema {
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.schema-row {
+  display: grid;
+  grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
+  border-bottom: 1px solid var(--rule);
+}
+.schema-row:last-child { border-bottom: 0; }
+.schema-key {
+  padding: 1rem 1.25rem;
+  background: var(--sunk);
+  font-weight: 700;
+  font-size: .9rem;
+  border-right: 1px solid var(--rule);
+}
+.schema-val { padding: 1rem 1.25rem; font-size: .9rem; color: var(--ink-soft); }
+.schema-val em {
+  display: block;
+  font-style: normal;
+  color: var(--muted);
+  font-size: .82rem;
+  margin-top: .35rem;
+}
+@media (max-width: 40rem) {
+  .schema-row { grid-template-columns: 1fr; }
+  .schema-key { border-right: 0; border-bottom: 1px solid var(--rule); padding: .6rem 1rem; }
+  .schema-val { padding: .85rem 1rem; }
+}
+
+.rule-out {
+  margin-top: 1.5rem;
+  border-left: 3px solid var(--accent);
+  padding: .3rem 0 .3rem 1.25rem;
+  color: var(--ink);
+  font-size: .95rem;
+  max-width: 42em;
+}
+
+/* ---------- install ---------- */
+
+pre {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 1.15rem 1.35rem;
+  overflow-x: auto;
+  margin: 0 0 1rem;
+  line-height: 1.75;
+  box-shadow: var(--shadow);
+}
+pre code { font-size: .85rem; color: var(--ink); }
+pre .c { color: var(--muted); }
+
+/* ---------- deps ---------- */
+
+.dep {
+  font-family: "JetBrains Mono", monospace;
+  font-size: .84rem;
+  line-height: 2;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 1.25rem 1.35rem;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--ink-soft);
+  box-shadow: var(--shadow);
+}
+.dep b { color: var(--ink); font-weight: 700; }
+.dep .req { color: var(--reject); }
+.dep .opt { color: var(--muted); }
+
+/* ---------- growth ---------- */
+
+.growth { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
+.growth > div { border-top: 2px solid var(--ink); padding-top: 1rem; }
+.growth p { font-size: .9rem; color: var(--ink-soft); margin: 0; }
+
+/* ---------- decisions ---------- */
+
+.decisions { margin: 0; }
+.decisions dt {
+  font-family: "Zen Old Mincho", serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--ink);
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+  margin-bottom: .5rem;
+  text-wrap: balance;
+}
+.decisions dt:first-of-type { padding-top: 0; border-top: 0; }
+.decisions dd {
+  margin: 0 0 1.75rem;
+  max-width: 44em;
+  color: var(--ink-soft);
+  font-size: .93rem;
+}
+.decisions dd:last-of-type { margin-bottom: 0; }
+
+footer {
+  border-top: 1px solid var(--rule);
+  padding-top: 2rem;
+  color: var(--muted);
+  font-size: .86rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: space-between;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a, .entry { transition: color .15s ease, background-color .15s ease; }
+}
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Claude Code plugin marketplace</p>
+    <h1>macotasu-agent-skills</h1>
+    <p class="thesis">証拠を集める者と、判定を下す者を分ける。</p>
+    <p class="standfirst">
+      AI エージェント向けのレビュー知識・開発ワークフロー・文書化の型を配るマーケットプレイス。
+      既存のレビュー支援が <strong>コードの書き方</strong> を見るのに対し、ここが扱うのは
+      <strong>その差分がプロダクトとして満たすべき性質</strong>、そして
+      <strong>誰がそれを判定するのか</strong> という構造のほう。
+      その構造をどう書き残すか、までを含む。
+    </p>
+  </header>
+
+  <section>
+    <h2>収録</h2>
+    <p class="section-note">
+      3系統ある。<strong>レビュー</strong>は差分を見る知識と、その判定を下す司法。
+      <strong>ワークフロー</strong>は開発の進め方そのもので、片方向に依存し合う。
+      <strong>文書化</strong>は独立していて、この仕組みと無関係にも使える。
+    </p>
+
+    <p class="group-label">レビュー — 差分を見る知識と、判定を下す司法</p>
+    <div class="register">
+      <div class="entry">
+        <div>
+          <div class="entry-name">saas-review</div>
+          <div class="entry-meta">5軸 · 24項目</div>
+        </div>
+        <div class="entry-body">
+          <strong>マルチテナント SaaS に固有</strong>の観点。テナント境界とデータ分離 / 課金・プラン・使用量メータリング /
+          権限と監査ログ / データ保持・削除とマスキング / 個社要件の混入。
+          「型は綺麗でテストも通るが、他テナントのデータが見える」差分を止める。
+          <div class="needs"><b>needs</b> — なし</div>
+        </div>
+      </div>
+
+      <div class="entry">
+        <div>
+          <div class="entry-name">architecture-review</div>
+          <div class="entry-meta">3軸 · 14項目</div>
+        </div>
+        <div class="entry-body">
+          <strong>事業形態に依存しない</strong>観点。DB と外部サービスの二重書き込み（outbox）・部分失敗・冪等性・
+          順序保証 / API とスキーマの後方互換 / 観測性と障害時の運用。
+          見るのは「壊れないか・壊れたことを知れるか・止められるか」。
+          <div class="needs"><b>needs</b> — なし</div>
+        </div>
+      </div>
+
+      <div class="entry">
+        <div>
+          <div class="entry-name">review-judge</div>
+          <div class="entry-meta">1 agent</div>
+        </div>
+        <div class="entry-body">
+          レビューの<strong>拘束力ある最終判定だけ</strong>を下す司法。観点別の所見と決定性チェックを束ね、
+          4つの判定のいずれか1つを返す。<code>Edit</code> / <code>Write</code> を持たないので直せない。
+          下の2つが共に依存する共有基盤で、<strong>独立した配布単位にしてある</strong>。
+          <div class="needs"><b>needs</b> — なし</div>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="group-label">ワークフロー — 開発の進め方</p>
+    <div class="register">
+      <div class="entry">
+        <div>
+          <div class="entry-name">spec-intake</div>
+          <div class="entry-meta">2 skills</div>
+        </div>
+        <div class="entry-body">
+          <strong>立法の支援</strong>。issue での議論を、実装根拠になる仕様まで持ち上げる。
+          <code>grill-issue</code> が曖昧な issue を質問攻めで詰め、<code>spec-draft</code> が
+          完了基準と検証コマンドつきの仕様を起草して PR にする。<strong>承認は必ず人間</strong>。
+          自律ループを回さなくても単体で使える。
+          <div class="needs"><b>needs</b> — grilling（外部・任意）</div>
+        </div>
+      </div>
+
+      <div class="entry">
+        <div>
+          <div class="entry-name">conductor</div>
+          <div class="entry-meta">1 skill</div>
+        </div>
+        <div class="entry-body">
+          開発の単一フロントドア＝<strong>指揮</strong>。フェーズを判定し、行政に実装させ、
+          書記に証拠を出させ、<strong>司法に持ち込む</strong>。自分ではコードを書かず、判定も出さない。
+          三権のどこにも属さない。
+          <div class="needs"><b>needs</b> — dev-crew / review-judge / feature-dev / pr-review-toolkit / commit-commands</div>
+        </div>
+      </div>
+
+      <div class="entry">
+        <div>
+          <div class="entry-name">dev-crew</div>
+          <div class="entry-meta">3 skills · 2 agents</div>
+        </div>
+        <div class="entry-body">
+          <strong>行政（実務）</strong>。契約に沿って実装し、ビルド・型・lint・テストの決定性証拠を
+          揃えるところまで。<strong>司法を呼ぶ権限を持たず、合否も宣言しない</strong> —
+          証拠を揃えて指揮に返す。出荷・運用と書記の職能エージェントも同梱。
+          <div class="needs"><b>needs</b> — feature-dev のみ</div>
+        </div>
+      </div>
+
+      <div class="entry">
+        <div>
+          <div class="entry-name">loop-engine</div>
+          <div class="entry-meta">1 skill · 1 command · 2 scripts</div>
+        </div>
+        <div class="entry-body">
+          人間が書いた仕様を起点に、拾い上げ→実装→司法検証→PR を回す自律ループ（HOTL）。
+          既定は<strong>報告のみ・副作用なし</strong>。実装まで進む設定でも
+          <strong>必ず PR で停止する</strong>——自動マージはしない。
+          <div class="needs"><b>needs</b> — dev-crew / review-judge</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="group-label">文書化 — 構造と理由を書き残す</p>
+    <div class="register">
+      <div class="entry">
+        <div>
+          <div class="entry-name">spec-page</div>
+          <div class="entry-meta">1 skill</div>
+        </div>
+        <div class="entry-body">
+          説明書・仕様書・設計文書を HTML 1枚にまとめる。収録物の一覧ではなく
+          <strong>対象の構造と、なぜそう決めたか</strong>を伝える形式に落とす。
+          配信環境で初めて出る欠陥（文字化け・横スクロール）を公開前チェックで潰す。
+          <strong>markdown で足りる内容は HTML にしない</strong>、という判断から始める。
+          <div class="needs"><b>needs</b> — なし</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>全体像</h2>
+    <p class="section-note">
+      issue での議論から PR のマージまで。<strong>横線より上が人間の意思決定、下が実行</strong>で、
+      この線が「issue は発見の場であって仕様ではない」という区別そのもの。
+      人間が止める点が2つあり、そこがこの仕組みの監督点になる。
+    </p>
+
+    <div class="court">
+      <svg viewBox="0 0 700 430" role="img" aria-label="issue の議論から仕様の承認、実装と判定を経て PR のマージまでの全体像">
+        <defs>
+          <marker id="fl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--rule-strong)"></path>
+          </marker>
+          <marker id="fl-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"></path>
+          </marker>
+        </defs>
+
+        <rect x="40" y="10" width="250" height="34" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+        <text x="54" y="32" class="svg-label">① issue で議論する</text>
+        <text x="306" y="32" class="svg-name">spec-intake:grill-issue</text>
+
+        <path d="M 165 46 L 165 70" stroke="var(--rule-strong)" stroke-width="1.25" fill="none" marker-end="url(#fl)"></path>
+        <text x="176" y="63" class="svg-note">「やる」と決めた時点で昇格</text>
+
+        <rect x="40" y="74" width="250" height="34" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+        <text x="54" y="96" class="svg-label">② 仕様を書く → PR</text>
+        <text x="306" y="96" class="svg-name">spec-intake:spec-draft</text>
+
+        <path d="M 165 110 L 165 134" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#fl-a)"></path>
+        <text x="176" y="127" class="svg-role" font-size="12">人間がマージ＝承認</text>
+
+        <line x1="0" y1="146" x2="700" y2="146" stroke="var(--rule-strong)" stroke-width="1" stroke-dasharray="6 4"></line>
+        <text x="0" y="141" class="svg-note">ここまで人間の意思決定</text>
+        <text x="0" y="162" class="svg-note">ここから実行。実装根拠は仕様だけ</text>
+
+        <rect x="40" y="172" width="250" height="34" rx="3" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <text x="54" y="194" class="svg-role" font-size="13">立法</text>
+        <text x="96" y="194" class="svg-name">goals/&lt;slug&gt;.md</text>
+
+        <path d="M 165 208 L 165 230" stroke="var(--rule-strong)" stroke-width="1.25" fill="none" marker-end="url(#fl)"></path>
+
+        <rect x="40" y="234" width="250" height="46" rx="3" fill="var(--surface)" stroke="var(--rule-strong)" stroke-width="1.5"></rect>
+        <text x="54" y="252" class="svg-role" font-size="13">指揮</text>
+        <text x="96" y="252" class="svg-name">conductor:dev</text>
+        <text x="54" y="270" class="svg-note">手動なら人間、自律なら</text>
+        <text x="186" y="270" class="svg-name">loop-engine</text>
+
+        <path d="M 294 248 C 340 248, 350 232, 396 232" stroke="var(--rule-strong)" stroke-width="1.25" fill="none" marker-end="url(#fl)"></path>
+        <path d="M 294 266 C 340 266, 350 286, 396 286" stroke="var(--rule-strong)" stroke-width="1.25" fill="none" marker-end="url(#fl)"></path>
+        <rect x="400" y="216" width="270" height="32" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+        <text x="414" y="236" class="svg-role" font-size="12">行政</text>
+        <text x="452" y="236" class="svg-name">dev-crew:implement</text>
+        <rect x="400" y="270" width="270" height="32" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+        <text x="414" y="290" class="svg-role" font-size="12">書記</text>
+        <text x="452" y="290" class="svg-name">pr-review ×6 ほか</text>
+        <path d="M 670 232 C 690 232, 690 262, 660 262 L 300 262" stroke="var(--rule-strong)" stroke-width="1" fill="none" stroke-dasharray="3 3" marker-end="url(#fl)"></path>
+        <text x="430" y="258" class="svg-note">証拠が指揮に集まる</text>
+
+        <path d="M 165 284 L 165 312" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#fl-a)"></path>
+        <text x="176" y="303" class="svg-note">持ち込めるのは指揮だけ</text>
+
+        <rect x="40" y="316" width="250" height="46" rx="3" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"></rect>
+        <text x="54" y="334" class="svg-role" font-size="13">司法</text>
+        <text x="96" y="334" class="svg-name">review-judge:judge</text>
+        <text x="54" y="352" class="svg-note">4値のいずれか1つを返す</text>
+
+        <path d="M 165 366 L 165 390" stroke="var(--rule-strong)" stroke-width="1.25" fill="none" marker-end="url(#fl)"></path>
+        <text x="176" y="383" class="svg-note">PASS なら</text>
+
+        <rect x="40" y="394" width="250" height="32" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+        <text x="54" y="414" class="svg-label">PR 作成 → 停止</text>
+        <text x="306" y="414" class="svg-role" font-size="12">人間がマージ</text>
+      </svg>
+
+      <p class="court-caption">
+        <strong>人間が止める点は2つ。</strong>仕様の承認（②のマージ）と、最後の PR のマージ。
+        自律で回していても、この2点は必ず人間を通る。<code>③ Spec:</code> コメントと
+        <code>loop-ready</code> ラベルの付与も人間が行う——仕様が main にマージされる前に
+        ラベルが付くと、ループが存在しない仕様を指して落ちるため、代行させない。
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>役割の分離</h2>
+    <p class="section-note">
+      上の図の<strong>横線から下</strong>を拡大したもの。観点を増やすことより、<strong>誰が何を
+      できないようにするか</strong>のほうが効く。禁止を規約に書くのではなく、権限を与えないことで
+      構造的に強制する。
+    </p>
+
+    <div class="roles">
+      <div class="role-row"><div class="role-name">立法</div>
+        <div class="role-who">人間が承認した <code>goals/&lt;slug&gt;.md</code>（起草は <code>spec-intake</code> が支援）</div>
+        <div class="role-lacks">ボットは<strong>承認しない</strong>。書き換えもしない</div></div>
+      <div class="role-row"><div class="role-name">行政</div>
+        <div class="role-who"><code>dev-crew:implement</code>（＋公式 feature-dev）</div>
+        <div class="role-lacks"><strong>司法を呼ぶ権限</strong>。合否も宣言しない</div></div>
+      <div class="role-row"><div class="role-name">司法</div>
+        <div class="role-who"><code>review-judge:judge</code></div>
+        <div class="role-lacks"><strong><code>Edit</code> / <code>Write</code> ツール</strong>。直せない</div></div>
+      <div class="role-row"><div class="role-name">指揮</div>
+        <div class="role-who"><code>conductor:dev</code>（手動）／ <code>loop-engine</code>（自律）</div>
+        <div class="role-lacks">コードを書かない。判定も出さない</div></div>
+      <div class="role-row"><div class="role-name">書記</div>
+        <div class="role-who">pr-review 6観点 ／ business-reviewer ／ domain-architect ／ saas-review ／ architecture-review</div>
+        <div class="role-lacks">拘束力。所見を出すだけ</div></div>
+    </div>
+
+    <p class="roles-note">
+      左が役、中央が担い手、<strong>右が「持たないもの」</strong>。分離を支えているのは右の列。
+      指揮だけが三権のどこにも属さず、手動なら人間が、自律なら <code>loop-engine</code> がその席に座る。
+    </p>
+
+    <div class="court">
+      <svg viewBox="0 0 700 330" role="img" aria-label="立法から始まり、指揮が行政と書記を動かし、指揮だけが判事に持ち込む構造図">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--rule-strong)"></path>
+          </marker>
+          <marker id="ar-strong" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"></path>
+          </marker>
+        </defs>
+
+        <text x="0" y="13" class="svg-role">行政</text>
+        <text x="52" y="13" class="svg-note">— 実装する。合否は宣言しない</text>
+        <rect x="0" y="24" width="200" height="46" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+        <text x="12" y="43" class="svg-name">dev-crew:implement</text>
+        <text x="12" y="60" class="svg-note">ビルド / 型 / lint / テスト の結果</text>
+
+        <text x="0" y="104" class="svg-role">書記</text>
+        <text x="52" y="104" class="svg-note">— 所見を出す。拘束力なし</text>
+        <g>
+          <rect x="0" y="114" width="200" height="28" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+          <text x="12" y="133" class="svg-name">pr-review-toolkit ×6</text>
+          <rect x="0" y="148" width="200" height="28" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+          <text x="12" y="167" class="svg-name">business-reviewer</text>
+          <rect x="0" y="182" width="200" height="28" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+          <text x="12" y="201" class="svg-name">domain-architect</text>
+          <rect x="0" y="216" width="200" height="28" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+          <text x="12" y="235" class="svg-name">saas-review</text>
+          <rect x="0" y="250" width="200" height="28" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+          <text x="12" y="269" class="svg-name">architecture-review</text>
+        </g>
+
+        <g stroke="var(--rule-strong)" stroke-width="1.25" fill="none" marker-end="url(#ar)">
+          <path d="M 204 47  C 240 47, 240 150, 264 150"></path>
+          <path d="M 204 128 C 240 128, 240 155, 264 155"></path>
+          <path d="M 204 162 C 240 162, 244 160, 264 160"></path>
+          <path d="M 204 196 C 240 196, 240 165, 264 165"></path>
+          <path d="M 204 230 C 240 230, 240 170, 264 170"></path>
+          <path d="M 204 264 C 240 264, 240 175, 264 175"></path>
+        </g>
+        <text x="212" y="296" class="svg-note">決定性の結果・所見</text>
+
+        <text x="268" y="13" class="svg-role">指揮</text>
+        <text x="320" y="13" class="svg-note">— 三権のどこにも属さない</text>
+        <rect x="268" y="116" width="182" height="94" rx="3" fill="var(--surface)" stroke="var(--rule-strong)" stroke-width="1.5"></rect>
+        <text x="282" y="142" class="svg-name">conductor:dev</text>
+        <text x="282" y="161" class="svg-name">loop-engine</text>
+        <text x="282" y="182" class="svg-note">手動なら人間、自律ならループ</text>
+        <text x="282" y="198" class="svg-note">持ち込む権限を持つのはここだけ</text>
+
+        <path d="M 454 163 L 508 163" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#ar-strong)"></path>
+
+        <text x="512" y="13" class="svg-role">司法</text>
+        <text x="564" y="13" class="svg-note">— 判定だけを返す</text>
+        <rect x="512" y="122" width="188" height="82" rx="3" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"></rect>
+        <text x="526" y="148" class="svg-name">review-judge:judge</text>
+        <text x="526" y="168" class="svg-note">決定性チェック ∧ セマンティック</text>
+        <text x="526" y="186" class="svg-note">Edit / Write ツールを持たない</text>
+        <text x="526" y="228" class="svg-label">4値のいずれか1つを返す</text>
+
+        <path d="M 200 86 C 340 86, 470 86, 600 108" stroke="var(--reject)" stroke-width="1.25" fill="none" stroke-dasharray="5 4" opacity="0.65"></path>
+        <text x="330" y="80" class="svg-note" fill="var(--reject)">行政から判事へ直接の経路は無い</text>
+        <line x1="392" y1="80" x2="408" y2="96" stroke="var(--reject)" stroke-width="1.5"></line>
+        <line x1="408" y1="80" x2="392" y2="96" stroke="var(--reject)" stroke-width="1.5"></line>
+      </svg>
+
+      <p class="court-caption">
+        <strong>行政から判事へ直接の経路が無いのが要点。</strong>実装した主体は、自分の成果を判定に
+        出すかどうかを決められない。「これは軽微だから判定は不要」という判断自体が判定であり、
+        行政には属さない。同じ発想で判事は <code>Edit</code> / <code>Write</code> を持たない —
+        修正できてしまえば「実行と検証が同一主体」になり、独立性は書いてあるだけの建前になる。
+        直したくなったら差し戻しの理由に書く、それしかできない。
+      </p>
+    </div>
+
+    <div class="verdicts">
+      <div class="verdict v-pass">
+        <div class="verdict-name">PASS</div>
+        <p>決定性チェックが全て緑で、証拠も揃っている。</p>
+      </div>
+      <div class="verdict v-retry">
+        <div class="verdict-name">RETRY</div>
+        <p>証拠が足りない。触った面に必要な証拠の型が欠けている。</p>
+      </div>
+      <div class="verdict v-reject">
+        <div class="verdict-name">REJECT</div>
+        <p>基準を満たしていない。理由を書いて実装側へ差し戻す。</p>
+      </div>
+      <div class="verdict v-escalate">
+        <div class="verdict-name">ESCALATE</div>
+        <p>無人で判断してはいけない領域。人間に上げる。</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>チェックリストの書式</h2>
+    <p class="section-note">
+      観点は全て固定の4フィールドで書く。形式が中身の質を決めるので、書式のほうを先に縛っている。
+    </p>
+
+    <div class="schema">
+      <div class="schema-row">
+        <div class="schema-key">観点</div>
+        <div class="schema-val">何を見るか。<em>例：課金イベントの冪等性</em></div>
+      </div>
+      <div class="schema-row">
+        <div class="schema-key">なぜ危険か</div>
+        <div class="schema-val">
+          守らなかった時に<strong>実際に起きる事故</strong>。抽象的なリスクではない。
+          <em>例：決済 webhook は at-least-once で再送される。重複排除が無ければ二重課金が起き、返金対応と信頼の損失が同時に発生する</em>
+        </div>
+      </div>
+      <div class="schema-row">
+        <div class="schema-key">どう検出するか</div>
+        <div class="schema-val">
+          見るファイル・grep・実行コマンド。<strong>エージェントがそのまま実行できる形</strong>で書く。
+          <em>例：<code>grep -rn "idempotency|Idempotency-Key"</code> と、webhook ハンドラに受信イベント ID の重複排除があるか</em>
+        </div>
+      </div>
+      <div class="schema-row">
+        <div class="schema-key">よくある間違った実装</div>
+        <div class="schema-val">
+          実際に踏まれるパターン。
+          <em>例：処理途中で例外が出ると 200 を返さず再送されるのに、「一度しか来ない」前提で副作用を先に実行している</em>
+        </div>
+      </div>
+    </div>
+
+    <p class="rule-out">
+      <strong>「どう検出するか」が書けない項目は採用しない。</strong>
+      レビュー時に実行できない項目はチェックリストではなくポエムで、ノイズにしかならない。
+    </p>
+  </section>
+
+  <section>
+    <h2>導入</h2>
+    <p class="section-note">必要なものだけ入れればよい。レビュー観点の2つは他に何も要らない。</p>
+<pre><code>/plugin marketplace add MacoTasu/agent-skills
+
+<span class="c"># 依存ゼロ。単体で使える</span>
+/plugin install saas-review@macotasu-agent-skills
+/plugin install architecture-review@macotasu-agent-skills
+
+<span class="c"># ワークフロー。この順で入れる</span>
+/plugin install review-judge@macotasu-agent-skills
+/plugin install spec-intake@macotasu-agent-skills
+/plugin install dev-crew@macotasu-agent-skills
+/plugin install conductor@macotasu-agent-skills
+/plugin install loop-engine@macotasu-agent-skills
+
+<span class="c"># ドキュメント。依存ゼロ</span>
+/plugin install spec-page@macotasu-agent-skills</code></pre>
+
+    <h3 style="margin-top:2.5rem">依存関係</h3>
+    <div class="dep"><b>spec-intake</b>  立法支援
+  <span class="opt">依存</span>  grilling（外部・任意）のみ
+
+<b>dev-crew</b>     行政
+  <span class="opt">依存</span>  公式 feature-dev のみ
+
+<b>review-judge</b> 司法
+  <span class="opt">依存</span>  なし
+
+<b>conductor</b>    指揮
+  <span class="req">必須</span>  dev-crew / review-judge ＋ 公式 pr-review-toolkit / commit-commands
+  <span class="opt">任意</span>  frontend-design / code-simplifier / saas-review / architecture-review
+
+<b>loop-engine</b>  自律
+  <span class="req">必須</span>  dev-crew / review-judge（自律モードでは loop-engine が指揮の席に座る）</div>
+    <p style="margin-top:1.25rem; font-size:.9rem; color:var(--muted)">
+      <strong>行政から司法への矢印が無いのが要点。</strong>実装した主体は、自分の成果を判事に
+      持ち込む権限を持たない。「これは軽微だから判定は不要」という判断自体が判定であり、
+      行政には属さない。なおプラグインの仕様には依存を宣言する仕組みが無いため、
+      <code>conductor</code> は招集の前に前提プラグインの有無を自分で検査し、
+      欠けていれば導入を促して止まる。
+    </p>
+  </section>
+
+  <section>
+    <h2>Claude Code 以外で使う</h2>
+    <p>
+      中身は <a href="https://code.claude.com/docs/en/skills">Agent Skills</a> 形式の素の Markdown で、
+      特定のランタイムに依存する記述を本文に持たない。<code>plugins/*/skills/*/</code> をそのままコピーするか、
+      <code>checklists/*.md</code> を任意のエージェントのコンテキストに渡せば使える。
+      プラグインとマーケットプレイスの仕組みだけが Claude Code 固有。
+    </p>
+  </section>
+
+  <section>
+    <h2>育て方</h2>
+    <p class="section-note">放っておけばチェックリストは書いた日が最終更新になる。何が追記を発火させるかを決めてある。</p>
+    <div class="growth">
+      <div>
+        <h3>取りこぼしだけ書く</h3>
+        <p>追記するのは「このパックに無かったせいで見逃しかけた観点」だけ。良い指摘を片端から足すと膨張し、かえって発火精度が落ちる。</p>
+      </div>
+      <div>
+        <h3>初期の観点は裏付けを持たない</h3>
+        <p>最初の軸は一般知識で書き起こしたもの。実際の PR に当てて空振りしたら直す前提でいる。以後に足される項目は上の規則により、その時点で実例を持っている。</p>
+      </div>
+      <div>
+        <h3>一般化してから入れる</h3>
+        <p>特定企業の内部事情・数値・固有のアーキテクチャは書かない。一般化した観点に落としてから入れる。</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>決定の記録</h2>
+    <p class="section-note">
+      後から見て「なぜこうなっているのか」が分からなくなる決定だけを残す。結論ではなく理由のほうが価値がある。
+    </p>
+
+    <dl class="decisions">
+      <dt>レビュー観点を2つのプラグインに割った</dt>
+      <dd>
+        境界は「<strong>マルチテナントで課金して継続提供する事業形態に固有か</strong>」。
+        outbox も後方互換も観測性も SaaS 固有ではないので <code>architecture-review</code> 側。
+        分けたのは<strong>利用者がまだ誰もいない時点</strong>——名前の変更は利用者の参照を壊すので、
+        分けるなら無料で済む時期しかなかった。
+      </dd>
+
+      <dt>司法を独立したプラグインにした</dt>
+      <dd>
+        当初は指揮役のプラグインに同梱していた。循環依存を避けるための消極的な配置だったが、
+        それだと<strong>行政が司法を配る</strong>形になり、分離を主張しながら梱包が主張と食い違う。
+        指揮も自律ループも判事なしに仕事を終えられず、
+        <strong>どちらも依存するが、どちらも所有していない</strong>。
+        判事が読む検証カタログも、プラグインを跨ぐとパスが解決できないので判事と同じ側に置いてある。
+      </dd>
+
+      <dt>指揮と実務を分け、行政から司法を呼べなくした</dt>
+      <dd>
+        当初はひとつのプラグインが、フェーズ判定・実装の委譲・書記の招集・司法への持ち込みを
+        すべて兼ねていた。だがそれは<strong>実装した主体が、自分の成果を判定に出すかどうかを
+        決められる</strong>ということで、「軽微だから判定は不要」という逃げ道が実際に規約に書かれていた。
+        判断自体が判定なので、行政には属さない。
+        いまは<strong>行政（実装と自己検査）</strong>・<strong>司法（判定）</strong>・
+        <strong>指揮（誰に何をさせ、いつ司法に持ち込むか）</strong>に分かれ、
+        指揮の席には手動なら人間が、自律なら loop-engine が座る。
+      </dd>
+
+      <dt>退会時の削除はマスキングでもよい</dt>
+      <dd>
+        取引記録に保持義務がある場合、行ごと消すと会計・監査が壊れる。
+        <strong>レコードは残して個人情報だけ不可逆に落とすのが正解</strong>。
+        危険なのは手段の選択ではなく、マスキングが可逆（対応表や元値が残っている）であること、
+        および自社 DB だけ処理して外部サービスに原本が残ること。
+      </dd>
+
+      <dt>第三者のスキルを同梱しない</dt>
+      <dd>
+        <code>grill-issue</code> が依存する <code>grilling</code> は外部由来（MIT）。
+        再配布は許されるが、上流の更新追従の責任を背負うことになる。
+        パスで読む代わりに<strong>スキル名で invoke し、無ければその旨を告げて続行</strong>する形にした。
+      </dd>
+
+      <dt>設定ファイルはプラグイン側に置かない</dt>
+      <dd>
+        プラグインの実体はインストール先のキャッシュで、<strong>読み取り専用として扱うべき場所</strong>。
+        ユーザー設定は使う側のリポジトリに置く（例: <code>.claude/release-note.config.yaml</code>）。
+      </dd>
+
+      <dt>ループの状態をファイルではなく GitHub に置く</dt>
+      <dd>
+        定期発火を cloud で回すと、毎回まっさらな clone から始まるので、作業ツリーに書いた状態は
+        次の発火に残らない。着手ロックとエスカレーションは <strong>issue のラベル</strong>が持つ。
+        副次的に、ボットがリポジトリへ状態を書き込む必要がなくなり、push 権限を PR ブランチだけに
+        絞れる。<code>Watching</code> にラベルを与えないのは、PR の存在が既に GitHub 上の事実で、
+        ラベルで二重に持つと必ずズレるため。
+      </dd>
+
+      <dt>試行回数は保存しない</dt>
+      <dd>
+        判事に3回差し戻されたら人間に上げる、という上限は残っている。だが
+        <strong>1回の発火が終わると、その issue はどの経路でも走査から除外される</strong>
+        （3回使い切り＝escalated ラベル／PR 作成＝<code>Closes #N</code> の open PR が存在／
+        途中終了＝ロックが残る）。次の発火で拾い直さない以上、前回の回数を持ち越す相手がいない。
+        状態をラベルに移した副産物として、カウンタの永続化そのものが不要になった。
+      </dd>
+
+      <dt>止まったロックは自動で解除しない</dt>
+      <dd>
+        発火が途中で死ぬとロックのラベルが残り、その issue は二度と拾われず<strong>静かに止まる</strong>。
+        一定時間を超えたものは検出して報告するが、<strong>ループはロックを取り直さない</strong> —
+        落ちた原因が残っているかもしれず、死んだ実行がブランチや PR を作りかけていれば自動再開は
+        二重作業になる。報告には残骸（ブランチ・PR・経過時間）を添えて、人間が後始末できるようにする。
+        ルールは一行: <strong>ラベルを外せるのは、正常完了したループと人間だけ。</strong>
+      </dd>
+
+      <dt>定期発火は cloud routine で行い、手元の繰り返し実行はやめた</dt>
+      <dd>
+        セッションが起きている間しか回らないという制約が、自律ループの前提と噛み合わない。
+        ただし routine の定義は claude.ai アカウント側に保存され git に残らないので、
+        <strong>routine に置くのは「同梱の手順書を読んで従え」という3行のポインタだけ</strong>にして、
+        実質的な手順はプラグイン側（＝版管理下）に残している。
+      </dd>
+
+      <dt>モデルの使い分けはプラグイン側に持つ</dt>
+      <dd>
+        どの職能をどのモデルで動かすかはコスト判断なので個人設定に置く、と一度は決めた。
+        だが利用者のホームディレクトリにある指示書は cloud session に届かず、
+        <strong>無人実行でこそ効いてほしいコスト制御が、そこでだけ適用されない</strong>という逆転が起きる。
+      </dd>
+
+      <dt>初版を公開するまでバージョンを上げない</dt>
+      <dd>
+        誰も参照していない間のバージョン更新は情報を持たない。
+        構築中は <code>0.1.0</code> のまま据え置き、公開後から semver を回す
+        （観点の追加＝minor / 文言修正＝patch / 名前・構造の変更＝major）。
+      </dd>
+    </dl>
+  </section>
+
+  <footer>
+    <span>MIT License</span>
+    <span><a href="https://github.com/MacoTasu/agent-skills">github.com/MacoTasu/agent-skills</a></span>
+  </footer>
+
+</div>

@@ -41,14 +41,12 @@ description: |
 
 ## 軸
 
-| 軸 | ファイル | 差分にこれがあれば読む | status |
+| 軸 | ファイル | 差分にこれがあれば読む |
 |---|---|---|---|
-| 外部連携とトランザクション整合 | `checklists/external-integration-consistency.md` | メール送信 / 決済 / 通知 / 送信する webhook / 非同期ジョブ / キュー | draft |
-| API・スキーマの後方互換と移行 | `checklists/api-compatibility.md` | レスポンス型変更 / DB マイグレーション / 送信する webhook | draft |
-| 観測性と障害時の運用 | `checklists/observability-operations.md` | 外部API呼び出し / 非同期ジョブ / 新機能の投入 | **verified** |
+| 外部連携とトランザクション整合 | `checklists/external-integration-consistency.md` | メール送信 / 決済 / 通知 / 送信する webhook / 非同期ジョブ / キュー |
+| API・スキーマの後方互換と移行 | `checklists/api-compatibility.md` | レスポンス型変更 / DB マイグレーション / 送信する webhook |
+| 観測性と障害時の運用 | `checklists/observability-operations.md` | 外部API呼び出し / 非同期ジョブ / 新機能の投入 |
 
-`status` は `draft`（書いたが実PRでの検証を経ていない）/ `verified`（実際の PR で使い、
-指摘として成立した実績がある）。
 
 ## 項目の書式
 

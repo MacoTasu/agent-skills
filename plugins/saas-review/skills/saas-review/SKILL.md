@@ -40,16 +40,14 @@ pr-test-analyzer / silent-failure-hunter / type-design-analyzer）は、いず�
 
 ## 軸
 
-| 軸 | ファイル | 差分にこれがあれば読む | status |
+| 軸 | ファイル | 差分にこれがあれば読む |
 |---|---|---|---|
-| テナント境界・データ分離 | `checklists/multi-tenancy.md` | クエリ / RLS / キャッシュキー / ストレージパス / バッチ・webhook | draft |
-| 課金・プラン・使用量メータリング | `checklists/billing-metering.md` | 決済API / プラン判定 / 上限チェック / 使用量集計 | draft |
-| 権限(RBAC)・監査ログ | `checklists/authz-audit-log.md` | エンドポイント追加 / ロール変更 / 招待 / メンバー削除 | draft |
-| データ保持・削除・エクスポート | `checklists/data-retention-deletion.md` | 削除処理 / 退会・解約 / マスターデータ変更 / 新テーブル追加 / 外部へのデータ同期 | draft |
-| 個社要件と汎用性 | `checklists/product-genericity.md` | 特定顧客由来の機能 / 条件分岐つきの挙動 / 設定項目の追加 | draft |
+| テナント境界・データ分離 | `checklists/multi-tenancy.md` | クエリ / RLS / キャッシュキー / ストレージパス / バッチ・webhook |
+| 課金・プラン・使用量メータリング | `checklists/billing-metering.md` | 決済API / プラン判定 / 上限チェック / 使用量集計 |
+| 権限(RBAC)・監査ログ | `checklists/authz-audit-log.md` | エンドポイント追加 / ロール変更 / 招待 / メンバー削除 |
+| データ保持・削除・エクスポート | `checklists/data-retention-deletion.md` | 削除処理 / 退会・解約 / マスターデータ変更 / 新テーブル追加 / 外部へのデータ同期 |
+| 個社要件と汎用性 | `checklists/product-genericity.md` | 特定顧客由来の機能 / 条件分岐つきの挙動 / 設定項目の追加 |
 
-`status` は `draft`（書いたが実PRでの検証を経ていない）/ `verified`（実際の PR で使い、
-指摘として成立した実績がある）。`verified` への昇格条件は CONTRIBUTING.md を参照。
 
 ## 項目の書式
 
