@@ -1,0 +1,19 @@
+{
+  "name": "saas-review",
+  "version": "0.1.0",
+  "description": "マルチテナント SaaS に固有の PR レビュー観点パック。テナント分離・課金とメータリング・権限と監査ログ・退会時の削除やマスキング・個社要件の混入を検査する。分散システム一般の整合性や後方互換は architecture-review にある。",
+  "author": {
+    "name": "MacoTasu",
+    "url": "https://github.com/MacoTasu"
+  },
+  "repository": "https://github.com/MacoTasu/agent-skills",
+  "license": "MIT",
+  "keywords": [
+    "saas",
+    "code-review",
+    "multi-tenancy",
+    "billing",
+    "audit-log",
+    "gdpr"
+  ]
+}
