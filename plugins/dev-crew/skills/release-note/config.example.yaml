@@ -1,0 +1,28 @@
+# /release-note 用の設定。
+# 実体は「使うプロジェクトの .claude/release-note.config.yaml」にコピーして使う
+# （プラグイン本体は読み取り専用のキャッシュなので、そこに設定を置かない）。
+# コミットしないこと（.gitignore に追加する）。
+#
+#   cp "${CLAUDE_PLUGIN_ROOT}/skills/release-note/config.example.yaml" .claude/release-note.config.yaml
+#   $EDITOR .claude/release-note.config.yaml
+
+# Notionのお知らせDBのID（URLの末尾32文字、ハイフン無しでも可）
+database_id: "00000000000000000000000000000000"
+
+# DBのプロパティ名マッピング。
+# 左がスキル内部のキー、右がNotion DB側の実際のプロパティ名。
+# DB側のプロパティ名と完全一致させること。
+properties:
+  title:        "Title"        # title 型
+  status:       "Status"       # select 型。"WIP" optionが存在すること
+  category:     "Category"     # select 型
+  service:      "Service"      # select 型
+  release_date: "ReleaseDate"  # date 型
+  pr_url:       "PR"           # url 型（任意。なければコメントアウト）
+
+# Status の "WIP" に相当する option の表示名（DB側で別名を使っているなら変更）
+wip_status_value: "WIP"
+
+# スクショキャッシュの保存先（リポジトリ相対）。
+# .gitignore で除外推奨。
+cache_dir: "cache/release-note"

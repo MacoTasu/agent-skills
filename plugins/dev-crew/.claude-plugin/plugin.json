@@ -1,0 +1,18 @@
+{
+  "name": "dev-crew",
+  "version": "0.1.0",
+  "description": "行政(実務)の一式。合意済みの契約に沿って実装し、ビルド・型・lint・テストの決定性証拠を揃えるところまでを担う implement と、出荷/運用の create-issue / release-note、そして書記の職能エージェント(business-reviewer / domain-architect)。指揮も判定も行わない — 自分の成果を自分で合格と宣言せず、証拠を揃えて指揮に返す。単体でも「実装して検査するだけ」として使える(依存は公式プラグインのみ)。",
+  "author": {
+    "name": "MacoTasu",
+    "url": "https://github.com/MacoTasu"
+  },
+  "repository": "https://github.com/MacoTasu/agent-skills",
+  "license": "MIT",
+  "keywords": [
+    "implementation",
+    "code-review",
+    "subagents",
+    "release",
+    "issue-tracking"
+  ]
+}

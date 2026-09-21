@@ -1,0 +1,22 @@
+{
+  "//": "このブロックを各プロジェクトの .claude/settings.json（commit 対象）にマージする。",
+  "//validate": "PostToolUse: Edit|Write 直後に .claude/hooks/validate.sh（速いチェック）",
+  "//gate": "Stop: 完了時に .claude/hooks/gate.sh（フル決定性ゲート・変更検知ガード付き）",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/validate.sh\"" }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/gate.sh\"" }
+        ]
+      }
+    ]
+  }
+}

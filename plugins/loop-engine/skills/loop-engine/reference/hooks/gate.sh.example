@@ -1,0 +1,29 @@
+#!/bin/bash
+# gate.sh — Stop hook（エージェント完了時のフル決定性ゲート）。
+#
+# 「done」の自己申告を機械で検証する最終門（モデルの誠実さに依存しない）。G4 司法とは別層:
+#   hooks = ハーネスが強制発火・連続・プロジェクト宣言／ G4 = ループ PR の拘束力ある判事。
+# stdin に hook JSON。.stop_hook_active が true なら既にゲート継続中＝無限ループ防止で素通り。
+#
+# 摩擦緩和（重要）: 未コミットの変更が無ければ即 exit 0（調査だけの /dev では走らない）。
+# 失敗時は exit 2 ＋ stderr → Claude は停止せず修正を続ける。pass は exit 0。
+set -uo pipefail
+
+INPUT=$(cat)
+ACTIVE=$(printf '%s' "$INPUT" | jq -r '.stop_hook_active // false' 2>/dev/null)
+[ "$ACTIVE" = "true" ] && exit 0   # 無限ループ防止（ゲート→再stop→再ゲート を断つ）
+
+# 変更検知ガード: working/staged ともに差分が無ければスキップ（コード未編集の対話では走らせない）
+if git diff --quiet 2>/dev/null && git diff --cached --quiet 2>/dev/null; then
+  exit 0
+fi
+
+# ---- ここにプロジェクト固有のフルスイートを書く ----
+# 例（Go の場合）:
+#   go build ./... 2>&1 || { echo "ビルド失敗" >&2; exit 2; }
+#   go test ./... 2>&1  || { echo "テスト失敗" >&2; exit 2; }
+# 例（dotfiles / shell。実配線は dogfood の .claude/hooks/gate.sh 参照）:
+#   for s in bin/*; do [ -f "$s" ] && { bash -n "$s" || { echo "構文エラー: $s" >&2; exit 2; }; }; done
+# ----------------------------------------------------
+
+exit 0   # 既定 no-op

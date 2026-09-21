@@ -1,0 +1,12 @@
+{
+  "name": "spec-page",
+  "version": "0.1.0",
+  "description": "説明書・仕様書・設計文書・調査報告を HTML 1枚のページにまとめるスキル。収録物の一覧ではなく「対象の構造」と「なぜそう決めたか」を伝える形式に落とす。リポジトリのドキュメントページ(docs/ + GitHub Pages)と単発の設計文書(Artifact)の両方を扱い、配信環境で初めて出る欠陥(charset 欠落による文字化け等)を公開前チェックリストで潰す。markdown で足りる内容は HTML にしない、という判断から始める。",
+  "author": {
+    "name": "MacoTasu",
+    "url": "https://github.com/MacoTasu"
+  },
+  "repository": "https://github.com/MacoTasu/agent-skills",
+  "license": "MIT",
+  "keywords": ["documentation", "specification", "design-doc", "html", "github-pages"]
+}
