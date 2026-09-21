@@ -18,6 +18,42 @@
       "description": "事業形態に依存しないアーキテクチャレビュー観点パック。外部連携とトランザクション整合(outbox) / API・スキーマの後方互換 / 観測性と障害時の運用 の3軸。SaaS でなくても適用できる。",
       "source": "./plugins/architecture-review",
       "category": "review"
+    },
+    {
+      "name": "review-judge",
+      "description": "レビューの拘束力ある最終判定だけを下す司法エージェント。観点別の所見と決定性チェックを束ね、PASS / REJECT / RETRY / ESCALATE を返す。Edit / Write を持たないため直すことができない。dev-conductor と loop-engine の双方が依存する共有基盤。",
+      "source": "./plugins/review-judge",
+      "category": "review"
+    },
+    {
+      "name": "spec-intake",
+      "description": "立法の支援。GitHub issue での議論を、実装根拠になる仕様(goals/)まで持ち上げる。grill-issue が曖昧な issue を質問攻めで詰め、spec-draft が完了基準と検証コマンドつきの仕様を起草して PR にする。承認は必ず人間。自律ループを回さなくても単体で使える。",
+      "source": "./plugins/spec-intake",
+      "category": "workflow"
+    },
+    {
+      "name": "conductor",
+      "description": "開発の指揮。フェーズを判定し、行政に実装させ、書記に証拠を出させ、司法に持ち込む。自分ではコードを書かず判定も出さない。行政が司法を呼べない構造にすることで、実装した主体が合否を決められないようにする。",
+      "source": "./plugins/conductor",
+      "category": "workflow"
+    },
+    {
+      "name": "dev-crew",
+      "description": "行政(実務)の一式。契約に沿って実装し決定性証拠を揃える implement、出荷/運用の create-issue・release-note、書記の職能エージェント。判定は出さず、証拠を揃えて指揮に返す。",
+      "source": "./plugins/dev-crew",
+      "category": "workflow"
+    },
+    {
+      "name": "loop-engine",
+      "description": "人間が書いた仕様を起点に拾い上げ→実装→司法検証→PR を回す自律ループ(HOTL)。既定は報告のみ、実装しても必ず PR で停止する。dev-conductor と review-judge が前提。",
+      "source": "./plugins/loop-engine",
+      "category": "workflow"
+    },
+    {
+      "name": "spec-page",
+      "description": "説明書・仕様書・設計文書を HTML 1枚にまとめる。一覧ではなく構造と決定の理由を伝える形式に落とし、配信環境で初めて出る欠陥を公開前チェックで潰す。Artifact と GitHub Pages の両方に対応。",
+      "source": "./plugins/spec-page",
+      "category": "documentation"
     }
   ]
 }

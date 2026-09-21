@@ -1,0 +1,18 @@
+{
+  "name": "review-judge",
+  "version": "0.1.0",
+  "description": "レビューの拘束力ある最終判定だけを下す司法エージェント。観点別の所見(書記)と決定性チェック(テスト/型/lint/CI)を束ね、PASS / REJECT / RETRY / ESCALATE のいずれか1つを返す。Edit / Write ツールを持たないため直すことができず、実行と検証が同一主体になることを構造的に防ぐ。持ち込めるのは指揮(conductor / loop-engine)だけで、実装した主体(行政)からは呼べない。双方が依存する共有基盤。",
+  "author": {
+    "name": "MacoTasu",
+    "url": "https://github.com/MacoTasu"
+  },
+  "repository": "https://github.com/MacoTasu/agent-skills",
+  "license": "MIT",
+  "keywords": [
+    "code-review",
+    "verification",
+    "separation-of-powers",
+    "gates",
+    "verdict"
+  ]
+}

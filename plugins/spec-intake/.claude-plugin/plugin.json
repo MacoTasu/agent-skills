@@ -1,0 +1,9 @@
+{
+  "name": "spec-intake",
+  "version": "0.1.0",
+  "description": "立法の支援。GitHub issue での議論を、実装根拠になる仕様(goals/<slug>.md)まで持ち上げる。grill-issue が曖昧な issue を質問攻めで詰め、spec-draft が完了基準と検証コマンドつきの仕様を起草して PR にする。承認(=マージ)は必ず人間が行い、Spec: コメントと loop-ready label の付与も代行しない。仕様の様式(SPEC.template.md)を同梱する。自律ループを回さなくても単体で使える。",
+  "author": { "name": "MacoTasu", "url": "https://github.com/MacoTasu" },
+  "repository": "https://github.com/MacoTasu/agent-skills",
+  "license": "MIT",
+  "keywords": ["specification", "issue-triage", "requirements", "github-issues", "legislation"]
+}

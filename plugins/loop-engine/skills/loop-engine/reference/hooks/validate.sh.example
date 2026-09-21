@@ -1,0 +1,28 @@
+#!/bin/bash
+# validate.sh — PostToolUse hook（Edit|Write 直後の「速い」決定性チェック）。
+#
+# プロジェクト固有の validation をここに書く（ハーネスは枠だけ・コマンドは持たない＝拡張点）。
+# stdin に Claude Code の hook JSON が来る。編集ファイルパスは .tool_input.file_path。
+# 規約: 速いものだけ（format / lint / 構文）。重いフルテストは gate.sh（Stop）か G4 司法へ寄せる。
+# 失敗時は exit 2 ＋ stderr に理由 → Claude が受け取って直す。pass は exit 0。
+set -uo pipefail
+
+INPUT=$(cat)
+FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
+[ -z "$FILE" ] && exit 0          # ファイル編集系でなければ素通り
+[ -f "$FILE" ] || exit 0
+
+# ---- ここにプロジェクト固有チェックを書く（拡張子で分岐）----
+# 例（Go の場合）:
+#   case "$FILE" in
+#     *.go)
+#       gofmt -l "$FILE" | grep -q . && { echo "gofmt 未整形: $FILE" >&2; exit 2; }
+#       go vet "./$(dirname "$FILE")/..." 2>&1 || exit 2 ;;
+#   esac
+# 例（TypeScript）:
+#   case "$FILE" in *.ts|*.tsx) npx tsc --noEmit 2>&1 || exit 2 ;; esac
+# 例（dotfiles / shell。実配線は dogfood の .claude/hooks/validate.sh 参照）:
+#   case "$FILE" in *.sh) bash -n "$FILE" || exit 2 ;; esac
+# ------------------------------------------------------------
+
+exit 0   # 既定 no-op（プロジェクトが中身を入れるまで素通り）

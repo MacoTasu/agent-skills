@@ -1,0 +1,128 @@
+#!/bin/bash
+# loop-init — 任意のリポジトリで loop-engine を回すための初期セットアップ。
+# goals/・.claude/loop/・hooks scaffold・settings.json の hooks 配線までを一括で行う。
+# 何度実行しても安全（既存物はスキップ・settings は壊さずマージ）。
+set -e
+
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
+  echo "error: git リポジトリではありません" >&2
+  exit 1
+}
+
+REPO_NAME=$(basename "$REPO_ROOT")
+# ハーネス参照物は本スクリプトと同じプラグイン内にある。
+# 自身の位置から解決するので PATH 登録も symlink も不要
+# （プラグイン配布・リポジトリ直実行のどちらでも動く）。
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+HARNESS_DIR="${CLAUDE_PLUGIN_ROOT:-$(dirname "$SCRIPT_DIR")}/skills/loop-engine/reference"
+
+# 言語マーカーを検出（root ＋ 代表的な subdir）→ 推奨 validation を提案する
+detect_langs() {
+  local found="" base d rel
+  for base in . backend frontend api server app web; do
+    d="$REPO_ROOT/$base"
+    [ -d "$d" ] || continue
+    rel="$base"; [ "$base" = "." ] && rel="(root)"
+    if [ -f "$d/go.mod" ]; then
+      found="${found}  Go      [$rel] validate: gofmt -l / go vet ./...    gate: go build ./... && go test ./...\n"
+    fi
+    if [ -f "$d/package.json" ]; then
+      found="${found}  Node/TS [$rel] validate: tsc --noEmit / eslint     gate: npm test\n"
+    fi
+    if [ -f "$d/pyproject.toml" ] || [ -f "$d/setup.py" ]; then
+      found="${found}  Python  [$rel] validate: ruff / black --check      gate: pytest\n"
+    fi
+  done
+  printf '%b' "$found"
+}
+
+# goals/ を作成
+if [ ! -d "$REPO_ROOT/goals" ]; then
+  mkdir -p "$REPO_ROOT/goals"
+  echo "created: goals/"
+else
+  echo "skip:    goals/ は既に存在します"
+fi
+
+# .claude/loop/ を作成
+mkdir -p "$REPO_ROOT/.claude/loop"
+
+# .gitignore に .claude/loop/judgments.md を追記（重複チェック）
+GITIGNORE="$REPO_ROOT/.gitignore"
+ENTRY=".claude/loop/judgments.md"
+if [ -f "$GITIGNORE" ] && grep -qF "$ENTRY" "$GITIGNORE"; then
+  echo "skip:    .gitignore に $ENTRY は既に存在します"
+else
+  printf '\n# loop-engine 判定ログ（揮発・as-built の runs/ は commit する）\n%s\n' "$ENTRY" >> "$GITIGNORE"
+  echo "added:   $ENTRY → .gitignore"
+fi
+
+# hooks（プロジェクト固有 validation）の雛形を scaffold（既定 no-op・project が中身を書く）
+HOOKS_DIR="$REPO_ROOT/.claude/hooks"
+mkdir -p "$HOOKS_DIR"
+for h in validate gate; do
+  SRC="$HARNESS_DIR/hooks/$h.sh.example"
+  DEST="$HOOKS_DIR/$h.sh"
+  if [ -f "$DEST" ]; then
+    echo "skip:    .claude/hooks/$h.sh は既に存在します"
+  elif [ -f "$SRC" ]; then
+    cp "$SRC" "$DEST" && chmod +x "$DEST"
+    echo "created: .claude/hooks/$h.sh（既定 no-op。project 固有チェックを書く）"
+  else
+    echo "warn:    $h.sh.example が見つかりません（$SRC）。スキップ"
+  fi
+done
+
+# .claude/settings.json に hooks を配線（無ければ作成・あれば安全マージ・既存 hooks は壊さない）
+SETTINGS="$REPO_ROOT/.claude/settings.json"
+SNIPPET="$HARNESS_DIR/hooks/settings.hooks.json"
+if ! command -v jq >/dev/null 2>&1; then
+  echo "warn:    jq が無いため settings 自動配線をスキップ。手で $SNIPPET の hooks を貼ってください"
+elif [ ! -f "$SNIPPET" ]; then
+  echo "warn:    settings.hooks.json が見つかりません（$SNIPPET）。settings 配線をスキップ"
+elif [ ! -f "$SETTINGS" ]; then
+  jq '{hooks: .hooks}' "$SNIPPET" > "$SETTINGS"
+  echo "created: .claude/settings.json（hooks 配線済み）"
+elif jq -e '.hooks' "$SETTINGS" >/dev/null 2>&1; then
+  echo "skip:    .claude/settings.json に hooks は既にあります（手で確認）"
+else
+  cp "$SETTINGS" "$SETTINGS.bak"
+  jq --slurpfile s "$SNIPPET" '. + {hooks: $s[0].hooks}' "$SETTINGS.bak" > "$SETTINGS"
+  echo "merged:  .claude/settings.json に hooks を追記（backup: settings.json.bak）"
+fi
+
+# .claude/settings.json にプラグイン宣言を追記（cloud routine で必須）
+# ユーザー設定で有効にしたプラグインは cloud session に届かない。marketplace と
+# enabledPlugins を「そのリポジトリの settings.json」に宣言してコミットする必要がある。
+if command -v jq >/dev/null 2>&1 && [ -f "$SETTINGS" ]; then
+  if jq -e '.enabledPlugins["loop-engine@macotasu-agent-skills"]' "$SETTINGS" >/dev/null 2>&1; then
+    echo "skip:    .claude/settings.json にプラグイン宣言は既にあります"
+  else
+    cp "$SETTINGS" "$SETTINGS.plugins.bak"
+    jq '
+      .extraKnownMarketplaces["macotasu-agent-skills"] //= {source: {source: "github", repo: "MacoTasu/agent-skills"}}
+      | .enabledPlugins["review-judge@macotasu-agent-skills"]   //= true
+      | .enabledPlugins["dev-crew@macotasu-agent-skills"]       //= true
+      | .enabledPlugins["loop-engine@macotasu-agent-skills"]    //= true
+    ' "$SETTINGS.plugins.bak" > "$SETTINGS"
+    echo "merged:  .claude/settings.json にプラグイン宣言を追記（cloud routine 用）"
+  fi
+fi
+
+# ---- 完了サマリ（残り作業を言語検出付きで案内）----
+echo ""
+echo "=== loop-init 完了 ==="
+LANGS=$(detect_langs)
+echo ""
+if [ -n "$LANGS" ]; then
+  echo "検出した言語と推奨 validation（.claude/hooks/{validate,gate}.sh に記入）:"
+  printf '%b' "$LANGS"
+  echo "  ※ monorepo は (cd <dir> && <cmd>) で対象ディレクトリを指定する"
+else
+  echo "言語マーカー未検出。.claude/hooks/{validate,gate}.sh を手で記入してください。"
+fi
+echo ""
+echo "残り:"
+echo "  1. .claude/hooks/{validate,gate}.sh に上記コマンドを記入（既定 no-op のまま回しても可）"
+echo "  2. goals/YYYYMMDD-<slug>.md を書く（雛形: $HARNESS_DIR/SPEC.template.md）"
+echo "  3. /loop-engine <slug>（L1=報告のみ・副作用ゼロ）→ 問題なければ spec を autonomy: L2 に昇格"

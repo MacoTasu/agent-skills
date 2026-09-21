@@ -1,0 +1,9 @@
+{
+  "name": "conductor",
+  "version": "0.1.0",
+  "description": "開発の指揮。フェーズを判定し、行政(dev-crew)に実装させ、書記に証拠を出させ、司法(review-judge)に持ち込む。自分ではコードを書かず、判定も出さない。三権のどこにも属さず、担うのは「誰に何をさせ、いつ司法に持ち込むか」だけ。行政が司法を呼べない構造にすることで、実装した主体が自分の成果の合否を決められないようにする。前提: dev-crew / review-judge と、公式の feature-dev / pr-review-toolkit / commit-commands。",
+  "author": { "name": "MacoTasu", "url": "https://github.com/MacoTasu" },
+  "repository": "https://github.com/MacoTasu/agent-skills",
+  "license": "MIT",
+  "keywords": ["orchestration", "separation-of-powers", "workflow", "code-review", "subagents"]
+}
