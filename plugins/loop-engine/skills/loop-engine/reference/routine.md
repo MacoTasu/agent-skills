@@ -20,9 +20,22 @@
 ```
 このリポジトリの loop-engine を1巡まわす。
 
-loop-engine プラグイン同梱の reference/routine.md を Read し、その「発火プロンプト本文」節に
-書かれた手順のとおりに実行すること。このプロンプトに書かれていない判断は、すべてそのファイルに従う。
+0. まず `git clone --depth 1 https://github.com/MacoTasu/agent-skills /tmp/harness` を実行する。
+   プラグインは cloud セッションに同期されないため、ハーネスを public リポジトリから直接取得する
+   （理由は下記「cloud にプラグインは届かない」）。clone に失敗したら何もせず ESCALATE して終了する。
+
+1. `/tmp/harness/plugins/loop-engine/skills/loop-engine/reference/routine.md` を Read し、
+   その「発火プロンプト本文」節に書かれた手順のとおりに実行すること。
+   このプロンプトに書かれていない判断は、すべてそのファイルに従う。
+   ただし前提確認の「3プラグインが有効」は、手順0の clone で満たされたものとして読み替える。
 ```
+
+> **司法が要るなら追加でもう1つ**: `review-judge:judge` は**プラグインの agent** なので、
+> clone してもサブエージェントとしては登録されない＝`Task` で起動できない。
+> 本ファイルは「Task が使えない環境なら PR を作らず ESCALATE」と定めているので、
+> **この状態では L2 が通らない（L1 の報告までで止まる）**。
+> L2 を回すなら `review-judge/agents/judge.md` を**対象 repo の `.claude/agents/` にコミットする**
+> （agent はリポジトリからも読まれる）。ハーネス全体の vendoring は不要。
 
 ## routine の設定
 
@@ -33,24 +46,60 @@ loop-engine プラグイン同梱の reference/routine.md を Read し、その�
 | 環境 | 既定（Trusted）でよい。`github.com` / `api.github.com` は既定の許可ドメインに含まれる |
 | モデル | routine のプロンプト入力にあるモデル選択で指定する |
 
-**対象リポジトリ側に必要な準備**（これが無いと cloud 側にハーネスが存在しない）:
+### cloud にプラグインは届かない（2026-09-22 実測）
 
-- `.claude/settings.json` に **marketplace とプラグインを宣言してコミット**する。
-  ユーザー設定（`~/.claude/settings.json`）で有効にしたプラグインは cloud に届かない。
-  宣言が要るのは `loop-engine` と、実装の委譲先 `dev-crew`、司法 `review-judge` の3つ。
+**`.claude/settings.json` にプラグインを宣言しても、cloud セッションにはインストールされない。**
+かつて本ファイルは「repo の settings.json に宣言すれば cloud に届く」と書いていたが、**誤りだった**。
+だから発火プロンプトの手順0で clone する。
+
+takul で2回 run して観測した内容（どちらも同一結果）:
+
+```
+cat /root/.claude/plugins/installed_plugins.json  → { "version": 2, "plugins": {} }
+ListPlugins {}                                    → {"results":[]}
+find /root/.claude/plugins/synced -type f         → 0件（ディレクトリのみ）
+```
+
+セッションは `.claude/settings.json` を `Read` して `extraKnownMarketplaces` /
+`enabledPlugins` の中身を**読めている**。宣言は届くが、インストールのトリガーになっていない。
+同期先ディレクトリが `synced/<env-uuid>_<account-uuid>/` という命名で、後半が routine の
+`creator.account_uuid` と一致することから、**同期はアカウント単位**でリポジトリ設定とは
+無関係だと見られる。routine 側の `enabled_plugins` / `extra_marketplaces` フィールドは
+API から更新しても**黙って捨てられる**（200 が返るのに値が入らない）。web の routine 編集
+フォームにもプラグイン選択は無い（コネクタのみ）。
+
+> 観測は**1アカウント・1環境で2回**。プラットフォームの仕様として断定はしない。
+> アカウント側にプラグインを入れる導線が見つかれば、手順0の clone は不要になる。
+
+**対象リポジトリ側に必要な準備**:
+
 - `goals/` と `.claude/hooks/` は `/loop-engine:init` で生成できる。
 - **`~/.claude/CLAUDE.md` は cloud に届かない**。無人実行に効かせたい規範は、
   リポジトリの `CLAUDE.md` かプラグイン側に置くこと。
+- `.claude/settings.json` のプラグイン宣言（`/loop-engine:init` が追記する）は
+  **ローカルセッション向け**。cloud のハーネス配送には効かないが、別マシンや他の人が
+  そのリポジトリを手元で触るときに効くので残してよい。
+
+### cloud セッションで使えるもの
+
+- **GitHub の MCP ツール**（`mcp__github__list_issues` 等）が最初から入っている。
+  issue の走査に `gh` 認証は不要（`gh` CLI も使えるが、MCP の方が確実）。
+- `ccusage` は**入っていない**ため `loop-budget` は exit 0（スキップ）になる＝予算ゲートは効かない。
 
 ## 発火プロンプト本文（ここから）
 
 **起動した session の current working repo** の自律ループを1巡まわす。
 ※ どの repo を対象にするかは routine の設定で決まる（repo 名はハードコードしない）。
 
-1. 前提確認: current repo が clone 済み・`loop-engine` / `dev-crew` / `review-judge` の3プラグインが
-   有効・L2 を回すなら `gh auth status` が OK。**どれか欠ければ何も実装せず ESCALATE（人間へ報告）して終了**。
+1. 前提確認: current repo が clone 済み・ハーネス（本ファイルと同階層の `SKILL.md`）が読める。
+   **L2 を回すなら追加で、司法 `review-judge:judge` が `Task` で起動できること**（cloud では
+   プラグイン agent が登録されないため、対象 repo の `.claude/agents/` に `judge.md` が要る）。
+   **どれか欠ければ何も実装せず ESCALATE（人間へ報告）して終了**。
+   ただし**司法が無いだけなら L1（報告のみ）は続行してよい**＝報告に司法は要らない。
 2. `git fetch origin && git checkout main && git pull --ff-only` で current repo を同期する。
-3. `loop-engine` skill の **autonomous-entry 節**（`${CLAUDE_PLUGIN_ROOT}/skills/loop-engine/SKILL.md`）に従う:
+3. `loop-engine` skill の **autonomous-entry 節**（このファイルと同階層の `../SKILL.md`。
+   プラグインとして入っているなら `${CLAUDE_PLUGIN_ROOT}/skills/loop-engine/SKILL.md`、
+   手順0で clone したなら `/tmp/harness/plugins/loop-engine/skills/loop-engine/SKILL.md`）に従う:
    - **`gh issue list --label loop-ready --state open`** で候補を集める（issue 番号昇順）。
      **`loop-running`（処理中）/ `loop-escalated`（人間待ち）が付いているものは除外**。
      **該当が無ければ何もせず正常終了**（no-op）。
