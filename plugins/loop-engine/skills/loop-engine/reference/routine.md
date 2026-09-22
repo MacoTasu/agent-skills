@@ -30,12 +30,14 @@
    ただし前提確認の「3プラグインが有効」は、手順0の clone で満たされたものとして読み替える。
 ```
 
-> **司法が要るなら追加でもう1つ**: `review-judge:judge` は**プラグインの agent** なので、
-> clone してもサブエージェントとしては登録されない＝`Task` で起動できない。
-> 本ファイルは「Task が使えない環境なら PR を作らず ESCALATE」と定めているので、
-> **この状態では L2 が通らない（L1 の報告までで止まる）**。
-> L2 を回すなら `review-judge/agents/judge.md` を**対象 repo の `.claude/agents/` にコミットする**
-> （agent はリポジトリからも読まれる）。ハーネス全体の vendoring は不要。
+> **司法の呼び方**: `review-judge:judge` は**プラグインの agent** なので、clone しても
+> `subagent_type` としては登録されない（cloud で実際に列挙されるのは
+> `claude` / `claude-code-guide` / `Explore` / `general-purpose` / `Plan` / `statusline-setup` のみ）。
+> だが**登録は司法の要件ではない**。分離を担保しているのは「別 Task の独立コンテキストで、
+> コードを書かず、証拠に照らして判定する」ことであって、型名ではない。
+> **clone した `judge.md` を手順書として汎用サブエージェントに読ませる**（詳細は下の
+> 「発火プロンプト本文」手順3）。**対象 repo に `judge.md` を置く必要はない**
+> （置くとハーネスがプロジェクト空間に侵入し、loop を回す全リポジトリに複製されて乖離する）。
 
 ## routine の設定
 
@@ -92,10 +94,10 @@ API から更新しても**黙って捨てられる**（200 が返るのに値�
 ※ どの repo を対象にするかは routine の設定で決まる（repo 名はハードコードしない）。
 
 1. 前提確認: current repo が clone 済み・ハーネス（本ファイルと同階層の `SKILL.md`）が読める。
-   **L2 を回すなら追加で、司法 `review-judge:judge` が `Task` で起動できること**（cloud では
-   プラグイン agent が登録されないため、対象 repo の `.claude/agents/` に `judge.md` が要る）。
+   **L2 を回すなら追加で、`Task`（サブエージェント起動）が使えること**。
    **どれか欠ければ何も実装せず ESCALATE（人間へ報告）して終了**。
-   ただし**司法が無いだけなら L1（報告のみ）は続行してよい**＝報告に司法は要らない。
+   ただし**司法を呼べないだけなら L1（報告のみ）は続行してよい**＝報告に司法は要らない。
+   前提確認でここを止めると報告すら出ないので、L1 を巻き添えにしないこと。
 2. `git fetch origin && git checkout main && git pull --ff-only` で current repo を同期する。
 3. `loop-engine` skill の **autonomous-entry 節**（このファイルと同階層の `../SKILL.md`。
    プラグインとして入っているなら `${CLAUDE_PLUGIN_ROOT}/skills/loop-engine/SKILL.md`、
@@ -114,9 +116,25 @@ API から更新しても**黙って捨てられる**（200 が返るのに値�
        着手時に issue へ **`loop-running`** を付け（ロック取得）、G5 完了時に外す。
        G3↔G4 のラウンドは**セッション内カウンタ**で数え、**N=3 を超えたらロールバック/ESCALATE**
        （回数は永続化しない）。
-       判定は必ず**分離した司法 `review-judge:judge`@opus を Task で起動**して出させる（自己採点しない）。
-       **Task が使えない環境なら PR を作らず ESCALATE**（自己採点に退化させない）。PASS で
-       `runs/<slug>/<run-id>/` に as-built を記録し `gh pr create` → judgments を `gh pr comment` で添付。
+       判定は必ず**分離した司法を Task で起動**して出させる（自己採点しない）。呼び方は環境で分ける:
+       - **`review-judge:judge` が `subagent_type` に居るなら**それを `model: opus` で起動する。
+       - **居ないなら**（cloud はこちら）、clone した
+         `/tmp/harness/plugins/review-judge/agents/judge.md` を**手順書として汎用サブエージェントに
+         読ませる**。`subagent_type` は **`Explore` を第一候補**とし、`model: opus` を明示する。
+         prompt は「このファイルを Read し、そこに書かれた判事としてふるまい、以下の証拠に照らして
+         PASS/REJECT/RETRY/ESCALATE を出せ」＋証拠一式。
+         `Explore` を選ぶのは**読み取り専用（Edit / Write を持たない）だから**で、
+         「司法はコードを書かない」を指示ではなくツールレベルで担保できる
+         （`judge.md` の frontmatter も `tools: Read, Grep, Glob, Bash`）。
+         `Explore` の探索向けペルソナが判定の邪魔をするなら `general-purpose` に落とす。
+         ただしその場合、**書き込みを防ぐのは指示だけになる**ことを判定コメントに明記すること。
+       - **`Task` 自体が使えない環境なら PR を作らず ESCALATE**（自己採点に退化させない）。
+
+       > 検証状況（2026-09-22）: cloud で `general-purpose` + `model: opus` の起動と
+       > `judge.md` の読み込みまでは**実測で確認済み**。`Explore` を判事として使えるかは**未検証**。
+
+       PASS で `runs/<slug>/<run-id>/` に as-built を記録し `gh pr create` →
+       judgments を `gh pr comment` で添付。
 4. **L2 は G6 手前で必ず停止する。`gh pr merge` は実行しない**（自動マージ runtime=Phase 3.1 は未出荷）。
    人間が PR をレビューしてマージする＝HOTL。
 5. **state rot 防止**: 終了時に `gh issue list --label loop-escalated` を全て再掲し、ラベル付与から

@@ -967,8 +967,37 @@ footer {
       <dd>
         セッションが起きている間しか回らないという制約が、自律ループの前提と噛み合わない。
         ただし routine の定義は claude.ai アカウント側に保存され git に残らないので、
-        <strong>routine に置くのは「同梱の手順書を読んで従え」という3行のポインタだけ</strong>にして、
+        <strong>routine に置くのは「同梱の手順書を読んで従え」というポインタだけ</strong>にして、
         実質的な手順はプラグイン側（＝版管理下）に残している。
+      </dd>
+
+      <dt>cloud にプラグインは届かないので、ハーネスは発火時に clone する</dt>
+      <dd>
+        当初は「対象リポジトリの <code>.claude/settings.json</code> に marketplace と
+        <code>enabledPlugins</code> を宣言すれば cloud セッションに届く」と書いていた。
+        <strong>実測で誤りだった</strong> — 宣言したリポジトリで routine を2回走らせたが、
+        どちらも <code>installed_plugins.json</code> が空のまま、ハーネス不在で停止した。
+        セッションは settings.json を読めているので宣言は届いているが、インストールの
+        トリガーにはなっていない。同期先が <code>&lt;env&gt;_&lt;account&gt;</code> という
+        命名であることから、<strong>同期はアカウント単位</strong>でリポジトリ設定とは無関係と見られる。
+        そこで、このリポジトリが public であることを使って
+        <strong>発火プロンプトの最初にハーネスを直接 clone する</strong>。
+        各プロジェクトにハーネスを複製する（vendoring）案は採らなかった —
+        loop を回す全リポジトリに同じものが散り、更新のたびに乖離する。
+      </dd>
+
+      <dt>司法は「登録された型」ではなく「分離された文脈」で担保する</dt>
+      <dd>
+        clone したところで <code>review-judge:judge</code> が <code>subagent_type</code> として
+        登録されるわけではない。だが<strong>登録は司法の要件ではない</strong>。
+        分離を担保しているのは「別 Task の独立した文脈で、コードを書かず、証拠に照らして判定する」
+        ことであって、型名ではない。だから
+        <strong>clone した <code>judge.md</code> を手順書として汎用サブエージェントに読ませる</strong>。
+        <code>subagent_type</code> は読み取り専用の <code>Explore</code> を第一候補にする —
+        <strong>「司法はコードを書かない」を指示ではなくツールの欠如で保証できる</strong>から。
+        <code>general-purpose</code> に落とす場合、その保証は指示だけになるので判定コメントに明記させる。
+        対象リポジトリに <code>judge.md</code> を置く案は採らなかった。ハーネスがプロジェクト空間に
+        侵入し、<strong>行政の持ち物の中に司法が置かれる</strong>形になって、分離の主張と梱包が食い違う。
       </dd>
 
       <dt>モデルの使い分けはプラグイン側に持つ</dt>
