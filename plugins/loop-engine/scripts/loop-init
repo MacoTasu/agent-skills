@@ -91,9 +91,12 @@ else
   echo "merged:  .claude/settings.json に hooks を追記（backup: settings.json.bak）"
 fi
 
-# .claude/settings.json にプラグイン宣言を追記（cloud routine で必須）
-# ユーザー設定で有効にしたプラグインは cloud session に届かない。marketplace と
-# enabledPlugins を「そのリポジトリの settings.json」に宣言してコミットする必要がある。
+# .claude/settings.json にプラグイン宣言を追記（ローカルセッション向け）
+# 注意: これは cloud routine には効かない。repo の settings.json に宣言しても cloud 側に
+# プラグインはインストールされない（実測。reference/routine.md の「cloud にプラグインは
+# 届かない」節を参照）。cloud のハーネス配送は発火プロンプト内の clone で行う。
+# ここで宣言する意味は、別マシンや他の人がこのリポジトリを手元で触るときに 3 プラグインが
+# 有効になること。
 if command -v jq >/dev/null 2>&1 && [ -f "$SETTINGS" ]; then
   if jq -e '.enabledPlugins["loop-engine@macotasu-agent-skills"]' "$SETTINGS" >/dev/null 2>&1; then
     echo "skip:    .claude/settings.json にプラグイン宣言は既にあります"
@@ -105,7 +108,7 @@ if command -v jq >/dev/null 2>&1 && [ -f "$SETTINGS" ]; then
       | .enabledPlugins["dev-crew@macotasu-agent-skills"]       //= true
       | .enabledPlugins["loop-engine@macotasu-agent-skills"]    //= true
     ' "$SETTINGS.plugins.bak" > "$SETTINGS"
-    echo "merged:  .claude/settings.json にプラグイン宣言を追記（cloud routine 用）"
+    echo "merged:  .claude/settings.json にプラグイン宣言を追記（ローカル用。cloud には効かない）"
   fi
 fi
 
