@@ -33,5 +33,5 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/loop-init"
 ```
 
 手で書くなら `spec-intake` 同梱の `SPEC.template.md` を `goals/$(date +%Y%m%d)-<slug>.md` に写す。
-`status: active`、`autonomy:` は省略（＝L1＝報告のみ）から始める。詳細は
+`status: active` にする。詳細は
 `${CLAUDE_PLUGIN_ROOT}/skills/loop-engine/reference/SETUP.md`。

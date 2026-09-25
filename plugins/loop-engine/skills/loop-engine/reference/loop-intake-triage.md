@@ -28,7 +28,7 @@
 - **「不可侵」と「reconcile」の両立**: 実行中に動かしてはいけないのは*変更ユニット（goal）*。reconcile する
   のは*製品仕様（anchor）*で、変更の**成果物として PR に載せ人間が merge 承認**する（ボットが main の
   正典を勝手に書き換えるのではない＝SSOT は人間所有のまま）。
-- 矛盾検知: 変更ユニットが製品仕様と矛盾するなら **ESCALATE**（"spec 矛盾"＝無人化禁止）。
+- 矛盾検知: 変更ユニットが製品仕様と矛盾するなら **ESCALATE**（"spec 矛盾"＝実装の根拠が無い）。
 - 命名: 製品仕様=`docs/specs`（anchor）／ 変更ユニット=`goals/`（goal）。deck の SSOT
   （機能要件・ドメインルール）に当たるのは**前者**。`goals/` は変更ゴールのキューであり仕様書ではない。
 
@@ -41,21 +41,13 @@
 | 探索的・曖昧・判断重・blast radius 大 | 人間駆動 | 書くと嘘になる。書かない |
 
 - spec の合格ラインは "perfect" ではなく **"完了が二値で機械判定できる" かつ "scope/guardrail で境界づけられている"**。
-- 無人化禁止対象（security・課金・破壊的変更・認証認可・spec 矛盾）は条件を満たしても**必ず ESCALATE**。
+- spec 矛盾・欠落は**必ず ESCALATE**。security・課金・破壊的変更・認証認可は loop に入れてよいが、PR 本文で申告させる（`autonomy-gates.md`「要注意の変更」）。
 
-#### 2つのダイヤル（intake × autonomy）
+#### 段階制（autonomy）は廃止
 
-トリアージは独立した2軸で決める。混同しない:
-
-- **ダイヤル1＝intake**: その仕事を **loop に入れるか / `/conductor:dev` か / 人間駆動か**（上表）。
-- **ダイヤル2＝autonomy**: loop に入れた spec を **どこまで無人で進めるか**。spec frontmatter
-  `autonomy: L1|L2`（**省略＝L1**）。
-  - **L1（既定・報告のみ）**: ループは active spec を検知して計画・リスクを**報告するだけ**。実装も PR もしない。
-  - **L2（per-spec 解禁）**: 実装→分離司法→PR、人間が merge（G6 手前停止）。
-  - **L3**（自動マージ）は閉鎖。
-- 原則「**必ず L1 から**」（記事 Loop Engineering の安全シーケンス）。新規 spec は既定 L1。
-  ループが spec とゲートを正しく読めることを L1 で確認できた spec だけ `autonomy: L2` に昇格する。
-  停止点の詳細は同梱の `autonomy-gates.md`「自律レベル」。
+以前は intake に加えて「どこまで無人で進めるか」（`autonomy: L1|L2`）を spec ごとに決めていたが、廃止した。
+loop に入れた spec は常に 実装→分離司法→PR まで進み、PR で止まる（マージは人間）。
+判断するのは intake（loop に入れるか / `/conductor:dev` か / 人間駆動か）だけ。
 
 ### 2. issue は intake であって SSOT ではない（＝発見経路であり、仕様ではない）
 
@@ -137,7 +129,7 @@ issue #N ── /loop-engine:loop-engine <N> ──▶ 司法 → PR (Closes #N)
   解決できなければ ESCALATE する。autonomous-entry は `loop-ready` label 付き issue を走査するが、
   **拾うのはあくまで「その issue が指す spec」**であって issue 本文ではない（label は intake のキュー、
   spec が法）。
-- 司法 `review-judge:judge` は、ループに乗った spec が 1（境界・無人化禁止）に反していないか、
+- 司法 `review-judge:judge` は、ループに乗った spec が 1（境界）に反していないか、要注意の変更が PR 本文で申告されているか、
   バグ修正なら 3 の再現テスト基準を持つかを採点観点に含める。
 - 新規 spec の命名が 4 に反する（日付プレフィックス無し）場合はレビューで差し戻す。
 

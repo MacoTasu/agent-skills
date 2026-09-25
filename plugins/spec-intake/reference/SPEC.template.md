@@ -1,6 +1,5 @@
 ---
 status: active     # active=実装対象(G1が拾う) / done=完了 / example=雛形・例
-autonomy: L1       # L1=ループは報告のみ(既定・省略可) / L2=実装→分離司法→PR(人間がmerge)。必ずL1から
 source_issue:      # 任意。起票元の GitHub issue 番号(例: 489)。issue 経由で回すなら書く
 product_spec:      # 関係する製品仕様(anchor)のパス。挙動を変えるなら必須・複数可。reconcile 対象
   - docs/specs/<feature>/<...>.md
