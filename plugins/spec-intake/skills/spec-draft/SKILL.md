@@ -40,7 +40,6 @@ allowed-tools:
 - **書けないなら書かない**。二値で機械判定できる完了基準を作れない issue は**起草を拒否**して
   `/conductor:dev`／人間駆動へ回す（穴の空いた spec がマージされると偽 spec になり、司法が PASS を出せなくなる）。
 - **検証コマンドは実在を確かめてから書く**。「それらしいテスト名」を捏造しない（後述の自己検証）。
-- **起草する spec は必ず `autonomy: L1`**。いきなり L2 にしない（`autonomy-gates.md` の安全シーケンス）。
 
 ## 手順
 
@@ -73,8 +72,6 @@ allowed-tools:
 > `/conductor:dev` か人間駆動へ回す。③ 曖昧なまま昇格させない（偽 spec を作らない）。
 **次のいずれかに当たるなら起草せず、理由を添えて `/conductor:dev`／人間駆動を案内して終了する**:
 
-- **無人化禁止対象** — security（認証/認可/秘匿情報/入力検証）・課金・破壊的変更/不可逆マイグレーション。
-  条件を満たしても loop に乗せない（`autonomy-gates.md`「絶対に無人化しない」）。
 - **完了基準を二値で機械判定できない** — 「使いやすくする」「速くする（目標値なし）」等。
   検証コマンドに落とせないものは spec にならない。
 - **原因不明・要調査のバグ** — 再現テストが書けないなら探索が先（`loop-intake-triage` 3）。
@@ -86,7 +83,7 @@ allowed-tools:
 >
 > **拒否したら詰め直す手段を案内する**。曖昧さ・議論未決着が理由なら **`/spec-intake:grill-issue <N>`**
 > （質問攻めで issue を spec に落とせる状態まで鋭くする）を案内し、そこから戻ってきてもらう。
-> 無人化禁止対象・要調査のバグが理由なら `/conductor:dev`／人間駆動へ回す（詰めても loop 向きにはならない）。
+> 要調査のバグが理由なら `/conductor:dev`／人間駆動へ回す（詰めても loop 向きにはならない）。
 
 ### 4. 起草
 
@@ -95,11 +92,14 @@ allowed-tools:
 
 - **ファイル名** — `goals/YYYYMMDD-<kebab-slug>.md`。`YYYYMMDD` は**今日**（`date +%Y%m%d`）。
   slug は issue の主題を kebab-case で簡潔に。**既存ファイルと衝突しないか `ls goals/` で確認**する。
-- **frontmatter** — `status: active` / **`autonomy: L1`（必ず）** / `source_issue: <N>` /
+- **frontmatter** — `status: active` / `source_issue: <N>` /
   挙動を変えるなら `product_spec:` に anchor のパス。
 - **完了基準** — 各基準に**実行コマンドを併記**する（`cd backend && go test ./internal/handler/ -run TestX`）。
   ここが司法の決定性チェックと1対1で対応する。
 - **スコープ** — In / Out を明記。Out を書かないと司法が「スコープ逸脱」を判定できない。
+- **要注意の変更** — security（認証/認可/秘匿情報/入力検証）・課金・破壊的変更/不可逆マイグレーション・
+  公開 API の互換破壊に触れるなら、spec の本文にそう書く（起草は拒否しない）。ループは PR まで進めて、
+  PR 本文の先頭で申告する（`autonomy-gates.md`「要注意の変更」）。
 - 迷ったら**薄く**書く。フル機能 spec の節を全部埋める必要はない（バグ修正なら再現テスト1本で足りる）。
 
 ### 5. 自己検証（起草した spec が"嘘"でないことを確かめる）
@@ -209,7 +209,7 @@ gh issue comment <N> --body "Spec: goals/YYYYMMDD-<slug>.md"
 # ④ loop に投げてよいという意思表示
 gh issue edit <N> --add-label loop-ready
 
-# ⑤ 起動（まず L1 = 報告のみ。信頼できたら spec を autonomy: L2 に上げる）
+# ⑤ 起動（実装→司法→PR まで進んで PR で停止。cloud routine が回っていれば次の発火で拾われる）
 # /loop-engine:loop-engine <N>
 ```
 
@@ -219,6 +219,5 @@ gh issue edit <N> --add-label loop-ready
 - **検証コマンドを確かめずに書く**（実在しないテスト名＝司法が永久に PASS を出せない偽 spec）。
 - **曖昧な issue を無理に spec 化する**（拒否が正しい動作。`/conductor:dev`／人間駆動へ回す）。
 - **spec と一緒に実装してしまう**（このコマンドは立法のみ。実装は `/loop-engine:loop-engine` or `/conductor:dev`）。
-- **`autonomy: L2` で起草する**（必ず L1 から。昇格は人間が L1 の結果を見て判断する）。
 - **③④ まで代行する**（spec が main にマージされる前に label が付くと `/loop-engine:loop-engine` が落ちる）。
 - **issue の議論を spec の代わりにする**（spec に書かれていないことは実装根拠にならない）。

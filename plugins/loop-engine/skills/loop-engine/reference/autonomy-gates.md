@@ -51,27 +51,48 @@ PR ブランチだけに絞れなくなる。
   外して行う。報告には後始末の材料として、**`loop/<issue番号>-*` ブランチの有無と最終コミット時刻・
   `Closes #N` の open PR の有無・ロック付与からの経過時間**を含める。
   閾値を 6 時間と長めに取るのは、正常に走っている実行を誤って stale 判定しないため
-  （L2 は1発火1spec なので、6 時間走り続けていること自体が異常）。誤判定しても破壊的な操作は
+  （1発火1spec なので、6 時間走り続けていること自体が異常）。誤判定しても破壊的な操作は
   行わず、ラベルの追加と報告にとどまる。
 
 ## ゲート定義
 
 | ゲート | 判定 | 通過条件 | 不通過 | runtime |
 |---|---|---|---|---|
-| **G1 トリガ** | 無人着手してよいか | `./goals/<slug>.md`（**`status: active`** のみ・rules/ は対象外）の**新規 or 更新が main にマージ済み**／`auto` 印あり／スコープが閾値以下／**security・課金・破壊的変更でない**。**対象 issue に `loop-running` が付いていないこと**（付いていれば別の発火が処理中＝スキップ）。**`loop-budget` が予算内**（exit<20。80%↑＝exit10 は新規 L2 を見送り・L1 報告は許容） | ESCALATE（人間へ）または no-op | 3.0 手動 / 3.2 autonomous-entry（cron） |
+| **G1 トリガ** | 無人着手してよいか | `./goals/<slug>.md`（**`status: active`** のみ・rules/ は対象外）の**新規 or 更新が main にマージ済み**／`auto` 印あり／スコープが閾値以下。要注意の変更（下記）に当たるかを見立てておく（止めない・G5 の申告に使う）。**対象 issue に `loop-running` が付いていないこと**（付いていれば別の発火が処理中＝スキップ） | ESCALATE（人間へ）または no-op | 3.0 手動 / 3.2 autonomous-entry（cron） |
 | **G2 立法** | SSOT が実装可能か | 変更ユニット(`./goals/`)に **完了基準＋検証方法＋検証サーフェス**が揃う＋**関係する製品仕様 `docs/specs/`（`product_spec`）を Read し矛盾が無い**（issue は使わない）。セッション内の試行カウンタをインクリメント（永続化しない） | 曖昧/欠落/**製品仕様と矛盾**は ESCALATE | 3.0 |
 | **G3 実装** | — | driver が **Task で直接実装**（公式 feature-dev は無人駆動不可のため）。差分はスコープ内・ブランチ分離。**挙動を変えたら製品仕様 `docs/specs/<feature>.md` を新挙動に reconcile（同 PR に含める）**。更新時は差分リコンサイル＋全基準を満たす。**issue に `loop-running` ラベルを付与**（ロック取得） | スコープ逸脱で停止 | 3.0 |
 | **G4 司法** | 緑か | **`review-judge:judge` PASS**（決定性緑＋サーフェス充足＋セマンティックOK＋**挙動変更なら製品仕様 reconcile 済み**）。spec パスを渡す。**セッション内カウンタが N=3 超なら司法を呼ばずロールバック/ESCALATE** | RETRY/REJECT→G3 へ（**reconcile 不足は RETRY**）。N=3 超で ロールバック/ESCALATE | 3.0 |
-| **G5 PR＋as-built** | PR 化してよいか | G4 PASS ＋ **as-built/決定を `./.claude/loop/runs/<slug>/<run-id>/` に版ごと履歴で残す**（上書きせず spec の git ref を記録）＋ `gh pr create` ＋ **judgments を `gh pr comment` で添付（恒久シンク B）**。**issue から `loop-running` ラベルを外す**（以後は open PR の存在が Watching を表す）。**`.claude/loop/run-log.md` に実行サマリを追記**（run_id / slug / outcome / findings / actions / token_estimate） | 停止 | 3.0 |
+| **G5 PR＋as-built** | PR 化してよいか | G4 PASS ＋ **as-built/決定を `./.claude/loop/runs/<slug>/<run-id>/` に版ごと履歴で残す**（上書きせず spec の git ref を記録）＋ `gh pr create`（**本文の先頭に「⚠️ 要注意の変更」節**）＋ **judgments を `gh pr comment` で添付（恒久シンク B）**。**issue から `loop-running` ラベルを外す**（以後は open PR の存在が Watching を表す） | 停止 | 3.0 |
 | **G6 マージ** | 自動マージしてよいか | 司法 PASS ＋ **CI 緑** ＋ コンフリクトなし ＋ **`auto-merge` ラベル**（opt-in）＋ 影響度しきい値以下。**merge で `Closes #N` により issue が close ＝ Done** | 未充足は **PR で停止（人間がマージ）** | **定義のみ・runtime=3.1 はスキップ中。常に PR 停止** |
 
-## 絶対に無人化しない（常に ESCALATE）
+## 要注意の変更（PR で申告する）
 
-次に触れる場合、条件を満たしても**自動で進めない**。必ず人間へ：
+次に触れる変更も**PR 作成までは進めてよい**。マージは常に人間が行う（G6 は閉鎖）ので、
+止める位置はマージ前で足りる。代わりに、人間がマージ判断で見落とさないよう **PR 本文の先頭で申告する**:
 
 - security（認証/認可/秘匿情報/入力検証）
 - 課金・決済・コスト発生
 - 本番データの破壊的変更・不可逆マイグレーション
+- 公開 API の後方互換を壊す変更
+
+**申告の書式**（PR 本文の先頭。該当が無くても「なし」と書く＝「確認して該当なし」と「確認し忘れ」を区別する）:
+
+```
+## ⚠️ 要注意の変更
+- [認証/認可] path/to/file: 何が変わるか・なぜ要注意か
+レビューで特に見てほしい点: …
+```
+
+```
+## ⚠️ 要注意の変更
+なし
+```
+
+司法（`review-judge:judge`）は**申告が差分と一致しているか**も判定する。差分が上の対象に触れているのに
+申告が無い・不正確なら **RETRY**（申告漏れのまま PR を出させない）。
+
+次は実装の根拠が無いので、進めずに **ESCALATE**:
+
 - spec 自体の矛盾・欠落
 - ガードレール（spec の制約節）への抵触
 
@@ -80,26 +101,16 @@ PR ブランチだけに絞れなくなる。
 - **N=3 ラウンド上限**（G3↔G4）。超過でロールバック or ESCALATE。無限ループを作らない。
 - 司法（`review-judge:judge`）は **opus** を毎ラウンド回す＝コストが効く。頻度（Phase 3.2 の Routines）と
   N の設計でコストを抑える。
-- **日次予算キャップ（`loop-budget`）**: autonomous-entry の G1 で `loop-budget` を実行し、当日の
-  Claude Code 総コスト（`ccusage` 由来・全プロジェクト合算）を日次キャップと照合する。
-  `LOOP_DAILY_BUDGET_USD`（既定 $20）で上書き可。**80%↑で新規 L2 を見送り（exit 10）・100% 超で full no-op（exit 20）**。
-  ループは後回し可能な低優先の消費者なので、総額が高い日は自律ループを絞る。価格表は `ccusage` に委譲（DRY）。
-  ccusage 不在なら予算チェックをスキップ（exit 0＝ループは止めない＝移植性優先）。
+- コストの上限は「**1 発火で扱うのは1件**」「発火間隔」「routine の1日あたりの回数上限」で決まる。
+  日次予算ゲートは持たない（cloud では使用量を取得する手段が無く、効かない仕組みを残さない）。
 - PASS が PR 自動作成（さらに G6 で自動マージ）に繋がるため、**迷ったら PASS せず ESCALATE/RETRY**（安全側）。
 
-## 自律レベル（autonomy）— 必ず L1 から
+## 段階制（autonomy）は廃止
 
-spec frontmatter `autonomy: L1|L2`（**省略＝L1**）で、ループがどこまで無人で進むかを **spec ごと**に制御。
-記事 Loop Engineering の安全シーケンス「いきなり L3 にしない・必ず L1 から」を採用。
-
-| レベル | ループの到達点 | 停止点 | 既定 |
-|---|---|---|---|
-| **L1** | active spec を検知し **報告のみ**（完了基準/スコープ/サーフェス/ESCALATE候補/既存PR/実装プラン） | **G3 手前**（実装しない＝副作用ゼロ・opus 不使用） | ✅ 既定 |
-| **L2** | 実装→分離司法→PR | **G6 手前**（人間が merge＝HOTL） | per-spec opt-in |
-| **L3** | ＋自動マージ | — | **閉鎖**（=3.1・未出荷） |
-
-信頼できた spec だけ `autonomy: L2` に昇格する。intake（loop か /conductor:dev か）と autonomy（L1 か L2 か）の
-**2ダイヤル**は同梱の `loop-intake-triage.md` が正典。
+以前は spec frontmatter `autonomy: L1|L2` で「報告のみ」と「PR まで」を spec ごとに切り替えていた。
+報告のみを既定にすると ready にした issue がいつまでも実装されず、昇格の手続きも増えるだけだったので廃止した。
+`loop-ready` が付いて spec に解決できた issue は、G1〜G5 まで進んで PR で止まる。
+frontmatter に `autonomy:` が残っていても**読まない**（後方互換。SSOT は人間所有なのでボットは書き換えない）。
 
 ## フェーズ境界
 
@@ -107,13 +118,12 @@ spec frontmatter `autonomy: L1|L2`（**省略＝L1**）で、ループがどこ�
   実走実証済み（PR #6 `20260621-loop-readme`）。
 - 3.1（**スキップ中**）: G6 自動マージ runtime（`gh pr merge`）。ブラッシュアップまで当面導入しない。
   これによりループは常に **PR で停止**＝人間が全マージをゲート（HOTL を最も安全側に保つ）。
-- 3.2（**active**）: 自動発火。**発火＝手元 session の `/loop`**（または durable `CronCreate`）で
+- 3.2（**active**）: 自動発火。**発火＝Claude Code の cloud routine**（schedule トリガ）で
   同梱の `routine.md` を定期実行。取り込みは `/loop-engine:loop-engine` autonomous-entry 節。
   **自動走査の対象は `loop-ready` label 付きの open issue**（そこから `Spec:` コメントで解決した
   spec が実装根拠。同梱
   `loop-intake-triage.md`）。issue は**人間が番号を指定する手動起動** `/loop-engine:loop-engine <N>` の入口として
-  使える（label + `Spec:` コメントで `goals/` に解決＝実装根拠は常に spec）。label 走査の自動発火は未実装。
-  既定 L1（報告のみ）で始め、spec 単位で L2 解禁。
+  使える（label + `Spec:` コメントで `goals/` に解決＝実装根拠は常に spec）。
   - **発火機構の決定**:
     - claude.ai Routine（`/schedule`/RemoteTrigger cron）= **不採用**（発火が repo 外・Claude が Claude を撃つ・
       poll であって event でない）。
@@ -139,6 +149,4 @@ Stop/PostToolUse hooks は**各プロジェクトの `.claude/settings.json`（c
   `stop_hook_active` ガード（無限ループ防止）で `/conductor:dev` の摩擦を抑える。失敗で exit 2 → Claude は停止せず修正続行。
 - 雛形＝同梱 `reference/hooks/{validate,gate}.sh.example`・配線 snippet＝`reference/hooks/settings.hooks.json`。
   `/loop-engine:init` が `.claude/hooks/` を scaffold（既定 no-op）。project が中身を書く。dogfood＝dotfiles 自身（編集 `*.sh` に `bash -n`）。
-  - **L2 解禁時の TODO**: issue のラベル（着手ロック/escalated 台帳）で
-    無限再試行を防止（実装済）。予算キャップは `loop-budget`（`ccusage`・日次停止・`LOOP_DAILY_BUDGET_USD`）で実装済。
-    残: 常時稼働は self-hosted runner / GitHub Actions（未実装）。
+  - 無限再試行は issue のラベル（着手ロック/escalated 台帳）で防止している（実装済）。

@@ -1,7 +1,7 @@
 {
   "name": "loop-engine",
   "version": "0.1.0",
-  "description": "人間が書いた仕様(goals/<slug>.md)を起点に、拾い上げ→実装→司法検証→PR を回す自律ループ(HOTL)。既定は L1(報告のみ・副作用なし)で、L2 でも必ず PR で停止する(自動マージはしない)。/loop-engine:init でプロジェクト側の実行基盤を生成。自律モードでは loop-engine 自身が指揮の席に座り、行政(dev-crew)に実装させ司法(review-judge)に持ち込む。前提: dev-crew と review-judge。単体では動かない。仕様の起草は spec-intake が担う(loop-engine は spec を実行するもので、書き方は教えない)。",
+  "description": "人間が書いた仕様(goals/<slug>.md)を起点に、拾い上げ→実装→司法検証→PR を回す自律ループ(HOTL)。必ず PR で停止する(自動マージはしない)。security・課金・破壊的変更は止めずに PR 本文で申告する。/loop-engine:init でプロジェクト側の実行基盤を生成。自律モードでは loop-engine 自身が指揮の席に座り、行政(dev-crew)に実装させ司法(review-judge)に持ち込む。前提: dev-crew と review-judge。単体では動かない。仕様の起草は spec-intake が担う(loop-engine は spec を実行するもので、書き方は教えない)。",
   "author": {
     "name": "MacoTasu",
     "url": "https://github.com/MacoTasu"

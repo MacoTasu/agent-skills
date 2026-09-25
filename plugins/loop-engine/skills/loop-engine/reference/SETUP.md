@@ -2,7 +2,7 @@
 
 このファイルは「別のプロジェクトで loop-engine を立ち上げる」ための実践ランブック。
 概念（3空間モデル・ゲート）は [`README.md`](README.md) / [`autonomy-gates.md`](autonomy-gates.md) を参照。
-**鉄則: 必ず L1（報告のみ）から始め、信頼できた spec だけ L2 に昇格する。**
+**流れ: spec を書いて `loop-ready` を付ければ、ループが実装→司法→PR まで進めて PR で止まる。マージは人間。**
 
 ---
 
@@ -14,7 +14,6 @@
 |---|---|---|
 | ハーネスが導入されている | `/plugin` で `loop-engine` が active | `/plugin marketplace add MacoTasu/agent-skills` → `/plugin install loop-engine@macotasu-agent-skills` |
 | 行政と司法が導入されている | `/plugin` で `dev-crew` と `review-judge` が active | `/plugin install dev-crew@macotasu-agent-skills` / `review-judge@macotasu-agent-skills`（**loop-engine は単体では動かない**） |
-| 予算ゲート用 ccusage（任意・推奨） | `command -v ccusage` | `brew install ccusage` |
 
 > **ハーネスの更新 = `/plugin marketplace update macotasu-agent-skills` → `/plugin update`**。
 > スクリプトもテンプレートもプラグインに同梱されているので、**PATH 登録も symlink も不要**。
@@ -81,7 +80,7 @@ hooks は G4 司法（review-judge:judge）と**重複ではなく多層防御**
 
 手で書くなら `spec-intake` 同梱の `SPEC.template.md` を `goals/$(date +%Y%m%d)-<slug>.md` に写す。
 
-- frontmatter: `status: active`、`autonomy:` 省略（＝L1）。挙動を変えるなら `product_spec:` に anchor を宣言。
+- frontmatter: `status: active`。挙動を変えるなら `product_spec:` に anchor を宣言。
 - **完了基準は二値で機械判定できる検証コマンドで書く**（例 `cd backend && go test ./... -run TestX`）。
 - スコープ / ガードレール / 停止条件を埋める。雛形のコメントに従えばよい。
 - **実装根拠は常に `goals/` の `status: active`**。issue の議論から仕様を推測して実装しない
@@ -90,7 +89,7 @@ hooks は G4 司法（review-judge:judge）と**重複ではなく多層防御**
 
 ---
 
-## 5. L1 ドライラン（報告のみ・副作用ゼロ）
+## 5. 回す
 
 そのプロジェクトの Claude session で:
 
@@ -98,35 +97,19 @@ hooks は G4 司法（review-judge:judge）と**重複ではなく多層防御**
 /loop-engine:loop-engine <slug>
 ```
 
-L1 は **実装・ブランチ・司法・PR を一切しない**。完了基準/スコープ/検証サーフェス/ESCALATE 候補/
-既存 PR/製品仕様との整合/「L2 昇格時の実装プラン」を**報告するだけ**。
-
-ここで確認すること:
-- ループが spec とゲートを正しく読めるか。
-- **その spec が既に満たされていないか**（L1 が「実は done」を実装前に検出する＝最大の価値）。
-- 満たされていたら spec を `status: done` に倒して終わり（実装しない）。
-
----
-
-## 6. L2 に昇格して自走させる
-
-L1 で問題なければ spec frontmatter を `autonomy: L2` に変更し、再度:
-
-```
-/loop-engine:loop-engine <slug>
-```
-
-L2 は **実装 → 分離司法（review-judge:judge@opus）→ PR** まで自走し、**G6（自動マージ）手前で必ず停止**する。
+**実装 → 分離司法（review-judge:judge@opus）→ PR** まで進み、**G6（自動マージ）手前で必ず停止**する。
 人間が PR をレビューしてマージ（HOTL）。`gh pr merge` は自動では絶対にしない。
 
 - N=3 ラウンド上限（実装↔司法）。超過でロールバック/ESCALATE。
-- security・課金・破壊的変更・認証認可・spec 矛盾は**必ず ESCALATE**（無人化禁止）。
-- 日次予算 `loop-budget`（`LOOP_DAILY_BUDGET_USD` 既定 $20）が 80% で新規 L2 を見送り。
+- spec の矛盾・欠落は**必ず ESCALATE**（実装の根拠が無い）。
+- security・課金・破壊的変更・認証認可に触れる変更も PR までは進むが、**PR 本文の先頭で「⚠️ 要注意の変更」として申告**される。
+  マージ前にそこを見る。
+- spec が既に満たされていれば、ループは実装せずにそう報告する。spec を `status: done` に倒して終わり。
 
 ### 定期監視（任意）
 
-そのプロジェクトの session で `/loop 30m`（発火本文＝[`routine.md`](routine.md)）。起きている間、
-`status: active` を定期的に拾って L1 報告 / L2 実装する。session 依存（laptop が起きている間だけ）。
+Claude Code の cloud routine で定期発火させる（発火本文と設定＝[`routine.md`](routine.md)）。
+`loop-ready` label 付きの issue を拾い、1 発火で1件ずつ PR まで進める。ラップトップを閉じていても回る。
 
 ---
 
@@ -158,24 +141,22 @@ issue テンプレート（`.github/ISSUE_TEMPLATE/*.yml`）を置くなら、**
 
 - 3〜4 を飛ばすと loop は **ESCALATE**（昇格していない issue を勝手に実装しない）。
 - 手順 5 は手動起動の経路。**label 付き issue の自動走査は cloud routine が行う**（`reference/routine.md`）。
-- L1/L2 の autonomy は**spec の frontmatter で決まる**（issue 経由でも同じ）。**必ず L1 から**。
 
 ---
 
 ## チェックリスト（要点）
 
-- [ ] 0. ハーネス symlink・PATH・ccusage を確認（マシン一度だけ）。古ければ dotfiles を `git pull`。
+- [ ] 0. ハーネス（プラグイン）の導入を確認（マシン一度だけ）。古ければ dotfiles を `git pull`。
 - [ ] 1. `loop-init` 実行。
 - [ ] 2. `.claude/hooks/{validate,gate}.sh` に project 固有チェック（既存 hook は再利用）。
 - [ ] 3. 製品仕様 anchor（`docs/specs/`）の場所を決める（あれば）。
 - [ ] 4. `goals/YYYYMMDD-<slug>.md` を書く（検証コマンド付き完了基準）。
-- [ ] 5. **L1** で `/loop-engine:loop-engine <slug>`（報告のみ・既充足チェック）。
-- [ ] 6. 信頼できたら `autonomy: L2` に昇格 → 実装→司法→PR。人間がマージ。
-- [ ] 7.（任意）issue 運用するなら `loop-ready` label を作成し、軽量 issue テンプレートを置く。
+- [ ] 5. `/loop-engine:loop-engine <slug>` → 実装→司法→PR。人間がマージ。
+- [ ] 6.（任意）issue 運用するなら `loop-ready` label を作成し、軽量 issue テンプレートを置く。
 
 ## 落とし穴
 
-- **いきなり L2 にしない**（必ず L1 から）。
+- **要注意の変更の PR はマージ前に「⚠️ 要注意の変更」節を必ず読む**（ループは止めずに申告だけする）。
 - **ボットは `goals/` を書き換えない**（SSOT は人間所有。出力は `.claude/loop/`）。
 - `runs/` は commit、`judgments.md` は gitignore。ループの動的状態はファイルではなく
   **GitHub の issue ラベル**（`loop-ready` / `loop-running` / `loop-escalated`）が持つ。
