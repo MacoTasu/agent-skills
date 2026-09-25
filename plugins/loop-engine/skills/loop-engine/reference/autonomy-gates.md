@@ -13,7 +13,7 @@
   - **`rules/`（規範・守るもの）** … 開発フロー/規約/ドメインルール。**トリガ対象外**。
     司法・`/conductor:dev` が参照し enforcement（deck の Authority Provenance）。
   - 雛形はハーネス同梱 `${CLAUDE_PLUGIN_ROOT}/skills/loop-engine/reference/{SPEC,RULE}.template.md`。更新は人間の spec/rule PR。版管理は git。
-- **派生 = `./.claude/loop/`** … ボットが書く。判定ログ `judgments.md`・as-built `runs/<slug>/<run-id>/`。
+- **出力** … ボットはリポジトリに記録ファイルを書かない。出力は PR（本文・司法判定のコメント）と issue のラベル・コメントだけ。
 - **ハーネス = `.claude/`** … 判事・本ゲート・検証カタログ・loop-engine（汎用・dotfiles で配布）。
 
 ## ループの状態は GitHub に置く（ファイルに持たない）
@@ -62,7 +62,7 @@ PR ブランチだけに絞れなくなる。
 | **G2 立法** | SSOT が実装可能か | 変更ユニット(`./goals/`)に **完了基準＋検証方法＋検証サーフェス**が揃う＋**関係する製品仕様 `docs/specs/`（`product_spec`）を Read し矛盾が無い**（issue は使わない）。セッション内の試行カウンタをインクリメント（永続化しない） | 曖昧/欠落/**製品仕様と矛盾**は ESCALATE | 3.0 |
 | **G3 実装** | — | driver が **Task で直接実装**（公式 feature-dev は無人駆動不可のため）。差分はスコープ内・ブランチ分離。**挙動を変えたら製品仕様 `docs/specs/<feature>.md` を新挙動に reconcile（同 PR に含める）**。更新時は差分リコンサイル＋全基準を満たす。**issue に `loop-running` ラベルを付与**（ロック取得） | スコープ逸脱で停止 | 3.0 |
 | **G4 司法** | 緑か | **`review-judge:judge` PASS**（決定性緑＋サーフェス充足＋セマンティックOK＋**挙動変更なら製品仕様 reconcile 済み**）。spec パスを渡す。**セッション内カウンタが N=3 超なら司法を呼ばずロールバック/ESCALATE** | RETRY/REJECT→G3 へ（**reconcile 不足は RETRY**）。N=3 超で ロールバック/ESCALATE | 3.0 |
-| **G5 PR＋as-built** | PR 化してよいか | G4 PASS ＋ **as-built/決定を `./.claude/loop/runs/<slug>/<run-id>/` に版ごと履歴で残す**（上書きせず spec の git ref を記録）＋ `gh pr create`（**本文の先頭に「⚠️ 要注意の変更」節**）＋ **judgments を `gh pr comment` で添付（恒久シンク B）**。**issue から `loop-running` ラベルを外す**（以後は open PR の存在が Watching を表す） | 停止 | 3.0 |
+| **G5 PR** | PR 化してよいか | G4 PASS ＋ `gh pr create`（**本文の先頭に「⚠️ 要注意の変更」節**。対象 spec の git ref も本文に書く）＋ **司法の判定出力を `gh pr comment` で添付**（恒久の記録）。**issue から `loop-running` ラベルを外す**（以後は open PR の存在が Watching を表す） | 停止 | 3.0 |
 | **G6 マージ** | 自動マージしてよいか | 司法 PASS ＋ **CI 緑** ＋ コンフリクトなし ＋ **`auto-merge` ラベル**（opt-in）＋ 影響度しきい値以下。**merge で `Closes #N` により issue が close ＝ Done** | 未充足は **PR で停止（人間がマージ）** | **定義のみ・runtime=3.1 はスキップ中。常に PR 停止** |
 
 ## 要注意の変更（PR で申告する）

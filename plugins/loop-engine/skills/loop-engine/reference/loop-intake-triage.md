@@ -115,7 +115,7 @@ issue #N ── /loop-engine:loop-engine <N> ──▶ 司法 → PR (Closes #N)
 ### 4. spec ファイルの命名と秩序
 
 - **命名 = `YYYYMMDD-<kebab-slug>.md`**（例 `20260621-loop-readme.md`）。slug＝ファイル名 stem 全体で、
-  `/loop-engine:loop-engine <slug>`・`runs/<slug>/` と 1:1。日付を剥がす特別ルールは作らない。
+  `/loop-engine:loop-engine <slug>` と 1:1。日付を剥がす特別ルールは作らない。
   - 理由: 時系列ソート＝作成順。新規は末尾。Supabase migration と同 idiom。連番方式の採番衝突を回避。
 - **秩序 = フラット ＋ frontmatter `status` 軸**（`active`→`done`）。ループは `status: active` だけ拾う。
   done も `goals/` 直下に残す（件数が増えたら退避を検討＝YAGNI）。カテゴリ分けは作らない。

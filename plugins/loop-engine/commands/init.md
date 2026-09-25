@@ -15,7 +15,6 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/loop-init"
 | `goals/` | 変更ユニット（spec）置き場。**人間が所有する SSOT** |
 | `.claude/hooks/{validate,gate}.sh` | プロジェクト固有 validation の雛形（既定 no-op） |
 | `.claude/settings.json` | hooks 配線（PostToolUse=validate / Stop=gate）＋**プラグイン宣言**を安全マージ |
-| `.gitignore` | `.claude/loop/judgments.md` を追記 |
 
 実行後、出力の言語検出結果に従って `.claude/hooks/` の中身を埋める。**ハーネスはコマンドを
 持たない＝ここが唯一の拡張点。**

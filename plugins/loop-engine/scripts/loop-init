@@ -1,6 +1,6 @@
 #!/bin/bash
 # loop-init — 任意のリポジトリで loop-engine を回すための初期セットアップ。
-# goals/・.claude/loop/・hooks scaffold・settings.json の hooks 配線までを一括で行う。
+# goals/・hooks scaffold・settings.json の hooks 配線までを一括で行う。
 # 何度実行しても安全（既存物はスキップ・settings は壊さずマージ）。
 set -e
 
@@ -42,19 +42,6 @@ if [ ! -d "$REPO_ROOT/goals" ]; then
   echo "created: goals/"
 else
   echo "skip:    goals/ は既に存在します"
-fi
-
-# .claude/loop/ を作成
-mkdir -p "$REPO_ROOT/.claude/loop"
-
-# .gitignore に .claude/loop/judgments.md を追記（重複チェック）
-GITIGNORE="$REPO_ROOT/.gitignore"
-ENTRY=".claude/loop/judgments.md"
-if [ -f "$GITIGNORE" ] && grep -qF "$ENTRY" "$GITIGNORE"; then
-  echo "skip:    .gitignore に $ENTRY は既に存在します"
-else
-  printf '\n# loop-engine 判定ログ（揮発・as-built の runs/ は commit する）\n%s\n' "$ENTRY" >> "$GITIGNORE"
-  echo "added:   $ENTRY → .gitignore"
 fi
 
 # hooks（プロジェクト固有 validation）の雛形を scaffold（既定 no-op・project が中身を書く）

@@ -18,7 +18,7 @@ product_spec:      # 関係する製品仕様(anchor)のパス。挙動を変え
 > 生成フロー: **人間がこのテンプレを `./goals/<slug>.md` にコピーして書く → PR →
 > レビュー → main マージ ＝ 立法の承認 ＝ ループのトリガ**。
 > 性質: spec(立法/SSOT)は **commit する**・**人間所有(ボットは書き換えない)**・更新は人間の spec PR。
-> 派生(判定ログ `.claude/loop/judgments.md`・as-built `.claude/loop/runs/`)はボットが書く。
+> ボットの出力は PR と issue だけ(リポジトリに記録ファイルは書かない)。
 
 ## 意図 (なぜ)
 

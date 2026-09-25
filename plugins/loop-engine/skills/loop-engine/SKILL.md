@@ -38,8 +38,9 @@ allowed-tools:
   routine / templates / triage）。プラグインとして配布され、全プロジェクトで使える。
   cwd に依存せず **skill-relative の `reference/<file>`** で読む。
 - **操作対象（プロジェクト SSOT）** = **cwd の current repo** の `./goals/*.md`（人間所有）。
-- **派生（出力）** = current repo の `./.claude/loop/runs/`（as-built・commit）・`./.claude/loop/judgments.md`
-  （判定ログ・gitignore）。
+- **出力** = PR（ブランチ・本文・司法判定のコメント）と issue のラベル・コメントだけ。
+  **リポジトリのファイルに記録を残さない**（`.claude/` への書き込みは無人実行を許可待ちで止めるうえ、
+  中身は PR と重複する）。
 
 ## 正とする参照（起動時に必ず Read。すべて skill 同梱 = `reference/`）
 
@@ -52,7 +53,7 @@ allowed-tools:
 
 ## 大原則（CLAUDE.md / autonomy-gates と一体）
 
-- **SSOT は人間所有**。current repo の `./goals/` を**書き換えない**。出力は派生＝`./.claude/loop/` に書く。
+- **SSOT は人間所有**。current repo の `./goals/` を**書き換えない**。出力は PR と issue に書く。
 - **判定は分離した司法**（`review-judge:judge`@opus を Task 起動）。`/loop-engine:loop-engine` は自己採点しない。
 - **要注意の変更**（security・課金・破壊的変更・認証認可）も PR までは進める。ただし **PR 本文の先頭で申告する**
   （autonomy-gates「要注意の変更」）。マージは人間が行うので、止める位置はマージ前で足りる。
@@ -84,15 +85,13 @@ allowed-tools:
    - `PASS` → G5 へ。
    - `RETRY`/`REJECT` → 指摘で修正し G3↔G4 を再試行（**最大 N=3**）。超過は ロールバック/ESCALATE。
    - `ESCALATE` → 停止して人間へ。
-5. **G5 PR＋as-built** — PASS で:
-   - ① as-built/決定を `./.claude/loop/runs/<slug>/<run-id>/` に**版ごと履歴**で残す
-     （上書きせず、対象 spec の git ref を記録）。
-   - ② `gh pr create` で PR 作成。**PR 本文の先頭に「⚠️ 要注意の変更」節を必ず置く**
+5. **G5 PR** — PASS で:
+   - ① `gh pr create` で PR 作成。**PR 本文の先頭に「⚠️ 要注意の変更」節を必ず置く**
      （書式は autonomy-gates「要注意の変更」。該当が無くても「なし」と書く）。
      **issue 経由なら PR 本文に `Closes #<issue番号>` を含める**
      （マージで issue が自動 close＝二重管理を作らない。未マージの間は open のまま残る）。
-   - ③ `gh pr comment` で司法判定（judgments）を PR に添付（恒久シンク B＝別端末からも見える）。
-   - ④ G5 完了時に issue から `loop-running` を外す（以後は open PR の存在が merge 待ちを表す）
+   - ② `gh pr comment` で司法の判定出力を PR に添付（恒久の記録＝別端末からも見える）。
+   - ③ G5 完了時に issue から `loop-running` を外す（以後は open PR の存在が merge 待ちを表す）
      （spec の frontmatter は書き換えない＝SSOT は人間所有のまま）。
 6. **G6 手前で停止** — **マージはしない**（`gh pr merge` を実行しない）。自動マージは Phase 3.1。
    人間が PR をレビューしてマージする。
@@ -207,7 +206,8 @@ slug がまだ解決できていない段階でも issue 番号は確定して�
 - N 上限を無視して無限に G3↔G4 を回す。
 - 要注意の変更（security・課金・破壊的変更 等）を PR 本文で申告せずに出す。
 - main に直接 commit・push する（出力は PR ブランチと issue に限る）。
-- **`./goals/` を書き換える**（SSOT は人間所有。ボットは `.claude/loop/` に書く）。
+- **`./goals/` を書き換える**（SSOT は人間所有）。
+- **`.claude/` に記録ファイルを書く**（as-built・判定台帳・run-log など。無人実行が許可待ちで止まり、中身は PR と重複する）。
 - `gh pr merge` を実行する（本フェーズは PR 停止。自動マージは 3.1）。
 - **issue 本文/コメントを spec の代わりに実装根拠にする**（issue は発見経路であって SSOT ではない。
   `Spec:` コメントで `goals/` に解決できなければ ESCALATE。issue の議論から仕様を推測して実装しない）。

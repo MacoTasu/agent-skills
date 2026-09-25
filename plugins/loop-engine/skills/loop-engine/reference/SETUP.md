@@ -38,7 +38,6 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/loop-init"
 - `goals/` … 変更ユニット（spec）置き場
 - `.claude/hooks/{validate,gate}.sh` … project 固有 validation の雛形（既定 no-op）
 - `.claude/settings.json` … hooks 配線（PostToolUse=validate / Stop=gate）を自動追記（既存は壊さず jq マージ）
-- `.gitignore` に `.claude/loop/judgments.md` を追記
 
 `loop-init` は **言語を検出**（root＋backend/frontend/api/server/app/web）して、その言語向けの
 validation コマンドを提案する。冪等なので何度実行しても安全。
@@ -157,8 +156,8 @@ issue テンプレート（`.github/ISSUE_TEMPLATE/*.yml`）を置くなら、**
 ## 落とし穴
 
 - **要注意の変更の PR はマージ前に「⚠️ 要注意の変更」節を必ず読む**（ループは止めずに申告だけする）。
-- **ボットは `goals/` を書き換えない**（SSOT は人間所有。出力は `.claude/loop/`）。
-- `runs/` は commit、`judgments.md` は gitignore。ループの動的状態はファイルではなく
+- **ボットは `goals/` を書き換えない**（SSOT は人間所有。出力は PR と issue）。
+- ボットはリポジトリに記録ファイルを書かない。ループの動的状態はファイルではなく
   **GitHub の issue ラベル**（`loop-ready` / `loop-running` / `loop-escalated`）が持つ。
 - ライブハーネスが古い → dotfiles メイン checkout で `git pull`（symlink 配布）。
 - `loop-init` が bare で叩けない → `bin` が PATH に無い（`~/.zshrc` の PATH 追記）。
