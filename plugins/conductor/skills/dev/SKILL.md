@@ -158,8 +158,8 @@ allowed-tools:
    **(b) 差分**(`git diff` の範囲)、**(c) 証拠**(上記各観点の所見 + テスト/CI/lint の決定性結果)。
    司法は契約の各完了基準に併記された検証方法を、自分の決定性チェックに対応づける。
 2. review-judge:judge は**決定性チェック + セマンティックチェックの二系統**で採点し、
-   `PASS / REJECT / RETRY / ESCALATE` のいずれか1つを返し、
-   `<対象プロジェクト>/.claude/loop/judgments.md` に基準↔証拠付きで追記する。
+   `PASS / REJECT / RETRY / ESCALATE` のいずれか1つを基準↔証拠付きで返す（ファイルには書かない）。
+   `/conductor:dev` はその出力をユーザーへのサマリに含める。
 3. `/conductor:dev` はその判定を**そのままルーティング**する(自分で結論を上書きしない):
    - `PASS` → ship フェーズへ(コミット/PR を案内)。
    - `REJECT` / `RETRY` → 指摘を実装側(行政)へ戻す。フル自律 driver(Phase 3)なら

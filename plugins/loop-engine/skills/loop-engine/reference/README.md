@@ -13,7 +13,7 @@ loop engineering は **dotfiles をベース定義に、各プロジェクトで
 | **ハーネス（汎用）** | `loop-engine` プラグイン（本 `reference/` 含む）・判事は `review-judge:judge` | 配布物 | 判事・ゲート・検証カタログ・テンプレ・規範。全プロジェクト共通 | agent-skills で commit |
 | **製品仕様（SSOT anchor）** | **各プロジェクトの** `docs/specs/<feature>/...`（既定。機能別 living） | **人間** | 「今どう振る舞うか」現在の真実＝agent のよりどころ。in-place 更新 | その repo で commit |
 | **変更ユニット（goal・操作対象）** | **各プロジェクトの** `goals/<YYYYMMDD-slug>`（仕様）・`rules/`（規範） | **人間** | デルタ/タスク。実行中不可侵・done で履歴化 | その repo で commit |
-| **派生（出力）** | **各プロジェクトの** `.claude/loop/runs/`（as-built）・`.claude/loop/judgments.md`（判定ログ） | ボット | SSOT に照らした結果物 | runs=commit / judgments=**gitignore** |
+| **出力** | **各プロジェクトの** PR（本文・司法判定のコメント） | ボット | SSOT に照らした結果物 | ファイルには書かない |
 | **動的状態** | **GitHub の issue**（`loop-ready` / `loop-running` / `loop-escalated` ラベル） | ボット＋人間 | 着手可否・ロック・エスカレーション | GitHub が保持（ファイルに持たない） |
 
 > **2層の区別が要**: 「製品仕様(`docs/specs`)＝anchor」と「変更ユニット(`goals/`)＝goal」は別物。
@@ -44,8 +44,7 @@ loop engineering は **dotfiles をベース定義に、各プロジェクトで
    `goals/YYYYMMDD-<slug>.md` を書く（人間が立法）。`status: active`。
    挙動を変えるなら `product_spec:` に関係する `docs/specs/...` を宣言＋「製品仕様 reconcile」基準を入れる。
    **完了基準の検証コマンドはそのプロジェクト依存で書く**（go build / tsc / pytest 等）。
-3. **派生の gitignore と state 初期化**: `loop-init` を実行する（`.gitignore` 更新＋`goals/` 作成）。
-   （`/loop-engine:init` が自動化済み）。`judgments.md` のみ gitignore。
+3. **初期化**: `loop-init` を実行する（`goals/` 作成）。（`/loop-engine:init` が自動化済み）。
 3.5. **hooks（プロジェクト固有 validation）**: `loop-init` が `.claude/hooks/{validate,gate}.sh`（既定 no-op）も
    scaffold する。`reference/hooks/settings.hooks.json` の snippet を `.claude/settings.json` に貼って配線し、
    `validate.sh`（PostToolUse・速い）/ `gate.sh`（Stop・フル・変更検知ガード付き）に**そのプロジェクトの決定性

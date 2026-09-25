@@ -129,9 +129,10 @@ API から更新しても**黙って捨てられる**（200 が返るのに値�
      > 検証状況（2026-09-22）: cloud で `general-purpose` + `model: opus` の起動と
      > `judge.md` の読み込みまでは**実測で確認済み**。`Explore` を判事として使えるかは**未検証**。
 
-     PASS で `runs/<slug>/<run-id>/` に as-built を記録し、ブランチを push して PR を作る。
+     PASS でブランチを push して PR を作る。
      **PR 本文の先頭に「⚠️ 要注意の変更」節を必ず置く**（書式は `autonomy-gates.md`「要注意の変更」。
-     該当が無くても「なし」と書く）。judgments は PR にコメントで添付する。
+     該当が無くても「なし」と書く）。司法の判定出力は PR にコメントで添付する。
+     **`.claude/` に記録ファイル（as-built・判定台帳など）を書かない**（無人実行が許可待ちで止まる）。
 4. **G6 手前で必ず停止する。PR をマージしない**（自動マージ runtime=Phase 3.1 は未出荷）。
    人間が PR をレビューしてマージする＝HOTL。
 5. **state rot 防止**: 終了時に `gh issue list --label loop-escalated` を全て再掲し、ラベル付与から
