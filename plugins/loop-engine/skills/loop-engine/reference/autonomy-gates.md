@@ -7,12 +7,12 @@
 ## SSOT / 派生 / ハーネスの境界（最重要原則）
 
 - **SSOT（立法）** … 人間が書いて承認（main マージ）した正典。**ボットは書き換えない**。
-  軸＝「作るもの」か「守るもの」で2種に分ける:
-  - **`goals/`（ゴール・作るもの）** … 変更ユニット。**`/loop-engine:loop-engine` のトリガ対象**（buildable）。
-    **`status: active` のものだけ G1 が拾う**（done/example は拾わない）。
-  - **`rules/`（規範・守るもの）** … 開発フロー/規約/ドメインルール。**トリガ対象外**。
-    司法・`/conductor:dev` が参照し enforcement（deck の Authority Provenance）。
-  - 雛形はハーネス同梱 `${CLAUDE_PLUGIN_ROOT}/skills/loop-engine/reference/{SPEC,RULE}.template.md`。更新は人間の spec/rule PR。版管理は git。
+  spec-kit の成果物を使い、軸＝「作るもの」か「守るもの」で2種に分ける:
+  - **`specs/<機能>/`（作るもの）** … 機能ごとの仕様。`spec.md` が契約で、`plan.md` / `tasks.md` は派生（Living Spec）。
+    **`/loop-engine:loop-engine` のトリガ対象**。**`origin/main` にマージ済み**（＝承認済み）のものだけ G1 が拾う。
+  - **`.specify/memory/constitution.md`（守るもの）** … プロジェクトの原則。**トリガ対象外**。
+    司法・`/conductor:dev`・spec-kit の各コマンドが参照し enforcement する。
+  - 雛形は spec-kit のテンプレート（対象リポジトリの `.specify/templates/`）。更新は人間の仕様の PR。版管理は git。
 - **出力** … ボットはリポジトリに記録ファイルを書かない。出力は PR（本文・司法判定のコメント）と issue のラベル・コメントだけ。
 - **ハーネス = `.claude/`** … 判事・本ゲート・検証カタログ・loop-engine（汎用・dotfiles で配布）。
 
@@ -58,10 +58,10 @@ PR ブランチだけに絞れなくなる。
 
 | ゲート | 判定 | 通過条件 | 不通過 | runtime |
 |---|---|---|---|---|
-| **G1 トリガ** | 無人着手してよいか | `./goals/<slug>.md`（**`status: active`** のみ・rules/ は対象外）の**新規 or 更新が main にマージ済み**／`auto` 印あり／スコープが閾値以下。要注意の変更（下記）に当たるかを見立てておく（止めない・G5 の申告に使う）。**対象 issue に `loop-running` が付いていないこと**（付いていれば別の発火が処理中＝スキップ） | ESCALATE（人間へ）または no-op | 3.0 手動 / 3.2 autonomous-entry（cron） |
-| **G2 立法** | SSOT が実装可能か | 変更ユニット(`./goals/`)に **完了基準＋検証方法＋検証サーフェス**が揃う＋**関係する製品仕様 `docs/specs/`（`product_spec`）を Read し矛盾が無い**（issue は使わない）。セッション内の試行カウンタをインクリメント（永続化しない） | 曖昧/欠落/**製品仕様と矛盾**は ESCALATE | 3.0 |
-| **G3 実装** | — | driver が **Task で直接実装**（公式 feature-dev は無人駆動不可のため）。差分はスコープ内・ブランチ分離。**挙動を変えたら製品仕様 `docs/specs/<feature>.md` を新挙動に reconcile（同 PR に含める）**。更新時は差分リコンサイル＋全基準を満たす。**issue に `loop-running` ラベルを付与**（ロック取得） | スコープ逸脱で停止 | 3.0 |
-| **G4 司法** | 緑か | **`review-judge:judge` PASS**（決定性緑＋サーフェス充足＋セマンティックOK＋**挙動変更なら製品仕様 reconcile 済み**）。spec パスを渡す。**セッション内カウンタが N=3 超なら司法を呼ばずロールバック/ESCALATE** | RETRY/REJECT→G3 へ（**reconcile 不足は RETRY**）。N=3 超で ロールバック/ESCALATE | 3.0 |
+| **G1 トリガ** | 無人着手してよいか | `specs/<機能>/` の `spec.md`・`plan.md`・`tasks.md` が **`origin/main` にマージ済み**（constitution は対象外）／spec-kit が初期化済み（`.specify/`）。要注意の変更（下記）に当たるかを見立てておく（止めない・G5 の申告に使う）。**対象 issue に `loop-running` が付いていないこと**（付いていれば別の発火が処理中＝スキップ） | ESCALATE（人間へ）または no-op | 3.0 手動 / 3.2 autonomous-entry（cron） |
+| **G2 立法** | SSOT が実装可能か | `spec.md` に **`[NEEDS CLARIFICATION]` が無い**／`checklists/` が全てチェック済み／**`/speckit-analyze` に CRITICAL が無い**／constitution と矛盾しない（issue は使わない）。セッション内の試行カウンタをインクリメント（永続化しない） | 曖昧/欠落/**constitution と矛盾**は ESCALATE | 3.0 |
+| **G3 実装** | — | **`dev-crew:implement` の手順**で実装（`tasks.md` の順・テスト先行・`[X]`・`/speckit-converge` で点検。`/speckit-implement` は使わない）。差分はスコープ内・ブランチ分離。**`spec.md`・`plan.md`・constitution は変えない**。**issue に `loop-running` ラベルを付与**（ロック取得） | スコープ逸脱・仕様の誤りの発見で停止 | 3.0 |
+| **G4 司法** | 緑か | **`review-judge:judge` PASS**（決定性緑＋**各基準に対応するテストがある**＋サーフェス充足＋セマンティックOK＋**正典を変えていない**）。契約 `specs/<機能>/` を渡す。**セッション内カウンタが N=3 超なら司法を呼ばずロールバック/ESCALATE** | RETRY/REJECT→G3 へ（**テストの無い基準は RETRY**）。N=3 超で ロールバック/ESCALATE | 3.0 |
 | **G5 PR** | PR 化してよいか | G4 PASS ＋ `gh pr create`（**本文の先頭に「⚠️ 要注意の変更」節**。対象 spec の git ref も本文に書く）＋ **司法の判定出力を `gh pr comment` で添付**（恒久の記録）。**issue から `loop-running` ラベルを外す**（以後は open PR の存在が Watching を表す） | 停止 | 3.0 |
 | **G6 マージ** | 自動マージしてよいか | 司法 PASS ＋ **CI 緑** ＋ コンフリクトなし ＋ **`auto-merge` ラベル**（opt-in）＋ 影響度しきい値以下。**merge で `Closes #N` により issue が close ＝ Done** | 未充足は **PR で停止（人間がマージ）** | **定義のみ・runtime=3.1 はスキップ中。常に PR 停止** |
 
@@ -93,8 +93,8 @@ PR ブランチだけに絞れなくなる。
 
 次は実装の根拠が無いので、進めずに **ESCALATE**:
 
-- spec 自体の矛盾・欠落
-- ガードレール（spec の制約節）への抵触
+- 仕様自体の矛盾・欠落（`[NEEDS CLARIFICATION]` の残存・`/speckit-analyze` の CRITICAL）
+- constitution の MUST の原則への抵触
 
 ## 停止条件・コスト
 
@@ -114,7 +114,7 @@ frontmatter に `autonomy:` が残っていても**読まない**（後方互換
 
 ## フェーズ境界
 
-- 3.0（実装済）: G1〜G5 を**ローカル手動 `/loop-engine:loop-engine <slug>`** で。**G6 手前で停止**。
+- 3.0（実装済）: G1〜G5 を**ローカル手動 `/loop-engine:loop-engine <機能>`** で。**G6 手前で停止**。
   実走実証済み（PR #6 `20260621-loop-readme`）。
 - 3.1（**スキップ中**）: G6 自動マージ runtime（`gh pr merge`）。ブラッシュアップまで当面導入しない。
   これによりループは常に **PR で停止**＝人間が全マージをゲート（HOTL を最も安全側に保つ）。
@@ -123,7 +123,7 @@ frontmatter に `autonomy:` が残っていても**読まない**（後方互換
   **自動走査の対象は `loop-ready` label 付きの open issue**（そこから `Spec:` コメントで解決した
   spec が実装根拠。同梱
   `loop-intake-triage.md`）。issue は**人間が番号を指定する手動起動** `/loop-engine:loop-engine <N>` の入口として
-  使える（label + `Spec:` コメントで `goals/` に解決＝実装根拠は常に spec）。
+  使える（label + `Spec:` コメントで `specs/<機能>/` に解決＝実装根拠は常に仕様）。
   - **発火機構の決定**:
     - claude.ai Routine（`/schedule`/RemoteTrigger cron）= **不採用**（発火が repo 外・Claude が Claude を撃つ・
       poll であって event でない）。

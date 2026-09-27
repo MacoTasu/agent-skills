@@ -75,7 +75,9 @@ API から更新しても**黙って捨てられる**（200 が返るのに値�
 
 **対象リポジトリ側に必要な準備**:
 
-- `goals/` と `.claude/hooks/` は `/loop-engine:init` で生成できる。
+- **spec-kit を初期化し、`.specify/` と `.claude/skills/speckit-*` をコミットしておく**。プラグインと違い、
+  リポジトリにコミットされたスキル（`/speckit-converge` / `/speckit-analyze` など）は cloud に届く。
+  `.claude/hooks/` は `/loop-engine:init` で生成できる。
 - **`~/.claude/CLAUDE.md` は cloud に届かない**。無人実行に効かせたい規範は、
   リポジトリの `CLAUDE.md` かプラグイン側に置くこと。
 - `.claude/settings.json` のプラグイン宣言（`/loop-engine:init` が追記する）は
@@ -104,11 +106,13 @@ API から更新しても**黙って捨てられる**（200 が返るのに値�
    - **`gh issue list --label loop-ready --state open`** で候補を集める（issue 番号昇順）。
      **`loop-running`（処理中）/ `loop-escalated`（人間待ち）が付いているものは除外**。
      **該当が無ければ何もせず正常終了**（no-op）。
-   - 各候補の行頭 `Spec: goals/YYYYMMDD-slug.md` コメントから **spec を解決する**。
-     解決できない／spec が `status: active` でない／既に `Closes #N` の open PR がある、のいずれかなら
-     **`loop-escalated` を付けて次の候補へ**。**issue 本文から仕様を推測しない**（実装根拠は spec だけ）。
+   - 各候補の行頭 `Spec: specs/<機能>/` コメントから **仕様を解決する**。
+     解決できない／仕様が `origin/main` に無い（`spec.md`・`plan.md`・`tasks.md`）／既に `Closes #N` の open PR がある、
+     のいずれかなら **`loop-escalated` を付けて次の候補へ**。**issue 本文から仕様を推測しない**（実装根拠は仕様だけ）。
    - 解決できた候補のうち **issue 番号昇順で最古1件だけ**選び G1〜G5 を実行する。
-     spec frontmatter に `autonomy:` が残っていても読まない（段階制は廃止）。
+     **実装（G3）は行政の手順に従う**: プラグインとして `dev-crew:implement` があればそれを、無ければ（cloud はこちら）
+     clone した `/tmp/harness/plugins/dev-crew/skills/implement/SKILL.md` を手順書として読んで従う。
+     `/speckit-implement` は使わない（理由は同 SKILL.md）。
      着手時に issue へ **`loop-running`** を付け（ロック取得）、G5 完了時に外す。
      G3↔G4 のラウンドは**セッション内カウンタ**で数え、**N=3 を超えたらロールバック/ESCALATE**
      （回数は永続化しない）。
@@ -147,12 +151,12 @@ API から更新しても**黙って捨てられる**（200 が返るのに値�
    （main に直接 commit・push しない。出力先は PR ブランチと issue のラベル・コメントだけ）。
 
 ガードレール（厳守）:
-- spec の矛盾・欠落、ガードレール（spec の制約節）への抵触は **G1/G2 で ESCALATE**（着手しない）。
+- 仕様の矛盾・欠落（`[NEEDS CLARIFICATION]`・`/speckit-analyze` の CRITICAL）、constitution への抵触は **G1/G2 で ESCALATE**（着手しない）。
 - 要注意の変更（security・課金・破壊的変更・認証認可・公開 API の互換破壊）は進めてよいが、
   **PR 本文の先頭で申告する**。申告漏れは司法が RETRY にする。
 - 司法 PASS 無しに PR を作らない。G3↔G4 は **N=3 ラウンド上限**、超過は ロールバック/ESCALATE。
-- **1 発火で扱うのは最大1 spec**（opus 司法が毎ラウンド走るためコストを抑える）。
-- current repo の `goals/` は書き換えない（SSOT は人間所有）。**main に直接 push しない**。
+- **1 発火で扱うのは最大1件**（opus 司法が毎ラウンド走るためコストを抑える）。
+- current repo の `spec.md`・`plan.md`・constitution は書き換えない（SSOT は人間所有）。**main に直接 push しない**。
 
 ## 発火プロンプト本文（ここまで）
 

@@ -1,11 +1,11 @@
 ---
 name: loop-engine
 description: |
-  自律ループのフロントドア（HOTL = Human on the Loop）。リポジトリ内の仕様
-  ./goals/<slug>.md を起点に、拾い上げ→実装→司法検証→PR を無人で回す。
-  /conductor:dev（単発・human-in-loop）と並立する自律ループの入口。手動起動: /loop-engine:loop-engine <slug>
-  または /loop-engine:loop-engine <issue番号>（GitHub issue 経由。label + Spec: コメントから spec を解決）。
-  進行は本 skill 同梱の reference/autonomy-gates.md のゲート G1〜G6 を正として行う。手動 /loop-engine:loop-engine <slug>
+  自律ループのフロントドア（HOTL = Human on the Loop）。人間がマージして承認した spec-kit の仕様
+  specs/<機能>/ を起点に、拾い上げ→実装→司法検証→PR を無人で回す。
+  /conductor:dev（単発・human-in-loop）と並立する自律ループの入口。手動起動: /loop-engine:loop-engine <機能>
+  または /loop-engine:loop-engine <issue番号>（GitHub issue 経由。label + Spec: コメントから仕様を解決）。
+  進行は本 skill 同梱の reference/autonomy-gates.md のゲート G1〜G6 を正として行う。手動起動
   に加え、autonomous-entry（Claude Code の cloud routine で定期発火し、loop-ready label が付いた
   issue を走査する・手順は reference/routine.md）がある。loop-ready の issue は実装→司法→PR まで進み、
   常に G6(自動マージ)手前=PR作成で停止する（自動マージ runtime は Phase 3.1 で未出荷）。
@@ -18,197 +18,156 @@ allowed-tools:
   - Glob
   - Edit
   - Write
+  - Skill
 ---
 
-# /loop-engine:loop-engine — 自律ループのフロントドア（雛形・PR停止）
+# /loop-engine:loop-engine — 自律ループのフロントドア（PR停止）
 
-**人間が書いた仕様（SSOT）を起点に、行政（実装）⇄司法（検証）を無人で回す**入口。
-`/conductor:dev` が単発・human-in-loop なのに対し、これは**自律ループ・HOTL**。コードは自分でも書くが、
+**人間が承認した仕様（SSOT）を起点に、行政（実装）⇄司法（検証）を無人で回す**入口。
+`/conductor:dev` が単発・human-in-loop なのに対し、これは**自律ループ・HOTL**。自律モードでは
+このスキルが指揮の席に座る。実装は行政（`dev-crew:implement` の手順）にさせ、
 **判定は必ず分離した司法 `review-judge:judge` に出させる**（自己採点しない）。
 
-> **範囲**: 手動 `/loop-engine:loop-engine <slug>` ＋ autonomous-entry（cloud routine で定期発火・`loop-ready` label 付き issue を走査）。
-> 対象の spec は G1〜G5 を回し、**G6（自動マージ）手前で停止**する。**自動マージ runtime（3.1）は未出荷**。
-> 段階制（spec の `autonomy: L1|L2`）は廃止した。frontmatter に残っていても読まない。
+> **範囲**: 手動 `/loop-engine:loop-engine <機能>` / `<issue番号>` ＋ autonomous-entry（cloud routine で定期発火・
+> `loop-ready` label 付き issue を走査）。対象の仕様は G1〜G5 を回し、**G6（自動マージ）手前で停止**する。
 
-## バケツの分離（ハーネス / 操作対象 / 派生）
+## バケツの分離（ハーネス / 操作対象 / 出力）
 
-このループは **「定義＝dotfiles のハーネス／実行＝任意のプロジェクト」**。3つを混同しない:
-
-- **ハーネス（汎用・本 skill に同梱）** = この skill ディレクトリの `reference/`（gates / surfaces /
-  routine / templates / triage）。プラグインとして配布され、全プロジェクトで使える。
+- **ハーネス（汎用・本 skill に同梱）** = この skill ディレクトリの `reference/`（gates / routine / triage / hooks）。
   cwd に依存せず **skill-relative の `reference/<file>`** で読む。
-- **操作対象（プロジェクト SSOT）** = **cwd の current repo** の `./goals/*.md`（人間所有）。
+- **操作対象（プロジェクト SSOT）** = **cwd の current repo** の spec-kit の成果物。
+  作るもの＝`specs/<機能>/`（`spec.md` が契約、`plan.md` / `tasks.md` は派生）、
+  守るもの＝`.specify/memory/constitution.md`。どちらも人間の所有物で、承認は仕様の PR のマージ。
 - **出力** = PR（ブランチ・本文・司法判定のコメント）と issue のラベル・コメントだけ。
-  **リポジトリのファイルに記録を残さない**（`.claude/` への書き込みは無人実行を許可待ちで止めるうえ、
-  中身は PR と重複する）。
+  **リポジトリのファイルに記録を残さない**。
 
 ## 正とする参照（起動時に必ず Read。すべて skill 同梱 = `reference/`）
 
 - `reference/autonomy-gates.md` … ゲート G1〜G6 の通過条件・ESCALATE・N 上限・要注意の変更の申告。
-- サーフェス→要求証拠タイプのカタログは **`review-judge` プラグイン側**（判事と同梱）。
-  司法が自分で Read するので、ここから渡す必要はない。
 - `reference/loop-intake-triage.md` … loop に入れるか / `/conductor:dev` か / 人間駆動かの判定。
-- `reference/RULE.template.md` … 規範の形式。仕様の様式は `spec-intake` プラグイン同梱の `SPEC.template.md`。
 - `reference/README.md` … 3空間モデルと **新プロジェクトで回す手順**。
+- 仕様の様式は **spec-kit のテンプレート**（対象リポジトリの `.specify/templates/`）。loop-engine は書き方を教えない。
+- サーフェス→要求証拠タイプのカタログと、spec-kit 契約の採点方法は **`review-judge` プラグイン側**（司法が自分で Read する）。
 
-## 大原則（CLAUDE.md / autonomy-gates と一体）
+## 大原則（autonomy-gates と一体）
 
-- **SSOT は人間所有**。current repo の `./goals/` を**書き換えない**。出力は PR と issue に書く。
-- **判定は分離した司法**（`review-judge:judge`@opus を Task 起動）。`/loop-engine:loop-engine` は自己採点しない。
-- **要注意の変更**（security・課金・破壊的変更・認証認可）も PR までは進める。ただし **PR 本文の先頭で申告する**
-  （autonomy-gates「要注意の変更」）。マージは人間が行うので、止める位置はマージ前で足りる。
-- **spec の矛盾・欠落**は実装の根拠が無いので**必ず ESCALATE**。
+- **SSOT は人間所有**。`specs/<機能>/spec.md`・`plan.md` と constitution を**書き換えない**。
+  `tasks.md` への `[X]` と `/speckit-converge` の追記は行政の作業記録として PR ブランチ上でのみ行う。
+- **判定は分離した司法**（`review-judge:judge`@opus を Task 起動）。自己採点しない。
+- **要注意の変更**（security・課金・破壊的変更・認証認可）も PR までは進める。ただし **PR 本文の先頭で申告する**。
+- **仕様の矛盾・欠落**（`[NEEDS CLARIFICATION]` の残存、`/speckit-analyze` の重大な指摘）は**必ず ESCALATE**。
 - **N=3 ラウンド上限**。超過でロールバック/ESCALATE。無限ループを作らない。
-- **迷ったら PASS せず ESCALATE/RETRY**（PASS が PR→（将来）自動マージに繋がるため安全側）。
+- **迷ったら PASS せず ESCALATE/RETRY**。
 
-## 手順（`/loop-engine:loop-engine <slug>` / `/loop-engine:loop-engine <issue番号>`）
+## 手順（`/loop-engine:loop-engine <機能>` / `/loop-engine:loop-engine <issue番号>`）
 
-0. **引数の解決（issue 番号が渡されたときだけ）** — 引数が数字のみなら GitHub issue 番号とみなし、
-   下の「issue 経由の起動」節に従って **slug を解決**してから 1. へ進む。引数が slug ならこの手順は不要。
+0. **引数の解決** — 数字のみなら GitHub issue 番号とみなし、下の「issue 経由の起動」で仕様のディレクトリを
+   解決してから 1. へ。それ以外は `specs/<機能>/` またはディレクトリ名（`<タイムスタンプ>-<名前>`）として扱う。
 
-1. **G1 トリガ判定** — `./goals/<slug>.md` を Read。無ければ停止。autonomy-gates の G1 条件
-   （`auto` 印・スコープ）を判定。外れたら ESCALATE で人間へ。
-   あわせて spec と想定差分が**要注意の変更**に当たるかを見立てておく（止めはしない。G5 の申告に使う）。
-2. **G2 立法確認** — 変更ユニット spec を読み、完了基準＋検証方法＋検証サーフェスが揃うか確認。
-   **`product_spec` に挙げた製品仕様 `docs/specs/<feature>.md` を Read し、矛盾が無いか確認**
-   （矛盾は "spec 矛盾"＝ESCALATE）。欠落/曖昧も ESCALATE。更新時は現状実装との差分を把握。
-3. **G3 実装** — ブランチ分離の上、spec どおり実装（直接 or Task サブエージェント）。
-   ブランチ名は slug 起動なら従来どおり、**issue 経由なら `loop/<issue番号>-<kebab-desc>`**
-   （loop が作ったブランチだと一目で分かるようにする）。`<kebab-desc>` は**解決した spec の slug から
-   日付プレフィックスを除いた部分**を使う（例: spec `20260622-bio-too-long` ＋ issue #489
-   → `loop/489-bio-too-long`）。issue タイトルからは作らない（spec が実装根拠だから）。
-   **挙動を変えたら、その PR で製品仕様 `docs/specs/<feature>.md` を新挙動に reconcile（更新）する**
-   （anchor を腐らせない＝Specification Provenance。製品仕様は人間が merge 承認）。
+1. **G1 トリガ判定** — `git fetch origin` のうえで、仕様が **`origin/main` にマージ済み**であることを確かめる:
+   `git cat-file -e origin/main:specs/<機能>/spec.md` と `…/plan.md` と `…/tasks.md` がすべて成功すること。
+   対象リポジトリに spec-kit が初期化されていること（`.specify/` がある）。欠ければ ESCALATE。
+   あわせて仕様と想定差分が**要注意の変更**に当たるかを見立てておく（止めはしない。G5 の申告に使う）。
+2. **G2 立法確認** — 仕様が実装可能かを確かめる。次のどれかなら ESCALATE:
+   - `spec.md` に `[NEEDS CLARIFICATION` が残っている
+   - `specs/<機能>/checklists/` に未チェックの項目がある
+   - `/speckit-analyze` の報告に CRITICAL の指摘がある（読み取りのみのコマンド）
+   - constitution の MUST の原則や仕様の制約と、仕様どうしが矛盾している
+3. **G3 実装** — `origin/main` から作業ブランチを切る。ブランチ名は機能ディレクトリ名から先頭の
+   タイムスタンプを除いた `<名前>` を使い、**issue 経由なら `loop/<issue番号>-<名前>`、直接なら `loop/<名前>`**。
+   `.specify/feature.json` に `{"feature_directory":"specs/<機能>"}` を書く（gitignore されたチェックアウト専用の状態）。
+   **`dev-crew:implement` の手順で実装する**（プラグインが無い cloud では clone した
+   `plugins/dev-crew/skills/implement/SKILL.md` を手順書として読む。`routine.md`）。
+   `tasks.md` の順にテスト先行で実装し、`/speckit-converge` で作り残しを点検する（**`/speckit-implement` は使わない**。理由は同 SKILL.md）。
    差分はスコープ内に保つ（逸脱は停止）。
-4. **G4 司法** — Task で `review-judge:judge`(opus) を起動し、**引数に spec パス `./goals/<slug>.md`**・
-   差分・証拠を渡す。判定を受ける:
+4. **G4 司法** — Task で `review-judge:judge`(opus) を起動し、**契約 `specs/<機能>/`**・差分（`origin/main...HEAD`）・
+   証拠（行政の決定性結果は「申告（未検証）」として）を渡す。判定を受ける:
    - `PASS` → G5 へ。
    - `RETRY`/`REJECT` → 指摘で修正し G3↔G4 を再試行（**最大 N=3**）。超過は ロールバック/ESCALATE。
    - `ESCALATE` → 停止して人間へ。
 5. **G5 PR** — PASS で:
    - ① `gh pr create` で PR 作成。**PR 本文の先頭に「⚠️ 要注意の変更」節を必ず置く**
-     （書式は autonomy-gates「要注意の変更」。該当が無くても「なし」と書く）。
-     **issue 経由なら PR 本文に `Closes #<issue番号>` を含める**
-     （マージで issue が自動 close＝二重管理を作らない。未マージの間は open のまま残る）。
-   - ② `gh pr comment` で司法の判定出力を PR に添付（恒久の記録＝別端末からも見える）。
-   - ③ G5 完了時に issue から `loop-running` を外す（以後は open PR の存在が merge 待ちを表す）
-     （spec の frontmatter は書き換えない＝SSOT は人間所有のまま）。
-6. **G6 手前で停止** — **マージはしない**（`gh pr merge` を実行しない）。自動マージは Phase 3.1。
-   人間が PR をレビューしてマージする。
+     （書式は autonomy-gates「要注意の変更」。該当が無くても「なし」と書く）。本文に `Spec: specs/<機能>/` を書く。
+     **issue 経由なら `Closes #<issue番号>` を含める**。
+   - ② `gh pr comment` で司法の判定出力を PR に添付（恒久の記録）。
+   - ③ issue から `loop-running` を外す（以後は open PR の存在が merge 待ちを表す）。
+6. **G6 手前で停止** — **マージはしない**（`gh pr merge` を実行しない）。人間が PR をレビューしてマージする。
 
 ## issue 経由の起動（`/loop-engine:loop-engine <issue番号>`）
 
 **GitHub issue を「議論の場＋実行トリガ」として使う経路**。issue は SSOT ではない — SSOT は
-あくまで `./goals/<slug>.md` のままで、**issue は spec への発見経路（ポインタ）**にすぎない
-（詳細な位置づけは同梱 `loop-intake-triage.md` の「2. issue は intake であって SSOT ではない」）。
+あくまで `specs/<機能>/` で、**issue は仕様への発見経路（ポインタ）**にすぎない
+（位置づけは同梱 `loop-intake-triage.md` の「2. issue は intake であって SSOT ではない」）。
 
 ### 前提となる人間側の昇格プロトコル
 
-issue は最初から実行可能である必要はない。**議論して「やる」と決まった時点**で人間が昇格させる:
-
-1. issue を立てて議論する（この時点では label も spec も無い＝ただの提案・観測）。
-2. 「fix する」と決まったら **spec `goals/YYYYMMDD-slug.md` を書いて PR → main マージ**
-   （立法の承認。`status: active`）。**`/spec-intake:spec-draft <issue番号>` で AI に起草させてもよい**
-   （issue＋コードベース＋製品仕様を読み、検証コマンド付きで起草して PR にする。承認＝マージは人間。
-   起草できない issue は拒否して `/conductor:dev` へ回す）。
-3. その issue に **固定書式のコメント**を1件投稿する: `Spec: goals/YYYYMMDD-slug.md`
+1. issue を立てて議論する（この時点では label も仕様も無い＝ただの提案・観測）。
+   `/spec-intake:grill-issue [番号]` で仕様に落とせる状態まで詰められる。
+2. 「やる」と決まったら **spec-kit で仕様を書いて仕様の PR → main マージ**（立法の承認）。
+   `/spec-intake:spec-draft <issue番号>` で起草させてもよいし、`/conductor:dev` の親で起草してもよい。
+3. その issue に **固定書式のコメント**を1件投稿する: `Spec: specs/<機能>/`
    （本文編集ではなく**コメント**＝いつ昇格したかが履歴に残る）。
 4. issue に **`loop-ready` label** を付ける（＝「loop に投げてよい」の意思表示）。
 
 ### 解決手順（手順 0 の実体・すべて満たさなければ ESCALATE）
 
-引数が数字のみなら issue 番号とみなし、次を**順に**判定する。**1つでも欠ければ実装に進まず
-ESCALATE**（人間に何が足りないかを具体的に伝える）:
-
-1. **label 確認** — `gh issue view <N> --json labels` に **`loop-ready` が無ければ ESCALATE**
-   （「まだ昇格していない issue を loop が勝手に実装する」事故の防止）。
-2. **spec パス解決** — `gh issue view <N> --json comments` の**コメント**を
-   固定書式でパースする（**OP 本文ではなくコメントを見る**）。
-   - **書式は「行頭 `Spec:` ＋ 空白 ＋ `goals/` 配下のパス」1行**。正規表現なら
-     `^\s*Spec:\s+(goals/\S+\.md)\s*$`（行頭一致・前後の空白のみ許容・大文字小文字は区別する）。
-     **1行として独立していない言及（文中の "Spec: ..." 等）は拾わない**＝誤検出を作らない。
-   - 該当が**複数あれば最新のコメントを採用**（昇格し直した場合に後勝ちでよい）。
-   - 該当が**無ければ ESCALATE**（自由形式から推測して拾わない）。
-3. **spec 実在・status 確認** — 解決したパスを Read。**存在しない、または `status: active` でなければ
-   ESCALATE**（issue の label と spec の status の不整合＝どちらかが古い。人間に整合させてもらう）。
-   - spec に任意項目 `source_issue:` があり、**起動に使った `<N>` と食い違うなら ESCALATE**（どちらかが古い）。
-   - **`source_issue:` は起動の根拠にしない**。起動の権威は 1（label）と 2（`Spec:` コメント）だけ。
-     spec 側の記述で label ゲートを迂回させない（＝人間の実行意思の確認点を守る）。
-4. **重複実行の防止** — その issue を閉じる PR が**既に open なら ESCALATE**（二重ブランチ・二重 PR を
-   作らない）。**2段構えで判定する**:
+1. **label 確認** — `gh issue view <N> --json labels` に **`loop-ready` が無ければ ESCALATE**。
+2. **仕様パス解決** — `gh issue view <N> --json comments` の**コメント**を固定書式でパースする（OP 本文は見ない）。
+   - **書式は「行頭 `Spec:` ＋ 空白 ＋ `specs/` 配下のディレクトリ」1行**。正規表現なら
+     `^\s*Spec:\s+(specs/[^/\s]+)/?\s*$`（行頭一致・前後の空白のみ許容・大文字小文字は区別する）。
+     **1行として独立していない言及は拾わない**。
+   - 該当が**複数あれば最新のコメントを採用**。該当が**無ければ ESCALATE**（自由形式から推測しない）。
+3. **仕様の承認確認** — G1 と同じく `origin/main` に `spec.md` / `plan.md` / `tasks.md` があること。無ければ ESCALATE
+   （label と仕様の状態の不整合。人間に整合させてもらう）。
+4. **重複実行の防止** — その issue を閉じる PR が**既に open なら ESCALATE**。**2段構えで判定する**:
    - ① `gh issue view <N> --json closedByPullRequestsReferences -q '.closedByPullRequestsReferences[].number'`
-     で、closing keyword（`Closes #<N>` 等）で**実際にリンクされた PR 番号**を取る。
-   - ② 得られた各番号に `gh pr view <num> --json state -q .state` を実行し、**`OPEN` が1つでもあれば ESCALATE**
-     （`MERGED`/`CLOSED` だけなら続行してよい）。①のフィールドは `state` を返さないため②が要る。
-   - **`gh pr list --search "<N>"` は使わない**。番号を全文検索の数字トークンとして雑にマッチするため、
-     無関係な PR を拾う（誤 ESCALATE）／本命を取り逃す（二重 PR）双方の事故を起こす。
+     で、closing keyword で**実際にリンクされた PR 番号**を取る。
+   - ② 各番号に `gh pr view <num> --json state -q .state` を実行し、**`OPEN` が1つでもあれば ESCALATE**。
+   - **`gh pr list --search "<N>"` は使わない**（数字トークンの全文検索で無関係な PR を拾う/本命を取り逃す）。
 5. 以降は**通常どおり G1〜G5**。issue 番号は G3 のブランチ名と G5 の `Closes #<N>` に引き継ぐ。
 
-**この段階（1〜4）での ESCALATE の記録**: **issue に `loop-escalated` ラベルを付け、理由をコメントする**。
-slug がまだ解決できていない段階でも issue 番号は確定しているので、記録先に困らない。
-手動起動の ESCALATE も同じようにラベルを付ける＝routine の「毎発火で再掲・3日超は stale」に乗り、
-ターミナル出力だけで消えない（state rot 防止）。
-
-> **スコープ（現時点）**: **人間が issue 番号を指定する手動起動のみ**。`loop-ready` label が付いた
-> issue を**自動で走査する（ポーリング / routine 化）のは未実装＝将来**。autonomous-entry が自動で
-> 拾う対象は引き続き `goals/` の `status: active` だけ（下記）。
-> label 名は当面 `loop-ready` 固定（プロジェクトごとの設定機構は需要が出るまで作らない＝YAGNI）。
->
-> **見直しトリガー（"需要が出たら" の判定基準）**: 次のどれかを観測したら自動化を検討する。
-> 漠然と「そのうち」にせず、これを満たすまでは手動のままでよい:
-> - 昇格（手順 3〜4）を **月に5件以上**行っている＝手作業のコストが積み上がっている。
-> - 手順 3 または 4 の**失念による ESCALATE が繰り返し**起きる＝人間の記憶に依存しすぎている。
-> - `loop-ready` を付けてから起動するまでの**放置が常態化**している＝自動走査の価値が出ている。
+**この段階での ESCALATE の記録**: **issue に `loop-escalated` ラベルを付け、理由をコメントする**。
 
 ## autonomous-entry（定期監視・cold-start）
 
 **Claude Code の cloud routine**（schedule トリガ）から、セッション文脈なしで定期起動されるモード。
-引数 slug を取らず、自分で対象 spec を選ぶ。発火プロンプトは自己完結な `reference/routine.md`。
-ラップトップを閉じていても回る。
+発火プロンプトは自己完結な `reference/routine.md`。ラップトップを閉じていても回る。
 
-1. **前提確認** — 対象 repo が checkout 済み・harness（本 skill / gates / `review-judge:judge`）が
-   存在し、`gh`（または GitHub の MCP ツール）で issue を読めるか確認。欠ければ **ESCALATE/no-op で安全終了**。
+1. **前提確認** — 対象 repo が checkout 済み・harness（本 skill / gates / 判事 / 行政の手順書）が存在し、
+   issue を読めるか確認。欠ければ **ESCALATE/no-op で安全終了**。
 2. **同期** — `git fetch origin && git checkout main && git pull --ff-only`。
-3. **走査** — `gh issue list --label loop-ready --state open` で候補を集める（issue 番号昇順＝時系列）。
-   **`loop-running` または `loop-escalated` が付いているものは除外**（前者は処理中、後者は人間待ち）。
-   該当ゼロなら **no-op で正常終了**。
-   各候補について、行頭 `Spec: goals/YYYYMMDD-slug.md` コメントから **spec を解決する**。
-   解決できない／spec が `status: active` でない／既に `Closes #N` の open PR がある、のいずれかなら
-   **その issue は ESCALATE**（`loop-escalated` を付けて次へ）。
-   **実装根拠は解決した spec であって issue 本文ではない**（[[loop-intake-triage]]）。
-4. **実行** — 解決できた候補のうち **issue 番号昇順で最古1件だけ**、下の「手順」G1〜G5 を実行する
-   （実装→分離司法→PR、**G6 手前で停止**）。1 発火 1 spec＝コスト・レビュー負荷を抑える。
+3. **走査** — `gh issue list --label loop-ready --state open` で候補を集める（issue 番号昇順）。
+   **`loop-running` または `loop-escalated` が付いているものは除外**。該当ゼロなら **no-op で正常終了**。
+   各候補について、行頭 `Spec: specs/<機能>/` コメントから **仕様を解決する**。
+   解決できない／仕様が main に無い／既に `Closes #N` の open PR がある、のいずれかなら
+   **その issue は ESCALATE**（`loop-escalated` を付けて次へ）。**実装根拠は解決した仕様であって issue 本文ではない**。
+4. **実行** — 解決できた候補のうち **issue 番号昇順で最古1件だけ** G1〜G5 を実行する（**G6 手前で停止**）。
    G1 通過後すぐ issue に **`loop-running`** を付け（ロック取得）、G5 完了後に外す。
-   G3↔G4 のラウンドは**セッション内のカウンタ**で数え、N=3 を超えたらロールバック/ESCALATE
-   （回数は永続化しない。次の発火でこの issue は除外されるため持ち越す相手がいない）。
-   spec frontmatter に `autonomy:` が残っていても**読まない**（段階制は廃止）。
+   G3↔G4 のラウンドは**セッション内のカウンタ**で数え、N=3 を超えたらロールバック/ESCALATE。
 5. **Escalated 再掲** — **`gh issue list --label loop-escalated` を全て報告に再掲**し、ラベル付与から
-   **3 日超**のものは `stale＝人間対応を要求`として浮上させる（付与時刻は `gh issue view --json timelineItems` 等で取る）。
-   あわせて **`loop-running` が 6 時間を超えて付いたままの issue**（＝発火が途中で死んだ疑い）に
-   `loop-escalated` を追加して報告する。**ロックは取り直さない**（自動再開は二重作業になりうる）。
-   報告には `loop/<issue番号>-*` ブランチの有無と最終コミット時刻・`Closes #N` の open PR の有無・
-   ロック付与からの経過時間を含める。**ラベルを外せるのは G5 正常完了時のループと人間だけ**。
-   報告は**発火の出力に書く**。発火の結果をリポジトリのファイルに記録しない（main に書き込む理由を作らない。
-   結果は PR・issue のラベルとコメント・セッションログに残る）。
-6. **停止** — PR 作成で停止（**自動マージしない**＝3.1 未出荷・HOTL）。
+   **3 日超**のものは `stale＝人間対応を要求`として浮上させる。
+   **`loop-running` が 6 時間を超えて付いたままの issue** に `loop-escalated` を追加して報告する（ロックは取り直さない）。
+   報告には `loop/<issue番号>-*` ブランチの有無と最終コミット時刻・`Closes #N` の open PR の有無・経過時間を含める。
+   **ラベルを外せるのは G5 正常完了時のループと人間だけ**。報告は発火の出力に書く（リポジトリのファイルに記録しない）。
+6. **停止** — PR 作成で停止（**自動マージしない**）。
 
 無人化の歯止め（autonomy-gates と一体）:
-- spec 矛盾・欠落、ガードレール（spec の制約節）への抵触は G1/G2 で **ESCALATE**（着手しない）。
-- 要注意の変更（security・課金・破壊的・認証認可）は進めてよいが、**PR 本文の先頭で申告**する。
-  申告漏れは司法が RETRY にする。
+- 仕様の矛盾・欠落、constitution への抵触は G1/G2 で **ESCALATE**（着手しない）。
+- 要注意の変更は進めてよいが、**PR 本文の先頭で申告**する。申告漏れは司法が RETRY にする。
 - 司法 PASS 無しに PR を作らない。N=3 超で ロールバック/ESCALATE。
-- **自動マージは絶対にしない**（3.1 未出荷）。人間が PR をマージする＝HOTL。
+- **自動マージは絶対にしない**。人間が PR をマージする＝HOTL。
 - Task/サブエージェント起動が使えない環境なら、PR を作らず **ESCALATE**（自己採点に退化させない）。
 
 ## アンチパターン
 
 - 司法（`review-judge:judge`）を飛ばして PR を作る／自分で PASS 相当の結論を出す（自己採点）。
 - N 上限を無視して無限に G3↔G4 を回す。
-- 要注意の変更（security・課金・破壊的変更 等）を PR 本文で申告せずに出す。
+- 要注意の変更を PR 本文で申告せずに出す。
 - main に直接 commit・push する（出力は PR ブランチと issue に限る）。
-- **`./goals/` を書き換える**（SSOT は人間所有）。
-- **`.claude/` に記録ファイルを書く**（as-built・判定台帳・run-log など。無人実行が許可待ちで止まり、中身は PR と重複する）。
-- `gh pr merge` を実行する（本フェーズは PR 停止。自動マージは 3.1）。
-- **issue 本文/コメントを spec の代わりに実装根拠にする**（issue は発見経路であって SSOT ではない。
-  `Spec:` コメントで `goals/` に解決できなければ ESCALATE。issue の議論から仕様を推測して実装しない）。
-- **`loop-ready` label の無い issue を実装する**（昇格していない＝人間がまだ「やる」と決めていない）。
+- **`spec.md`・`plan.md`・constitution を書き換える**（SSOT は人間所有。振る舞いの変更は先に仕様の PR）。
+- **main にマージされていない仕様で実装する**（未承認の仕様は立法ではない）。
+- **`/speckit-implement` で実装する**（自己採点・スコープ外の差分・無人での停止を持ち込む）。
+- **`.claude/` に記録ファイルを書く**（無人実行が許可待ちで止まり、中身は PR と重複する）。
+- `gh pr merge` を実行する。
+- **issue 本文/コメントを仕様の代わりに実装根拠にする**（`Spec:` コメントで `specs/` に解決できなければ ESCALATE）。
+- **`loop-ready` label の無い issue を実装する**（人間がまだ「やる」と決めていない）。
