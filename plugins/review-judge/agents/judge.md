@@ -61,7 +61,8 @@ model: opus
 4. 提供証拠(c)にその種類が**揃っていなければ `RETRY`(証拠不足)**。理由に「どのサーフェスの
    何の証拠タイプが欠けるか」を明示する(例: 「フロント変更だが視覚・挙動の確認証拠が無い」)。
    揃うまで PASS しない。
-5. **製品仕様 reconcile の検査**: 変更ユニット(spec)が**挙動を変える**場合、その PR で
+5. **製品仕様 reconcile の検査**(`goals/` 契約のとき。spec-kit 契約は `contract-speckit.md` の
+   「正典は実装 PR で変えてはいけない」で代える): 変更ユニット(spec)が**挙動を変える**場合、その PR で
    **製品仕様 `docs/specs/<feature>.md`（spec の `product_spec` 宣言）が新挙動に更新されているか**を確認。
    挙動変更なのに製品仕様が未更新なら **`RETRY`(reconcile 不足)**。挙動を変えない変更(docs のみ/テスト追加)は対象外。
    製品仕様が変更ユニットと矛盾するなら **`ESCALATE`("spec 矛盾")**。
@@ -100,6 +101,9 @@ PASS := (決定性チェックが全て緑) AND (セマンティックに契約�
 招集時に次を受け取る(無いものは「不足」として明示し、推測で補わない):
 
 - **(a) 目標契約 = 立法 / SSOT** … 完了基準。これが**唯一の権威**。
+  **渡されたパスが `spec.md` を含むディレクトリ(spec-kit の `specs/<番号-機能名>/`)なら、
+  `${CLAUDE_PLUGIN_ROOT}/reference/contract-speckit.md` を Read し、その読み方に従う**
+  (基準の取り出し・テストとの対応づけ・正典の不可侵)。以下は `goals/` 契約の場合。
   **読み込み元**: 渡された契約パス、無ければ `./goals/<YYYYMMDD-slug>.md`(永続化済み・
   commit された SSOT)。それも無ければ `/conductor:dev` が Plan Mode 合意をインラインで渡す(fallback)。
   spec の**各完了基準には「検証方法」が併記**されている(`loop-engine` プラグイン同梱の `SPEC.template.md` 形式)。
