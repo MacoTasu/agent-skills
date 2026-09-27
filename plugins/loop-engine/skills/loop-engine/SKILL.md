@@ -78,7 +78,8 @@ allowed-tools:
    `.specify/feature.json` に `{"feature_directory":"specs/<機能>"}` を書く（gitignore されたチェックアウト専用の状態）。
    **`dev-crew:implement` の手順で実装する**（プラグインが無い cloud では clone した
    `plugins/dev-crew/skills/implement/SKILL.md` を手順書として読む。`routine.md`）。
-   `tasks.md` の順にテスト先行で実装し、`/speckit-converge` で作り残しを点検する（**`/speckit-implement` は使わない**。理由は同 SKILL.md）。
+   前の確認（仕様の確定・拡張フック）→ `/speckit-implement` で書く → 後の確認（範囲外の変更・自己レビュー・
+   `/speckit-converge` での点検・証拠表）。**`/speckit-implement` を枠の外で直接呼ばない**（理由は同 SKILL.md）。
    差分はスコープ内に保つ（逸脱は停止）。
 4. **G4 司法** — Task で `review-judge:judge`(opus) を起動し、**契約 `specs/<機能>/`**・差分（`origin/main...HEAD`）・
    証拠（行政の決定性結果は「申告（未検証）」として）を渡す。判定を受ける:
@@ -166,7 +167,7 @@ allowed-tools:
 - main に直接 commit・push する（出力は PR ブランチと issue に限る）。
 - **`spec.md`・`plan.md`・constitution を書き換える**（SSOT は人間所有。振る舞いの変更は先に仕様の PR）。
 - **main にマージされていない仕様で実装する**（未承認の仕様は立法ではない）。
-- **`/speckit-implement` で実装する**（スコープ外の差分・無人での停止・証拠の欠落を持ち込む）。
+- **`/speckit-implement` を `dev-crew:implement` の枠の外で直接呼ぶ**（無人での停止・範囲外の変更・証拠の欠落が素通りする）。
 - **`.claude/` に記録ファイルを書く**（無人実行が許可待ちで止まり、中身は PR と重複する）。
 - `gh pr merge` を実行する。
 - **issue 本文/コメントを仕様の代わりに実装根拠にする**（`Spec:` コメントで `specs/` に解決できなければ ESCALATE）。

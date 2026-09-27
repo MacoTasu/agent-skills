@@ -118,20 +118,25 @@ loop-engine     自律   必須: dev-crew / review-judge ／ spec-kit（外部�
 してから実装する（Living Spec: `spec.md` が契約で、振る舞いを変えるなら先に `spec.md` を直す）。
 小さな変更は仕様を作らず `/conductor:dev` で直接進める。
 
-**ただし実装コマンドの `/speckit-implement` は使わない。** 実装は `dev-crew:implement` が `tasks.md` を読んで行う。
+**実装コマンドの `/speckit-implement` は、`dev-crew:implement` の枠の中で使う。** コードを書く部分は spec-kit に任せ、
+その前後を `dev-crew:implement` が受け持つ（直接は呼ばない）。
 
-| `/speckit-implement` の振る舞い | 何とぶつかるか |
+| | 担当 | 何をするか |
+|---|---|---|
+| 前の確認 | `dev-crew:implement` | 仕様が確定しているか（未解決の点・未チェックの checklists）、拡張フックの有無 |
+| 書く | `/speckit-implement` | `tasks.md` の順（テスト先行）に実装し `[X]` を付ける |
+| 後の確認 | `dev-crew:implement` | 範囲外の変更の検出と巻き戻し、自己レビュー、`/speckit-converge` での点検、要件ごとの証拠表 |
+
+枠が要るのは、`/speckit-implement` を単体で使うと次が素通りするため:
+
+| `/speckit-implement` の振る舞い | 枠がどう防ぐか |
 |---|---|
-| 技術スタックを検出して `.gitignore` などを毎回作成・追記する | **スコープ外の差分**が毎回混ざる |
-| `checklists/` に未チェックがあると人間に yes/no を聞いて止まる | **無人ループが固まる** |
-| 基準ごとの証拠を返さない | 司法に渡す**証拠の形が無い** |
+| `checklists/` に未チェックがあると人間に yes/no を聞いて止まる | 前の確認で先に差し戻すので、枠の中では起きない |
+| ignore ファイル（`.gitignore` など）に足りないパターンを追記・無ければ作成する（`.vscode/` など、コミットしたいものまで無視されうる） | 後の確認で、タスクに無い ignore ファイルの変更を元に戻して報告する |
+| 要件ごとの証拠を返さない | 後の確認で証拠表を作る |
 
-最後に自分で完了を検証する手順もあるが、これは良い自己レビューで、不採用の理由ではない
-（後ろに必ず司法を置くので、自己検証で工程が終わる作りでも実害は出ない）。
-
-成果物の形式（`tasks.md` のタスク ID・`[P]`・`[X]`）には従うので、`/speckit-analyze` や `/speckit-converge` は
-そのまま使える（`converge` は行政の自己点検として使い、完了の判定には使わない）。
-spec-kit 自身の工程エンジン（`workflow.yml`）も最後が `/speckit-implement` で判事がいないため使わず、工程は指揮が持つ。
+最後に自分で完了を検証する手順は良い自己レビューとして活かす。その「完了」は判定ではなく、合否は判事が出す。
+spec-kit 自身の工程エンジン（`workflow.yml`）は最後が `/speckit-implement` で判事がいないため使わず、工程は指揮が持つ。
 
 ## 設計方針
 

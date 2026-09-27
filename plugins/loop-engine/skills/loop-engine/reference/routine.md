@@ -112,7 +112,7 @@ API から更新しても**黙って捨てられる**（200 が返るのに値�
    - 解決できた候補のうち **issue 番号昇順で最古1件だけ**選び G1〜G5 を実行する。
      **実装（G3）は行政の手順に従う**: プラグインとして `dev-crew:implement` があればそれを、無ければ（cloud はこちら）
      clone した `/tmp/harness/plugins/dev-crew/skills/implement/SKILL.md` を手順書として読んで従う。
-     `/speckit-implement` は使わない（理由は同 SKILL.md）。
+     `/speckit-implement` はその手順の中（枠の中）で呼び、直接は呼ばない（理由は同 SKILL.md）。
      着手時に issue へ **`loop-running`** を付け（ロック取得）、G5 完了時に外す。
      G3↔G4 のラウンドは**セッション内カウンタ**で数え、**N=3 を超えたらロールバック/ESCALATE**
      （回数は永続化しない）。

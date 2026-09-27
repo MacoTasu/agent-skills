@@ -520,8 +520,8 @@ footer {
         <div class="entry-body">
           <strong>行政（実務）</strong>。契約に沿って実装し、ビルド・型・lint・テストの決定性証拠を
           揃えるところまで。<strong>司法を呼ぶ権限を持たず、合否も宣言しない</strong> —
-          証拠を揃えて指揮に返す。spec-kit の仕様では <code>tasks.md</code> の順に自分で実装し、
-          <code>/speckit-implement</code> は使わない。出荷・運用と書記の職能エージェントも同梱。
+          証拠を揃えて指揮に返す。spec-kit の仕様では <code>/speckit-implement</code> を枠の中で呼び、
+          前後の確認（仕様の確定・範囲外の変更・自己レビュー・証拠表）を受け持つ。出荷・運用と書記の職能エージェントも同梱。
           <div class="needs"><b>needs</b> — feature-dev / spec-kit（仕様を契約にするとき）</div>
         </div>
       </div>
@@ -1043,26 +1043,87 @@ footer {
         <code>goals/</code> との互換は残さず一度に移した。構築中の <code>0.1.0</code> で、途中の状態を使う利用者がいないため。
       </dd>
 
-      <dt>spec-kit の実装コマンド /speckit-implement は使わない</dt>
+      <dt>/speckit-implement は dev-crew:implement の枠の中で使う（一度「使わない」と決めてから戻した）</dt>
       <dd>
-        spec-kit に乗ると決めた以上、実装も <code>/speckit-implement</code> に任せるのが素直に見える。
-        だが実物を読むと、このリポジトリの芯である「実装した主体に合否を決めさせない」と正面からぶつかる。
-        <strong>① 技術スタックを検出して <code>.gitignore</code> などの ignore ファイルを毎回作成・追記する</strong>——
-        タスクと関係ない差分が毎回混ざり、判事にスコープ逸脱と判定されうる。
-        <strong>② <code>checklists/</code> に未チェックがあると人間に yes/no を聞いて止まる</strong>——無人ループが固まる。
-        <strong>③ 要件ごとの証拠を返さない</strong>——判事に渡す証拠の形が無い。
-        最後に自分で完了を検証する手順もあるが、これは<strong>良い自己レビューであって不採用の理由ではない</strong>。
-        当初はこれを「自己採点」として理由の筆頭に挙げていたが、禁じるべきは自分で点検することではなく、
-        <strong>その結果を拘束力のある判定として扱い、他者のチェックを通さずに終わること</strong>。
-        後ろに必ず判事を置くこの設計では実害が出ないので、理由から外した。
-        そこで<strong>乗るのは成果物の形式（<code>spec.md</code>・<code>plan.md</code>・<code>tasks.md</code>、タスク ID、
-        <code>[P]</code>、<code>[X]</code>）で、実装コマンドには乗らない</strong>。実装は <code>dev-crew:implement</code> が
-        <code>tasks.md</code> をテスト先行の順に読んで行い、<code>[X]</code> も付ける。形式が共通なので
-        <code>/speckit-analyze</code> や <code>/speckit-converge</code>（作り残しを <code>tasks.md</code> に追記するだけの点検）は
-        そのまま使える。<code>converge</code> の「Converged」は行政の自己点検として扱い、完了の判定には使わない。
-        同じ理由で、spec-kit 自身の工程エンジン（<code>workflow.yml</code>）も最後が <code>/speckit-implement</code> で
-        判事がいないので使わず、工程は指揮が持つ。拡張フック（<code>after_implement</code>）に判事をつなぐ案も、
-        実装したエージェント自身がフックを実行する＝行政が司法を呼ぶ形になるので採らなかった。
+        spec-kit には実装コマンド <code>/speckit-implement</code> がある。使い方は3通り考えられる。
+        <strong>A</strong> は指揮から直接呼ぶ、<strong>B</strong> は使わずに <code>dev-crew:implement</code> が自前で書く、
+        <strong>C</strong> は <code>dev-crew:implement</code> を枠にして、その中で呼ぶ（前の確認 → 書く → 後の確認）。
+        最初は B に決めた。実物を読んで、<strong>① 最後に自分で完了を検証して報告する</strong>（自己採点）、
+        <strong>② ignore ファイルを作成・追記する</strong>（範囲外の変更）、
+        <strong>③ <code>checklists/</code> に未チェックがあると人間に yes/no を聞いて止まる</strong>（無人ループが固まる）、
+        <strong>④ 要件ごとの証拠を返さない</strong>、の4点が三権分立や無人運転とぶつかると判断したためだった。
+        ところが検証し直すと、どれも「使わない」理由としては弱かった。
+        ① は自己レビューそのもので、禁じるべきは自分で点検することではなく<strong>その結果を判定として扱うこと</strong>——
+        後ろに必ず判事を置く以上、実害は無い。② は「毎回」ではなく<strong>足りないパターンだけの追記</strong>で、一度そろえば差分は出ない
+        （ただし <code>.vscode/</code> など、コミットしたいものまで無視されうる）。③ は、実装の前に未チェックが無いことを
+        確かめて差し戻せば起きない。④ は後から作れる。つまり<strong>どれも前後の確認で防げる</strong>。
+        B は問題が起きない代わりに、書く手順を自前で持つので、spec-kit の改善を取り込めず、レールから離れていく。
+        そこで <strong>C に切り替えた</strong>。書く部分は spec-kit に乗り、前の確認（仕様の確定・拡張フック）と後の確認
+        （範囲外の変更の巻き戻し・自己レビュー・<code>/speckit-converge</code>・証拠表）を <code>dev-crew:implement</code> が受け持つ。
+        代償は、spec-kit の版が上がると書く手順が私たちの管理外で変わること。版の固定を推奨し、後の確認で差分の範囲を毎回確かめる。
+        spec-kit 自身の工程エンジン（<code>workflow.yml</code>）は最後が <code>/speckit-implement</code> で判事がいないので使わず、
+        工程は指揮が持つ。拡張フック（<code>after_implement</code>）に判事をつなぐ案も、実装したエージェント自身が
+        フックを実行する＝行政が司法を呼ぶ形になるので採らなかった。
+        <div class="court" style="margin-top:1.5rem">
+      <svg viewBox="-8 0 716 264" role="img" aria-label="spec-kit の実装コマンドの使い方3案の比較。A は前後の確認なしで直接呼ぶ、B は自前で書く、C は前後の確認の枠の中で呼ぶ（採用）">
+        <defs>
+          <marker id="abc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--rule-strong)"></path>
+          </marker>
+        </defs>
+        <text x="100" y="12" class="svg-label">前の確認</text>
+        <text x="260" y="12" class="svg-label">コードを書く</text>
+        <text x="460" y="12" class="svg-label">後の確認</text>
+        <text x="620" y="12" class="svg-label">合否</text>
+        <text x="0" y="42" class="svg-role" font-size="15">A</text>
+        <text x="0" y="60" class="svg-note">直接呼ぶ</text>
+        <rect x="100" y="24" width="140" height="40" rx="3" fill="none" stroke="var(--rule)" stroke-dasharray="4 3"></rect>
+        <text x="112" y="49" class="svg-note">なし</text>
+        <path d="M 242 44 L 256 44" stroke="var(--rule-strong)" stroke-width="1.25" fill="none" marker-end="url(#abc)"></path>
+        <rect x="260" y="24" width="180" height="40" rx="3" fill="var(--surface)" stroke="var(--rule-strong)" stroke-width="1.25"></rect>
+        <text x="272" y="49" class="svg-name">/speckit-implement</text>
+        <path d="M 442 44 L 456 44" stroke="var(--rule-strong)" stroke-width="1.25" fill="none" marker-end="url(#abc)"></path>
+        <rect x="460" y="24" width="140" height="40" rx="3" fill="none" stroke="var(--rule)" stroke-dasharray="4 3"></rect>
+        <text x="472" y="49" class="svg-note">なし</text>
+        <path d="M 602 44 L 616 44" stroke="var(--rule-strong)" stroke-width="1.25" fill="none" marker-end="url(#abc)"></path>
+        <rect x="620" y="24" width="80" height="40" rx="3" fill="var(--surface)" stroke="var(--rule-strong)"></rect>
+        <text x="634" y="49" class="svg-role" font-size="13">判事</text>
+        <text x="100" y="82" class="svg-note">仕様が未確定だと yes/no で止まる・ignore の変更が混ざる・証拠表が無い</text>
+        <text x="0" y="126" class="svg-role" font-size="15">B</text>
+        <text x="0" y="144" class="svg-note">使わない</text>
+        <rect x="100" y="108" width="140" height="40" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+        <text x="112" y="133" class="svg-name">dev-crew</text>
+        <path d="M 242 128 L 256 128" stroke="var(--rule-strong)" stroke-width="1.25" fill="none" marker-end="url(#abc)"></path>
+        <rect x="260" y="108" width="180" height="40" rx="3" fill="var(--surface)" stroke="var(--rule-strong)" stroke-width="1.25"></rect>
+        <text x="272" y="133" class="svg-name">dev-crew（自前）</text>
+        <path d="M 442 128 L 456 128" stroke="var(--rule-strong)" stroke-width="1.25" fill="none" marker-end="url(#abc)"></path>
+        <rect x="460" y="108" width="140" height="40" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+        <text x="472" y="133" class="svg-name">dev-crew</text>
+        <path d="M 602 128 L 616 128" stroke="var(--rule-strong)" stroke-width="1.25" fill="none" marker-end="url(#abc)"></path>
+        <rect x="620" y="108" width="80" height="40" rx="3" fill="var(--surface)" stroke="var(--rule-strong)"></rect>
+        <text x="634" y="133" class="svg-role" font-size="13">判事</text>
+        <text x="100" y="166" class="svg-note">問題は起きないが、書く手順を自前で持ち、spec-kit から離れていく</text>
+        <rect x="-6" y="184" width="712" height="76" rx="4" fill="var(--accent)" fill-opacity="0.07" stroke="var(--accent)" stroke-opacity="0.35"></rect>
+        <text x="0" y="210" class="svg-role" font-size="15">C</text>
+        <text x="0" y="228" class="svg-note">枠の中（採用）</text>
+        <rect x="100" y="192" width="140" height="40" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+        <text x="112" y="217" class="svg-name">dev-crew</text>
+        <path d="M 242 212 L 256 212" stroke="var(--rule-strong)" stroke-width="1.25" fill="none" marker-end="url(#abc)"></path>
+        <rect x="260" y="192" width="180" height="40" rx="3" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"></rect>
+        <text x="272" y="217" class="svg-name">/speckit-implement</text>
+        <path d="M 442 212 L 456 212" stroke="var(--rule-strong)" stroke-width="1.25" fill="none" marker-end="url(#abc)"></path>
+        <rect x="460" y="192" width="140" height="40" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+        <text x="472" y="217" class="svg-name">dev-crew</text>
+        <path d="M 602 212 L 616 212" stroke="var(--rule-strong)" stroke-width="1.25" fill="none" marker-end="url(#abc)"></path>
+        <rect x="620" y="192" width="80" height="40" rx="3" fill="var(--surface)" stroke="var(--rule-strong)"></rect>
+        <text x="634" y="217" class="svg-role" font-size="13">判事</text>
+        <text x="100" y="250" class="svg-note">書く手順は spec-kit に乗り、止まる条件・範囲外の変更・証拠は前後の確認が引き受ける</text>
+      </svg>
+      <p class="court-caption">
+        3案とも合否は判事が出すので、三権分立はどれでも崩れない。違うのは <strong>spec-kit のレールにどこまで乗るか</strong>と、
+        <strong>前後の確認を置くか</strong>だけ。
+      </p>
+        </div>
       </dd>
 
       <dt>指揮を親子に分け、親は main、子は worktree に置く</dt>
