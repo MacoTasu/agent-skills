@@ -88,7 +88,9 @@ herdr pane split --current --direction right --cwd "$PWD" --no-focus
 herdr agent start <name> --kind <kind> --pane <pane_id> -- <起動引数>
 ```
 
-- 名前は `impl-<slug>` / `judge-<slug>`。32文字を超えるなら slug を切り詰める。
+- 名前は `impl-<slug>` / `judge-<slug>`。slug は機能ディレクトリ名から先頭のタイムスタンプを除いた部分
+  （`20260927-143022-user-export` → `user-export`）。インライン契約ならブランチ名から作る。
+  32文字を超えるなら slug を切り詰める。
 - **指示文は一時ファイルに書き、ペインには「そのファイルを読んで従え」とだけ送る。**
   長い指示をペインに流すと、画面の読み取りで自分の指示文と相手の出力が混ざるため。
   置き場所は `mktemp -d` で作る一時ディレクトリ（リポジトリの外。`.claude/` にも書かない）。
@@ -134,7 +136,7 @@ herdr agent start <name> --kind <kind> --pane <pane_id> -- <起動引数>
 指示文ファイルに書くこと:
 
 1. `/dev-crew:implement` を実行し、その手順に従う（同じユーザー環境なのでスキルが使える）
-2. 契約のパス `./goals/<YYYYMMDD-slug>.md`
+2. 契約 — spec-kit の機能ディレクトリのパス `specs/<機能>/`、またはインライン契約の本文
 3. **司法を呼ばない・合否を宣言しない**（implement の職責どおり。念押し）
 4. 最後は implement の「返す形式」で、`<dir>/result.md` に書いて終える
 

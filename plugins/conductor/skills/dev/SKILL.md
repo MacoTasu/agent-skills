@@ -6,7 +6,9 @@ description: |
   (feature-dev / pr-review-toolkit / frontend-design / commit-commands / code-simplifier)と
   カスタム職能サブエージェント(dev-crew:business-reviewer / dev-crew:domain-architect)を Task で
   並列招集・委譲する。自分でコードは書かず、指揮・判断・合意形成・並列調整に徹する。
-  Plan Mode 合意必須とブランチ分離の思想を保持する。
+  main に常駐する「親」は spec-kit で仕様を起草して仕様の PR を作り、承認された仕様を
+  worktree の「子」に送り出す。子は /conductor:dev specs/<機能>/ で実装→書記→司法→PR を回す。
+  小さな変更は仕様を作らず Plan Mode の合意(インライン契約)で直接進める。
 disable-model-invocation: false
 allowed-tools:
   - Task
@@ -14,6 +16,7 @@ allowed-tools:
   - Read
   - Grep
   - Glob
+  - Skill
 ---
 
 # /conductor:dev — 開発オーケストレータ
@@ -43,13 +46,18 @@ allowed-tools:
 ## 大原則(CLAUDE.md と一体)
 
 - **Plan Mode 合意必須** — 実装系は設計を提示しユーザー承認を得るまで1行も書かない。
-- **立法(目標契約)の永続化** — implement では Plan Mode で合意した完了基準を、
-  `loop-engine` プラグイン同梱の `SPEC.template.md` の形式に沿って
-  `./goals/<YYYYMMDD-slug>.md` に**起草・永続化**してから実装に進む(AI起草→人間承認
-  ＝Plan Mode 合意)。各完了基準には**検証方法(決定性チェック)を併記**する。これが司法の
-  採点する SSOT になる。契約は **commit する**(SSOT)、判定ログは gitignore(派生)。Plan Mode を
-  二重化せず、合意済み基準を契約ファイルに落とすだけ。
-- **ブランチ分離** — 実装着手前にブランチを作成。worktree は複数独立タスクの並列時のみ。
+- **立法(契約)は2種類** — 司法が採点する正典(SSOT)は次のどちらか。
+  - **spec-kit の機能ディレクトリ** `specs/<タイムスタンプ-名前>/` … 機能追加・振る舞いの変更。
+    **仕様を先に PR にし、人間のマージで承認**してから実装する(Living Spec: `spec.md` が契約で、
+    振る舞いを変えるなら先に `spec.md` を直す)。実装 PR は `spec.md`・constitution を変えない。
+  - **インライン契約** … 仕様を作らない小さな変更(typo・1箇所のバグ修正など)。Plan Mode で合意した
+    完了基準に**検証方法(実行コマンド)を併記**し、招集時に司法へそのまま渡す。ファイルには残さない。
+  どちらに当たるか迷ったら人間に1問だけ聞く。
+- **親は main、子は worktree** — 親(このスキルを main で起動したもの)は `main` から動かず、
+  仕様の起草と送り出しに徹する。実装は機能ごとの worktree で動く子が担う。手順は
+  `${CLAUDE_PLUGIN_ROOT}/reference/parent-child.md`。herdr が無い環境では、子を人間に起動してもらうか、
+  従来どおり現在のチェックアウトでブランチを切って1件ずつ進める。
+- **ブランチ分離** — 実装はブランチ(または worktree)の上で。`main` に直接コミットしない。
 - **DRY / KISS / YAGNI** — 公式で足りるものは公式へ委譲。欠ける職能(ビジネス/ドメイン/
   司法)だけ自前。指揮自身はコードを書かない。
 - **司法の分離(三権分立 / HOTL)** — review の拘束力ある最終判定は、行政から分離した
@@ -97,7 +105,10 @@ allowed-tools:
 | 入力の性質 | フェーズ | 招集先 |
 |---|---|---|
 | コード調査 / 既存挙動の把握だけ | explore | `feature-dev:code-explorer` を Task 直接起動 **@haiku** |
-| 機能追加 / バグ修正 / リファクタの依頼 | implement | Plan Mode 合意 → **目標契約を `./goals/<YYYYMMDD-slug>.md` に永続化(立法)** → 設計は `feature-dev:code-architect` Task **@opus** → 実装は **`dev-crew:implement`**(契約を渡す。実装本体は公式 feature-dev に委ねてよい。`via: herdr` ならペインで。下の「実行方式」)。行政は決定性の結果までを返し、合否は宣言しない |
+| 機能追加 / 振る舞いの変更の依頼(main 上) | specify | **親**: spec-kit で仕様を起草し仕様の PR を作る(`parent-child.md`「仕様の起草」)。承認(マージ)は人間 |
+| 「<仕様> を実装して」/ マージ済み仕様の送り出し(main 上) | dispatch | **親**: worktree を切って子を起動する(`parent-child.md`「送り出し」) |
+| `/conductor:dev specs/<機能>/`(機能ブランチ・worktree 上) | implement(子) | **子**: 仕様は承認済みなので Plan Mode は省く → 実装は **`dev-crew:implement`**(契約=機能ディレクトリ。`via: herdr` ならペイン) → 書記 → 司法 → PR(`parent-child.md`「子の手順」) |
+| 小さな変更(typo・1箇所のバグ修正・軽いリファクタ) | implement(直接) | Plan Mode 合意(＝インライン契約。各基準に検証方法を併記) → 設計が要れば `feature-dev:code-architect` Task **@opus** → 実装は **`dev-crew:implement`**(インライン契約を渡す) → 書記 → 司法。行政は決定性の結果までを返し、合否は宣言しない |
 | UI / 画面 / コンポーネントを伴う実装 | implement(FE) | 上記 ＋ `frontend-design`(UI変更で自動発火) |
 | 「レビューして」/ PR番号・URL | review | `/conductor:dev` が pr-review-toolkit 6サブエージェントを **Task 並列・model 上書き**で起動(＝証拠提供) ＋ 必要に応じ dev-crew:business-reviewer / dev-crew:domain-architect を並列 → 最後に **`review-judge:judge`(司法・判事)が束ねて単一判定**(下記レビュー招集ルール) |
 | 軽い整理・可読性改善だけ | refactor | `code-simplifier` を Task 直接起動 **@haiku** |
@@ -154,8 +165,8 @@ allowed-tools:
 
 1. 6観点・business・domain の所見が揃ったら、Task で `review-judge:judge`(opus)を起動
    (`.claude/conductor.json` で `judge` が `via: herdr` なら、下の「実行方式」に従いペインで招集)。
-   引数で渡すもの: **(a) 目標契約のパス** `./goals/<YYYYMMDD-slug>.md`(implement で
-   永続化済みの SSOT。単発レビューでパス無しならレビュー基準をインラインで渡す fallback)、
+   引数で渡すもの: **(a) 契約** — spec-kit の機能ディレクトリのパス `specs/<機能>/`、または
+   インライン契約(Plan Mode で合意した完了基準と検証方法。単発レビューならレビュー基準)、
    **(b) 差分**(`git diff` の範囲)、**(c) 証拠**(上記各観点の所見 + テスト/CI/lint の決定性結果)。
    司法は契約の各完了基準に併記された検証方法を、自分の決定性チェックに対応づける。
 2. review-judge:judge は**決定性チェック + セマンティックチェックの二系統**で採点し、
