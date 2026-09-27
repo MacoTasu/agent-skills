@@ -27,13 +27,13 @@
     },
     {
       "name": "spec-intake",
-      "description": "立法の支援。GitHub issue での議論を、実装根拠になる仕様(goals/)まで持ち上げる。grill-issue が曖昧な issue を質問攻めで詰め、spec-draft が完了基準と検証コマンドつきの仕様を起草して PR にする。承認は必ず人間。自律ループを回さなくても単体で使える。",
+      "description": "立法の支援。GitHub issue での議論を、実装根拠になる spec-kit の仕様(specs/<機能>/)まで持ち上げる。grill-issue が曖昧な issue を質問攻めで詰め、spec-draft が spec-kit のコマンドで仕様を起草して仕様の PR にする。承認は必ず人間。自律ループを回さなくても単体で使える。",
       "source": "./plugins/spec-intake",
       "category": "workflow"
     },
     {
       "name": "conductor",
-      "description": "開発の指揮。フェーズを判定し、行政に実装させ、書記に証拠を出させ、司法に持ち込む。自分ではコードを書かず判定も出さない。行政が司法を呼べない構造にすることで、実装した主体が合否を決められないようにする。",
+      "description": "開発の指揮。main に常駐する親が spec-kit で仕様を起草して仕様の PR を作り、承認された仕様を worktree の子に送り出す。子は行政に実装させ、書記に証拠を出させ、司法に持ち込む。自分ではコードを書かず判定も出さない。行政が司法を呼べない構造にすることで、実装した主体が合否を決められないようにする。",
       "source": "./plugins/conductor",
       "category": "workflow"
     },
@@ -45,7 +45,7 @@
     },
     {
       "name": "loop-engine",
-      "description": "人間が書いた仕様を起点に拾い上げ→実装→司法検証→PR を回す自律ループ(HOTL)。既定は報告のみ、実装しても必ず PR で停止する。dev-conductor と review-judge が前提。",
+      "description": "人間が承認した spec-kit の仕様を起点に拾い上げ→実装→司法検証→PR を回す自律ループ(HOTL)。loop-ready の issue を PR まで進め、必ず PR で停止する。dev-crew と review-judge が前提。",
       "source": "./plugins/loop-engine",
       "category": "workflow"
     },

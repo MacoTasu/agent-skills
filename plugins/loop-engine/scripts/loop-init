@@ -1,7 +1,7 @@
 #!/bin/bash
 # loop-init — 任意のリポジトリで loop-engine を回すための初期セットアップ。
-# goals/・hooks scaffold・settings.json の hooks 配線までを一括で行う。
-# 何度実行しても安全（既存物はスキップ・settings は壊さずマージ）。
+# spec-kit の設定確認・hooks scaffold・settings.json の hooks 配線までを一括で行う。
+# 何度実行しても安全（既存物はスキップ・settings は壊さずマージ・spec-kit の設定は確認して案内するだけ）。
 set -e
 
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
@@ -36,12 +36,31 @@ detect_langs() {
   printf '%b' "$found"
 }
 
-# goals/ を作成
-if [ ! -d "$REPO_ROOT/goals" ]; then
-  mkdir -p "$REPO_ROOT/goals"
-  echo "created: goals/"
+# spec-kit の設定を確認する（仕様は spec-kit の specs/<機能>/。書き換えはせず、足りなければ案内する）
+SPECKIT_TODO=""
+if [ ! -d "$REPO_ROOT/.specify" ]; then
+  echo "todo:    spec-kit が未初期化です（.specify/ がありません）"
+  SPECKIT_TODO="${SPECKIT_TODO}  - spec-kit を初期化してコミット: specify init --here --force --non-interactive --integration claude --script sh\n"
 else
-  echo "skip:    goals/ は既に存在します"
+  echo "ok:      spec-kit 初期化済み（.specify/）"
+  OPTS="$REPO_ROOT/.specify/init-options.json"
+  NUMBERING=""
+  if [ -f "$OPTS" ]; then
+    NUMBERING=$(grep -oE '"(feature|branch)_numbering"[[:space:]]*:[[:space:]]*"[a-z]+"' "$OPTS" | head -1 | grep -oE '"[a-z]+"$' | tr -d '"')
+  fi
+  if [ "$NUMBERING" = "timestamp" ]; then
+    echo "ok:      仕様の番号はタイムスタンプ方式"
+  else
+    echo "todo:    仕様の番号が連番（${NUMBERING:-未設定}）です"
+    SPECKIT_TODO="${SPECKIT_TODO}  - .specify/init-options.json の feature_numbering を \"timestamp\" に（並行する仕様の PR の番号衝突を防ぐ）\n"
+  fi
+  CONSTITUTION="$REPO_ROOT/.specify/memory/constitution.md"
+  if [ -f "$CONSTITUTION" ] && grep -qE 'FR-[0-9#]|自動テスト|automated test' "$CONSTITUTION"; then
+    echo "ok:      constitution にテストの原則らしき記述あり（内容は人間が確認）"
+  else
+    echo "todo:    constitution に自動テストの原則が見当たりません"
+    SPECKIT_TODO="${SPECKIT_TODO}  - constitution に追加:「spec.md の各 FR と各受け入れシナリオは自動テストを持たなければならない（MUST）。テストに基準 ID（FR-001 など）を書く」\n"
+  fi
 fi
 
 # hooks（プロジェクト固有 validation）の雛形を scaffold（既定 no-op・project が中身を書く）
@@ -112,7 +131,12 @@ else
   echo "言語マーカー未検出。.claude/hooks/{validate,gate}.sh を手で記入してください。"
 fi
 echo ""
+if [ -n "$SPECKIT_TODO" ]; then
+  echo "spec-kit の設定で足りないもの（このスクリプトは書き換えない）:"
+  printf '%b' "$SPECKIT_TODO"
+  echo ""
+fi
 echo "残り:"
 echo "  1. .claude/hooks/{validate,gate}.sh に上記コマンドを記入（既定 no-op のまま回しても可）"
-echo "  2. goals/YYYYMMDD-<slug>.md を書く（雛形: $HARNESS_DIR/SPEC.template.md）"
-echo "  3. /loop-engine <slug> → 実装→司法→PR まで進んで PR で停止（マージは人間）"
+echo "  2. spec-kit で仕様を書いて仕様の PR をマージ（/conductor:dev の親、/spec-intake:spec-draft <issue番号>、または /speckit-specify から手で）"
+echo "  3. /loop-engine:loop-engine <機能> → 実装→司法→PR まで進んで PR で停止（マージは人間）"
