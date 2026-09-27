@@ -658,8 +658,8 @@ footer {
         <div class="role-who">人間が承認した spec-kit の仕様 <code>specs/&lt;機能&gt;/</code> と constitution（起草は <code>conductor</code> の親か <code>spec-intake</code>）</div>
         <div class="role-lacks">ボットは<strong>承認しない</strong>。書き換えもしない</div></div>
       <div class="role-row"><div class="role-name">行政</div>
-        <div class="role-who"><code>dev-crew:implement</code>（＋公式 feature-dev）</div>
-        <div class="role-lacks"><strong>司法を呼ぶ権限</strong>。合否も宣言しない</div></div>
+        <div class="role-who"><code>dev-crew:implement</code>（＋公式 feature-dev）。自己レビューまでが仕事</div>
+        <div class="role-lacks"><strong>司法を呼ぶ権限</strong>と<strong>合否を宣言する権限</strong></div></div>
       <div class="role-row"><div class="role-name">司法</div>
         <div class="role-who"><code>review-judge:judge</code></div>
         <div class="role-lacks"><strong><code>Edit</code> / <code>Write</code> ツール</strong>。直せない</div></div>
@@ -1047,11 +1047,14 @@ footer {
       <dd>
         spec-kit に乗ると決めた以上、実装も <code>/speckit-implement</code> に任せるのが素直に見える。
         だが実物を読むと、このリポジトリの芯である「実装した主体に合否を決めさせない」と正面からぶつかる。
-        <strong>① 最後に自分で完了を検証して報告する</strong>——自己採点そのもの。
-        <strong>② 技術スタックを検出して <code>.gitignore</code> などの ignore ファイルを毎回作成・追記する</strong>——
+        <strong>① 技術スタックを検出して <code>.gitignore</code> などの ignore ファイルを毎回作成・追記する</strong>——
         タスクと関係ない差分が毎回混ざり、判事にスコープ逸脱と判定されうる。
-        <strong>③ <code>checklists/</code> に未チェックがあると人間に yes/no を聞いて止まる</strong>——無人ループが固まる。
-        <strong>④ 要件ごとの証拠を返さない</strong>——判事に渡す証拠の形が無い。
+        <strong>② <code>checklists/</code> に未チェックがあると人間に yes/no を聞いて止まる</strong>——無人ループが固まる。
+        <strong>③ 要件ごとの証拠を返さない</strong>——判事に渡す証拠の形が無い。
+        最後に自分で完了を検証する手順もあるが、これは<strong>良い自己レビューであって不採用の理由ではない</strong>。
+        当初はこれを「自己採点」として理由の筆頭に挙げていたが、禁じるべきは自分で点検することではなく、
+        <strong>その結果を拘束力のある判定として扱い、他者のチェックを通さずに終わること</strong>。
+        後ろに必ず判事を置くこの設計では実害が出ないので、理由から外した。
         そこで<strong>乗るのは成果物の形式（<code>spec.md</code>・<code>plan.md</code>・<code>tasks.md</code>、タスク ID、
         <code>[P]</code>、<code>[X]</code>）で、実装コマンドには乗らない</strong>。実装は <code>dev-crew:implement</code> が
         <code>tasks.md</code> をテスト先行の順に読んで行い、<code>[X]</code> も付ける。形式が共通なので

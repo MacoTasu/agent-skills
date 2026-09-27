@@ -166,7 +166,7 @@ allowed-tools:
 - main に直接 commit・push する（出力は PR ブランチと issue に限る）。
 - **`spec.md`・`plan.md`・constitution を書き換える**（SSOT は人間所有。振る舞いの変更は先に仕様の PR）。
 - **main にマージされていない仕様で実装する**（未承認の仕様は立法ではない）。
-- **`/speckit-implement` で実装する**（自己採点・スコープ外の差分・無人での停止を持ち込む）。
+- **`/speckit-implement` で実装する**（スコープ外の差分・無人での停止・証拠の欠落を持ち込む）。
 - **`.claude/` に記録ファイルを書く**（無人実行が許可待ちで止まり、中身は PR と重複する）。
 - `gh pr merge` を実行する。
 - **issue 本文/コメントを仕様の代わりに実装根拠にする**（`Spec:` コメントで `specs/` に解決できなければ ESCALATE）。

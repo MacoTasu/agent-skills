@@ -89,7 +89,7 @@ loop-engine     自律   必須: dev-crew / review-judge ／ spec-kit（外部�
 | 役 | 誰 | 持たないもの |
 |---|---|---|
 | **立法** | 人間が承認した spec-kit の仕様 `specs/<機能>/` と constitution（起草は `conductor` の親か `spec-intake`） | — ボットは承認しない |
-| **行政** | `dev-crew:implement`（＋公式 feature-dev） | **司法を呼ぶ権限**。合否も宣言しない |
+| **行政** | `dev-crew:implement`（＋公式 feature-dev）。**自己レビューまでが仕事** | **司法を呼ぶ権限**と**合否を宣言する権限** |
 | **司法** | `review-judge:judge` | **`Edit` / `Write` ツール**。直せない |
 | 指揮 | `conductor:dev`（手動） / `loop-engine`（自律） | コードを書かない。判定も出さない |
 | 書記 | pr-review 6観点 / `business-reviewer` / `domain-architect` / `saas-review` / `architecture-review` | 拘束力。所見を出すだけ |
@@ -122,10 +122,12 @@ loop-engine     自律   必須: dev-crew / review-judge ／ spec-kit（外部�
 
 | `/speckit-implement` の振る舞い | 何とぶつかるか |
 |---|---|
-| 最後に自分で完了を検証して報告する | **自己採点**。合否は分離した司法が出す |
 | 技術スタックを検出して `.gitignore` などを毎回作成・追記する | **スコープ外の差分**が毎回混ざる |
 | `checklists/` に未チェックがあると人間に yes/no を聞いて止まる | **無人ループが固まる** |
 | 基準ごとの証拠を返さない | 司法に渡す**証拠の形が無い** |
+
+最後に自分で完了を検証する手順もあるが、これは良い自己レビューで、不採用の理由ではない
+（後ろに必ず司法を置くので、自己検証で工程が終わる作りでも実害は出ない）。
 
 成果物の形式（`tasks.md` のタスク ID・`[P]`・`[X]`）には従うので、`/speckit-analyze` や `/speckit-converge` は
 そのまま使える（`converge` は行政の自己点検として使い、完了の判定には使わない）。
