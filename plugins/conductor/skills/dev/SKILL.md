@@ -97,7 +97,7 @@ allowed-tools:
 | 入力の性質 | フェーズ | 招集先 |
 |---|---|---|
 | コード調査 / 既存挙動の把握だけ | explore | `feature-dev:code-explorer` を Task 直接起動 **@haiku** |
-| 機能追加 / バグ修正 / リファクタの依頼 | implement | Plan Mode 合意 → **目標契約を `./goals/<YYYYMMDD-slug>.md` に永続化(立法)** → 設計は `feature-dev:code-architect` Task **@opus** → 実装は **`dev-crew:implement`**(契約を渡す。実装本体は公式 feature-dev に委ねてよい)。行政は決定性の結果までを返し、合否は宣言しない |
+| 機能追加 / バグ修正 / リファクタの依頼 | implement | Plan Mode 合意 → **目標契約を `./goals/<YYYYMMDD-slug>.md` に永続化(立法)** → 設計は `feature-dev:code-architect` Task **@opus** → 実装は **`dev-crew:implement`**(契約を渡す。実装本体は公式 feature-dev に委ねてよい。`via: herdr` ならペインで。下の「実行方式」)。行政は決定性の結果までを返し、合否は宣言しない |
 | UI / 画面 / コンポーネントを伴う実装 | implement(FE) | 上記 ＋ `frontend-design`(UI変更で自動発火) |
 | 「レビューして」/ PR番号・URL | review | `/conductor:dev` が pr-review-toolkit 6サブエージェントを **Task 並列・model 上書き**で起動(＝証拠提供) ＋ 必要に応じ dev-crew:business-reviewer / dev-crew:domain-architect を並列 → 最後に **`review-judge:judge`(司法・判事)が束ねて単一判定**(下記レビュー招集ルール) |
 | 軽い整理・可読性改善だけ | refactor | `code-simplifier` を Task 直接起動 **@haiku** |
@@ -152,7 +152,8 @@ allowed-tools:
 上記6観点+business/domain は**証拠提供(書記)**。これらを統合してユーザーに最終提示
 するのは**`/conductor:dev` メインの自己採点ではなく、分離した `review-judge:judge`(司法)**:
 
-1. 6観点・business・domain の所見が揃ったら、Task で `review-judge:judge`(opus)を起動。
+1. 6観点・business・domain の所見が揃ったら、Task で `review-judge:judge`(opus)を起動
+   (`.claude/conductor.json` で `judge` が `via: herdr` なら、下の「実行方式」に従いペインで招集)。
    引数で渡すもの: **(a) 目標契約のパス** `./goals/<YYYYMMDD-slug>.md`(implement で
    永続化済みの SSOT。単発レビューでパス無しならレビュー基準をインラインで渡す fallback)、
    **(b) 差分**(`git diff` の範囲)、**(c) 証拠**(上記各観点の所見 + テスト/CI/lint の決定性結果)。
@@ -203,6 +204,24 @@ allowed-tools:
    `feature-dev:code-explorer`@haiku で文脈を先取り収集してから誘導する。
 3. feature-dev/pr-review の code-reviewer 系を回した後、追加で回すのは
    **domain / business 観点のみ**。コード品質の二重レビューはしない。
+
+## 実行方式(Task / herdr ペイン)
+
+行政(`dev-crew:implement`)と司法(`review-judge:judge`)は、Task の代わりに
+**herdr の隣のペインで動く別の AI コーディングツール**に担わせられる(判事を別ベンダーの
+モデルにする / 実装を目視して割り込む、のため)。書記は常に Task。
+
+1. 招集の直前に、対象リポジトリの `.claude/conductor.json` を Read する。
+   無い、または該当役割が `via: herdr` でなければ **Task(既定・上記のまま)**。
+2. `via: herdr` なら `${CLAUDE_PLUGIN_ROOT}/reference/herdr-backend.md` を Read し、
+   **その手順どおり**に招集する。前提(`HERDR_ENV=1`・`herdr`・指定ツールの存在・
+   対応している kind)が1つでも欠けたら、**理由を1行表示して Task にフォールバック**する。
+3. ペインの判事では「直せない」をツールの不在で強制できない。**判事の前後で作業ツリーの
+   スナップショットを取り、変わっていたら判定に関わらず `ESCALATE`**(手順書の「改ざん検出」)。
+   これを省いて判事をペインで動かさない。
+4. 判定行が読み取れなければ `RETRY` 扱い。PASS に倒さない。
+
+`loop-engine`(自律・cloud)はこの設定を読まない。herdr が無い環境では常に Task。
 
 ## Agent Teams(言及のみ)
 

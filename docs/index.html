@@ -506,7 +506,7 @@ footer {
         <div class="entry-body">
           開発の単一フロントドア＝<strong>指揮</strong>。フェーズを判定し、行政に実装させ、
           書記に証拠を出させ、<strong>司法に持ち込む</strong>。自分ではコードを書かず、判定も出さない。
-          三権のどこにも属さない。
+          三権のどこにも属さない。行政と司法は、任意で herdr の隣のペインに別の AI コーディングツールとして出せる。
           <div class="needs"><b>needs</b> — dev-crew / review-judge / feature-dev / pr-review-toolkit / commit-commands</div>
         </div>
       </div>
@@ -670,6 +670,8 @@ footer {
     <p class="roles-note">
       左が役、中央が担い手、<strong>右が「持たないもの」</strong>。分離を支えているのは右の列。
       指揮だけが三権のどこにも属さず、手動なら人間が、自律なら <code>loop-engine</code> がその席に座る。
+      行政と司法を herdr のペインで別ツールに担わせた場合、判事の右の列は「持たない」から
+      「禁止され、破れば検出される」に弱まる（下の決定の記録）。
     </p>
 
     <div class="court">
@@ -998,6 +1000,22 @@ footer {
         <code>general-purpose</code> に落とす場合、その保証は指示だけになるので判定コメントに明記させる。
         対象リポジトリに <code>judge.md</code> を置く案は採らなかった。ハーネスがプロジェクト空間に
         侵入し、<strong>行政の持ち物の中に司法が置かれる</strong>形になって、分離の主張と梱包が食い違う。
+      </dd>
+
+      <dt>判事を別ベンダーのツールで動かすときは、禁止ではなく事後検出で担保する</dt>
+      <dd>
+        <code>conductor:dev</code> は行政と司法を、Task の代わりに herdr の隣のペインで動く
+        別の AI コーディングツールに担わせられる（例: 判事を GitHub Copilot CLI に）。
+        <strong>書いたモデルと採点するモデルが同じだと、同じ盲点を両方が共有する</strong>ので、
+        判事の系統を変えることには独立性の上で実利がある。
+        代償は、ペインのツールから <code>Edit</code> / <code>Write</code> を取り上げきれないこと。
+        Copilot CLI の <code>--deny-tool write</code> はファイル編集ツールを止めるが、
+        <strong>シェル経由の書き込みは止めない</strong>（実測: 編集ツールでの作成は拒否、
+        <code>echo &gt; file</code> は成功）。判事はテストを走らせるのでシェルを外せない。
+        しかも同じ実測で、ツールは「両方阻止された」と報告しながら片方の成功も認めていた。
+        そこで保証の本体を<strong>判事の前後での作業ツリーの比較</strong>に置き、変わっていれば判定に
+        関わらず人間に上げる。書き込みを不可能にはできないが、<strong>書き込んだ判定が通ることはない</strong>。
+        この差を受け入れられない利用者のために、既定は Task のまま据え置いている。
       </dd>
 
       <dt>モデルの使い分けはプラグイン側に持つ</dt>

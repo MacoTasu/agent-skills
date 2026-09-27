@@ -94,6 +94,18 @@ loop-engine     自律   必須: dev-crew / review-judge
 行政が司法を呼べないのは、実装した主体が「これは軽微だ」と判定を回避できてしまうから。
 どちらも規約で禁じるのではなく、**権限を与えないことで構造的に強制している**。
 
+### 任意: 行政と司法を herdr のペインで動かす
+
+`conductor:dev` は、行政と司法を Task の代わりに [herdr](https://herdr.dev) の隣のペインで
+動く別の AI コーディングツールに担わせられる（例: 実装は Claude Code、判事は GitHub Copilot CLI）。
+判事を別ベンダーのモデルにすると、書いたモデルと採点するモデルが盲点を共有しなくなる。
+対象リポジトリの `.claude/conductor.json` で役割ごとに選ぶ。既定は Task のままで、herdr が無ければ自動で Task に戻る。
+
+**この場合、判事の分離は弱まる。** ペインのツールはシェル経由で書き込めるので、
+「直せない」を権限の不在では強制できない。代わりに判事の前後で作業ツリーを比較し、
+変わっていれば判定を無効にして人間へ上げる（禁止＋事後検出）。
+手順と制約は [`plugins/conductor/reference/herdr-backend.md`](plugins/conductor/reference/herdr-backend.md)。
+
 ## 設計方針
 
 - **1項目＝固定4フィールド**（観点 / なぜ危険か / どう検出するか / よくある間違った実装）。
