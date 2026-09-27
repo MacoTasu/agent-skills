@@ -490,11 +490,11 @@ footer {
           <div class="entry-meta">2 skills</div>
         </div>
         <div class="entry-body">
-          <strong>立法の支援</strong>。issue での議論を、実装根拠になる仕様まで持ち上げる。
+          <strong>立法の支援</strong>。issue での議論を、実装根拠になる spec-kit の仕様まで持ち上げる。
           <code>grill-issue</code> が曖昧な issue を質問攻めで詰め、<code>spec-draft</code> が
-          完了基準と検証コマンドつきの仕様を起草して PR にする。<strong>承認は必ず人間</strong>。
-          自律ループを回さなくても単体で使える。
-          <div class="needs"><b>needs</b> — grilling（外部・任意）</div>
+          spec-kit のコマンドで仕様を起草し、書いたテストの器が正しいかを流して確かめてから仕様の PR にする。
+          <strong>承認は必ず人間</strong>。自律ループを回さなくても単体で使える。
+          <div class="needs"><b>needs</b> — spec-kit（外部）/ grilling（外部・任意）</div>
         </div>
       </div>
 
@@ -504,8 +504,9 @@ footer {
           <div class="entry-meta">1 skill</div>
         </div>
         <div class="entry-body">
-          開発の単一フロントドア＝<strong>指揮</strong>。フェーズを判定し、行政に実装させ、
-          書記に証拠を出させ、<strong>司法に持ち込む</strong>。自分ではコードを書かず、判定も出さない。
+          開発の単一フロントドア＝<strong>指揮</strong>。<code>main</code> に常駐する<strong>親</strong>が
+          spec-kit で仕様を起草して仕様の PR を作り、承認された仕様を worktree の<strong>子</strong>に送り出す。
+          子は行政に実装させ、書記に証拠を出させ、<strong>司法に持ち込む</strong>。自分ではコードを書かず、判定も出さない。
           三権のどこにも属さない。行政と司法は、任意で herdr の隣のペインに別の AI コーディングツールとして出せる。
           <div class="needs"><b>needs</b> — dev-crew / review-judge / feature-dev / pr-review-toolkit / commit-commands</div>
         </div>
@@ -519,8 +520,9 @@ footer {
         <div class="entry-body">
           <strong>行政（実務）</strong>。契約に沿って実装し、ビルド・型・lint・テストの決定性証拠を
           揃えるところまで。<strong>司法を呼ぶ権限を持たず、合否も宣言しない</strong> —
-          証拠を揃えて指揮に返す。出荷・運用と書記の職能エージェントも同梱。
-          <div class="needs"><b>needs</b> — feature-dev のみ</div>
+          証拠を揃えて指揮に返す。spec-kit の仕様では <code>tasks.md</code> の順に自分で実装し、
+          <code>/speckit-implement</code> は使わない。出荷・運用と書記の職能エージェントも同梱。
+          <div class="needs"><b>needs</b> — feature-dev / spec-kit（仕様を契約にするとき）</div>
         </div>
       </div>
 
@@ -530,10 +532,9 @@ footer {
           <div class="entry-meta">1 skill · 1 command · 2 scripts</div>
         </div>
         <div class="entry-body">
-          人間が書いた仕様を起点に、拾い上げ→実装→司法検証→PR を回す自律ループ（HOTL）。
-          既定は<strong>報告のみ・副作用なし</strong>。実装まで進む設定でも
-          <strong>必ず PR で停止する</strong>——自動マージはしない。
-          <div class="needs"><b>needs</b> — dev-crew / review-judge</div>
+          人間が承認した spec-kit の仕様を起点に、拾い上げ→実装→司法検証→PR を回す自律ループ（HOTL）。
+          <code>loop-ready</code> の issue を実装まで進め、<strong>必ず PR で停止する</strong>——自動マージはしない。
+          <div class="needs"><b>needs</b> — dev-crew / review-judge / spec-kit（外部）</div>
         </div>
       </div>
     </div>
@@ -584,7 +585,8 @@ footer {
 
         <rect x="40" y="74" width="250" height="34" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
         <text x="54" y="96" class="svg-label">② 仕様を書く → PR</text>
-        <text x="306" y="96" class="svg-name">spec-intake:spec-draft</text>
+        <text x="306" y="96" class="svg-name">spec-kit</text>
+        <text x="372" y="96" class="svg-note">conductor の親か spec-draft が起草</text>
 
         <path d="M 165 110 L 165 134" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#fl-a)"></path>
         <text x="176" y="127" class="svg-role" font-size="12">人間がマージ＝承認</text>
@@ -595,7 +597,7 @@ footer {
 
         <rect x="40" y="172" width="250" height="34" rx="3" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></rect>
         <text x="54" y="194" class="svg-role" font-size="13">立法</text>
-        <text x="96" y="194" class="svg-name">goals/&lt;slug&gt;.md</text>
+        <text x="96" y="194" class="svg-name">specs/&lt;機能&gt;/</text>
 
         <path d="M 165 208 L 165 230" stroke="var(--rule-strong)" stroke-width="1.25" fill="none" marker-end="url(#fl)"></path>
 
@@ -637,6 +639,8 @@ footer {
         自律で回していても、この2点は必ず人間を通る。<code>③ Spec:</code> コメントと
         <code>loop-ready</code> ラベルの付与も人間が行う——仕様が main にマージされる前に
         ラベルが付くと、ループが存在しない仕様を指して落ちるため、代行させない。
+        手動で進めるときは、<code>main</code> の親が仕様を起草し、マージ後に worktree の子（同じ
+        <code>conductor:dev</code>）へ送り出す。指揮の席に座るのはその子。
       </p>
     </div>
   </section>
@@ -651,7 +655,7 @@ footer {
 
     <div class="roles">
       <div class="role-row"><div class="role-name">立法</div>
-        <div class="role-who">人間が承認した <code>goals/&lt;slug&gt;.md</code>（起草は <code>spec-intake</code> が支援）</div>
+        <div class="role-who">人間が承認した spec-kit の仕様 <code>specs/&lt;機能&gt;/</code> と constitution（起草は <code>conductor</code> の親か <code>spec-intake</code>）</div>
         <div class="role-lacks">ボットは<strong>承認しない</strong>。書き換えもしない</div></div>
       <div class="role-row"><div class="role-name">行政</div>
         <div class="role-who"><code>dev-crew:implement</code>（＋公式 feature-dev）</div>
@@ -830,10 +834,11 @@ footer {
 
     <h3 style="margin-top:2.5rem">依存関係</h3>
     <div class="dep"><b>spec-intake</b>  立法支援
-  <span class="opt">依存</span>  grilling（外部・任意）のみ
+  <span class="req">必須</span>  spec-kit（外部）
+  <span class="opt">任意</span>  grilling（外部）
 
 <b>dev-crew</b>     行政
-  <span class="opt">依存</span>  公式 feature-dev のみ
+  <span class="opt">依存</span>  公式 feature-dev ／ spec-kit（仕様を契約にするとき）
 
 <b>review-judge</b> 司法
   <span class="opt">依存</span>  なし
@@ -841,15 +846,17 @@ footer {
 <b>conductor</b>    指揮
   <span class="req">必須</span>  dev-crew / review-judge ＋ 公式 pr-review-toolkit / commit-commands
   <span class="opt">任意</span>  frontend-design / code-simplifier / saas-review / architecture-review
+            spec-kit（仕様を作るとき・外部）／ herdr（並行実行・外部）
 
 <b>loop-engine</b>  自律
-  <span class="req">必須</span>  dev-crew / review-judge（自律モードでは loop-engine が指揮の席に座る）</div>
+  <span class="req">必須</span>  dev-crew / review-judge / spec-kit（外部。自律モードでは loop-engine が指揮の席に座る）</div>
     <p style="margin-top:1.25rem; font-size:.9rem; color:var(--muted)">
       <strong>行政から司法への矢印が無いのが要点。</strong>実装した主体は、自分の成果を判事に
       持ち込む権限を持たない。「これは軽微だから判定は不要」という判断自体が判定であり、
       行政には属さない。なおプラグインの仕様には依存を宣言する仕組みが無いため、
       <code>conductor</code> は招集の前に前提プラグインの有無を自分で検査し、
-      欠けていれば導入を促して止まる。
+      欠けていれば導入を促して止まる。外部の spec-kit は同梱せず、使うリポジトリで
+      <code>specify init</code> して <code>.specify/</code> と <code>.claude/skills/speckit-*</code> をコミットする。
     </p>
   </section>
 
@@ -1018,6 +1025,55 @@ footer {
         同じ理由で、ペインのツールの報告は<strong>手がかりであって根拠ではない</strong>。変えたものは
         指揮が <code>git diff</code> で、テストの緑・赤は判事が自分で実行して取り直す。
         この差を受け入れられない利用者のために、既定は Task のまま据え置いている。
+      </dd>
+
+      <dt>立法を自前の goals/ から spec-kit に移し、そのレールに乗る</dt>
+      <dd>
+        以前は仕様を自前の形式（<code>goals/&lt;slug&gt;.md</code>）で書き、「今の振る舞い」を別の
+        <code>docs/specs/</code> に持って、実装 PR で追従させていた。これを
+        <a href="https://github.com/github/spec-kit">spec-kit</a> に置き換えた。
+        途中で「spec-kit で起草して <code>goals/</code> に翻訳する」案も検討したが、
+        <strong>正典が2つになり、翻訳が必ずずれる</strong>ので採らなかった。使うなら形式ごと乗る。
+        仕様の持ち方は spec-kit の <strong>Living Spec</strong>（<code>spec.md</code> が契約で、振る舞いを変えるなら
+        先に <code>spec.md</code> を直す）を選び、<strong>仕様を先に PR にして人間がマージしてから実装する</strong>。
+        これで手動も自律ループも同じ流れになり、承認済みの仕様が <code>main</code> に並んで「着手待ちの一覧」になる。
+        spec-kit ではテストが任意なので、constitution に「各要件は自動テストで確かめる（MUST）」を入れ、
+        判事はテストの無い要件を RETRY にする。番号はタイムスタンプ方式にして、並行する仕様の PR の衝突を避ける。
+        小さな変更まで仕様にすると割に合わないので、それは仕様を作らず直接進める。
+        <code>goals/</code> との互換は残さず一度に移した。構築中の <code>0.1.0</code> で、途中の状態を使う利用者がいないため。
+      </dd>
+
+      <dt>spec-kit の実装コマンド /speckit-implement は使わない</dt>
+      <dd>
+        spec-kit に乗ると決めた以上、実装も <code>/speckit-implement</code> に任せるのが素直に見える。
+        だが実物を読むと、このリポジトリの芯である「実装した主体に合否を決めさせない」と正面からぶつかる。
+        <strong>① 最後に自分で完了を検証して報告する</strong>——自己採点そのもの。
+        <strong>② 技術スタックを検出して <code>.gitignore</code> などの ignore ファイルを毎回作成・追記する</strong>——
+        タスクと関係ない差分が毎回混ざり、判事にスコープ逸脱と判定されうる。
+        <strong>③ <code>checklists/</code> に未チェックがあると人間に yes/no を聞いて止まる</strong>——無人ループが固まる。
+        <strong>④ 要件ごとの証拠を返さない</strong>——判事に渡す証拠の形が無い。
+        そこで<strong>乗るのは成果物の形式（<code>spec.md</code>・<code>plan.md</code>・<code>tasks.md</code>、タスク ID、
+        <code>[P]</code>、<code>[X]</code>）で、実装コマンドには乗らない</strong>。実装は <code>dev-crew:implement</code> が
+        <code>tasks.md</code> をテスト先行の順に読んで行い、<code>[X]</code> も付ける。形式が共通なので
+        <code>/speckit-analyze</code> や <code>/speckit-converge</code>（作り残しを <code>tasks.md</code> に追記するだけの点検）は
+        そのまま使える。<code>converge</code> の「Converged」は行政の自己点検として扱い、完了の判定には使わない。
+        同じ理由で、spec-kit 自身の工程エンジン（<code>workflow.yml</code>）も最後が <code>/speckit-implement</code> で
+        判事がいないので使わず、工程は指揮が持つ。拡張フック（<code>after_implement</code>）に判事をつなぐ案も、
+        実装したエージェント自身がフックを実行する＝行政が司法を呼ぶ形になるので採らなかった。
+      </dd>
+
+      <dt>指揮を親子に分け、親は main、子は worktree に置く</dt>
+      <dd>
+        行政を herdr のペインに出すと、実装している間も人間のペインは空く。そこで人間が作業を続けると、
+        同じチェックアウトの上で実装とぶつかる。<strong>ペインに出した時点で作業は並列になる</strong>ので、
+        実装は機能ごとの worktree で行う。当初は1つの指揮が本体に残って worktree の実装を審査させる形を考えたが、
+        判事と改ざん検出が実装の無い場所を見てしまい、<strong>誤った判定が警告なしに通る</strong>穴になる。
+        また、複数のタスクのレビュー報告を1つの指揮が抱えると文脈がすぐ埋まる。
+        そこで指揮を2段にした。<strong>親</strong>は <code>main</code> に常駐して仕様の起草と送り出しだけを行い、
+        <strong>子</strong>（同じ <code>conductor:dev</code>）が worktree の中で行政・書記・司法・PR を回す。
+        判事を呼ぶのは子であって実装者ではないので、「行政は司法を呼べない」は保たれる。
+        人間は子に直接指示してよいが、仕様の範囲が変わる指示では子は止まり、先に仕様の PR を求める
+        （子が <code>spec.md</code> を変えれば判事が ESCALATE する）。
       </dd>
 
       <dt>モデルの使い分けはプラグイン側に持つ</dt>
