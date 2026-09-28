@@ -39,7 +39,7 @@
     },
     {
       "name": "dev-crew",
-      "description": "行政(実務)の一式。契約に沿って実装し決定性証拠を揃える implement、出荷/運用の create-issue・release-note、書記の職能エージェント。判定は出さず、証拠を揃えて指揮に返す。",
+      "description": "行政(実務)の一式。契約に沿って実装し決定性証拠を揃える implement、出荷/運用の create-issue、書記の職能エージェント。判定は出さず、証拠を揃えて指揮に返す。",
       "source": "./plugins/dev-crew",
       "category": "workflow"
     },
