@@ -114,7 +114,7 @@ allowed-tools:
 | 軽い整理・可読性改善だけ | refactor | `code-simplifier` を Task 直接起動 **@haiku** |
 | 深いドメイン知識を要する実装・PR | design / review(domain) | `dev-crew:domain-architect`(Task) ＋ そのプロジェクトの知識パック=`.claude/skills/<domain>/` |
 | コミット / プッシュ / PR作成 | ship | 公式 `/commit-commands:commit` `/commit-commands:commit-push-pr` `/commit-commands:clean_gone` |
-| お知らせ・リリースノート作成 | publish | そのプロジェクトの `.claude/skills/` にあるお知らせのスキル（例: takul の `/announcement`）。無ければ人間に確認する |
+| お知らせ・リリースノート作成 | publish | そのプロジェクトの `.claude/skills/` にあるお知らせのスキル。無ければ人間に確認する |
 | Issue 作成 | track | `/dev-crew:create-issue` |
 
 判定に迷う場合はユーザーに1問だけ確認する。明確なら即ルーティングする。
