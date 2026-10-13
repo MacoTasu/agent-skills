@@ -22,6 +22,7 @@ AI エージェント向けのレビュー知識パック集。
 | `dev-crew` | **行政（実務）**。契約に沿って実装し、ビルド・型・lint・テストの決定性証拠を揃えるところまで。判定は出さず、証拠を揃えて指揮に返す。出荷・運用と書記の職能エージェントも同梱 |
 | `loop-engine` | 人間が承認した spec-kit の仕様を起点に、拾い上げ→実装→司法検証→PR を回す自律ループ（HOTL）。必ず PR で停止する |
 | `spec-page` | 説明書・仕様書・設計文書を HTML 1枚にまとめる。一覧ではなく**構造と決定の理由**を伝える形式に落とす |
+| `calendar-tasks` | **Google カレンダー 1 本でタスクを管理**する窓口と夜間処理。タスクは接頭辞付きの終日予定、毎晩 未完了を次の営業日へ繰り越し、慢性的な繰越は保留にして月末に集める。データは Google カレンダーの中だけ |
 
 レビュー観点の2つの境界は「**マルチテナントで課金して継続提供するという事業形態に固有か**」で
 引いている。SaaS のバックエンドを触る PR では両方が効く。
@@ -40,6 +41,9 @@ AI エージェント向けのレビュー知識パック集。
 
 # ドキュメント。依存ゼロ
 /plugin install spec-page@macotasu-agent-skills
+
+# 個人の運用。依存は Google カレンダー連携（夜間処理を自動で回すなら cloud routine も）
+/plugin install calendar-tasks@macotasu-agent-skills
 ```
 
 必要なものだけ入れればよい。**レビュー観点の2つは依存ゼロで単体で使える。**
@@ -60,6 +64,8 @@ conductor       指揮   必須: dev-crew / review-judge
 
 loop-engine     自律   必須: dev-crew / review-judge ／ spec-kit（外部）
                        （自律モードでは loop-engine 自身が指揮の席に座る）
+
+calendar-tasks  運用   依存: Google カレンダー連携（claude.ai コネクタ）／ cloud routine（夜間処理を自動で回すとき）
 ```
 
 外部の [spec-kit](https://github.com/github/spec-kit) は**同梱しない**。使うリポジトリで
