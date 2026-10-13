@@ -54,6 +54,12 @@
       "description": "説明書・仕様書・設計文書を HTML 1枚にまとめる。一覧ではなく構造と決定の理由を伝える形式に落とし、配信環境で初めて出る欠陥を公開前チェックで潰す。Artifact と GitHub Pages の両方に対応。",
       "source": "./plugins/spec-page",
       "category": "documentation"
+    },
+    {
+      "name": "calendar-tasks",
+      "description": "Google カレンダー 1 本でタスクを管理する窓口と夜間処理。タスクは接頭辞付きの終日予定（☐ / ☑ / ⏸ / ✖）、属性は description、設定はカレンダーの説明欄。毎晩 未完了を次の営業日へ繰り越し、慢性的な繰越は保留にして月末に集める。通知なし。データは Google カレンダーの中だけ。前提: Google カレンダー連携。",
+      "source": "./plugins/calendar-tasks",
+      "category": "workflow"
     }
   ]
 }
