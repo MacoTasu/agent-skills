@@ -117,6 +117,14 @@ calendar-tasks  運用   依存: Google カレンダー連携（claude.ai コネ
 変わっていれば判定を無効にして人間へ上げる（禁止＋事後検出）。
 手順と制約は [`plugins/conductor/reference/herdr-backend.md`](plugins/conductor/reference/herdr-backend.md)。
 
+**判事を別ベンダーにしたいだけなら、Codex CLI を使う（ペイン不要）。** `.claude/conductor.json` で
+`judge` を `via: codex` にすると、判事を `codex exec -s read-only` で動かす。OS のサンドボックスが
+シェル経由の書き込みも遮断するので、「直せない」が再び構造的に強制される（事後検出も保険として残す）。
+read-only では書き込み（キャッシュ・ビルド成果物・`$TMPDIR`）やネットワークを要するテストは失敗しうるので、
+決定性チェックは指揮が実行して生の出力を判事に渡す。
+`scribes` に `codex-review` を足すと、`codex exec review` の所見も書記として証拠に加わる。
+手順と制約は [`plugins/conductor/reference/codex-backend.md`](plugins/conductor/reference/codex-backend.md)。
+
 ## spec-kit との分担
 
 立法（仕様）には [spec-kit](https://github.com/github/spec-kit) を使い、そのレールに乗る。

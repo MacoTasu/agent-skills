@@ -158,13 +158,21 @@ allowed-tools:
 - 全観点を毎回回す必要はない。差分の性質に無関係な観点は省きさらにコストを抑える
   (型変更なしなら type-design-analyzer を省く 等)。
 
+### 別ベンダーの所見(任意)
+
+対象リポジトリの `.claude/conductor.json` の `scribes` に `codex-review` があれば、
+`${CLAUDE_PLUGIN_ROOT}/reference/codex-backend.md`「書記の手順」で `codex exec review` の所見を取得し、
+証拠(c)に含める(位置づけは公式6観点と同じ書記)。前提(`codex` の存在・認証)が欠けるか失敗したら
+「Codex レビュー: 未取得(理由)」と明記して進む(判事を止めない)。
+
 ### 司法ゲート(判事・拘束力ある最終判定)
 
 上記6観点+business/domain は**証拠提供(書記)**。これらを統合してユーザーに最終提示
 するのは**`/conductor:dev` メインの自己採点ではなく、分離した `review-judge:judge`(司法)**:
 
 1. 6観点・business・domain の所見が揃ったら、Task で `review-judge:judge`(opus)を起動
-   (`.claude/conductor.json` で `judge` が `via: herdr` なら、下の「実行方式」に従いペインで招集)。
+   (`.claude/conductor.json` で `judge` が `via: herdr` / `via: codex` なら、下の「実行方式」に従い
+   ペイン / Codex で招集)。
    引数で渡すもの: **(a) 契約** — spec-kit の機能ディレクトリのパス `specs/<機能>/`、または
    インライン契約(Plan Mode で合意した完了基準と検証方法。単発レビューならレビュー基準)、
    **(b) 差分**(`git diff` の範囲)、**(c) 証拠**(上記各観点の所見 + テスト/CI/lint の決定性結果)。
@@ -216,26 +224,40 @@ allowed-tools:
 3. feature-dev/pr-review の code-reviewer 系を回した後、追加で回すのは
    **domain / business 観点のみ**。コード品質の二重レビューはしない。
 
-## 実行方式(Task / herdr ペイン)
+## 実行方式(Task / herdr ペイン / Codex)
+
+判事を別ベンダーにする既定の手段は Codex(ペイン不要)。herdr は実装を目視したいときに使う。
 
 行政(`dev-crew:implement`)と司法(`review-judge:judge`)は、Task の代わりに
 **herdr の隣のペインで動く別の AI コーディングツール**に担わせられる(判事を別ベンダーの
-モデルにする / 実装を目視して割り込む、のため)。書記は常に Task。
+モデルにする / 実装を目視して割り込む、のため)。司法はさらに **Codex CLI の `codex exec`**
+(OS サンドボックスで read-only)にも担わせられる。書記は Task(加えて任意で `codex-review`。
+レビュー招集ルール「別ベンダーの所見」)。
 
 1. 招集の直前に、対象リポジトリの `.claude/conductor.json` を Read する。
-   無い、または該当役割が `via: herdr` でなければ **Task(既定・上記のまま)**。
+   無い、または該当役割の `via` が `herdr` / `codex` のどちらでもなければ **Task(既定・上記のまま)**。
 2. `via: herdr` なら `${CLAUDE_PLUGIN_ROOT}/reference/herdr-backend.md` を Read し、
    **その手順どおり**に招集する。前提(`HERDR_ENV=1`・`herdr`・指定ツールの存在・
    対応している kind)が1つでも欠けたら、**理由を1行表示して Task にフォールバック**する。
+   `via: codex`(judge のみ)なら `${CLAUDE_PLUGIN_ROOT}/reference/codex-backend.md` を Read し、
+   **その手順どおり**に招集する。前提(`codex` の存在・`codex login status`・`judge.md`・
+   main 以外のブランチ)が1つでも欠けたら、**理由を1行表示して Task にフォールバック**する。
 3. ペインの判事では「直せない」をツールの不在で強制できない。**判事の前後で作業ツリーの
    スナップショットを取り、変わっていたら判定に関わらず `ESCALATE`**(手順書の「改ざん検出」)。
-   これを省いて判事をペインで動かさない。
+   これを省いて判事をペインで動かさない。Codex の判事は read-only のサンドボックスで書けないが、
+   保険として**同じ改ざん検出を行う**。
 4. 結果は一時ディレクトリの `result.md` で受け取る(画面の読み取りは予備)。
    判定行が読み取れなければ `RETRY` 扱い。PASS に倒さない。
+   Codex の判事は `result.json`(`--output-schema` で固定した JSON)で受け取る。無い・schema 不適合は
+   `RETRY`、利用上限・認証切れは判事が動いていないので Task にフォールバック。
 5. **ペインの報告は参考情報で、事実は取り直す。** 変えたものは指揮が `git diff` で確かめ、
    テストの緑・赤は判事が自分で実行して決める。行政の「緑でした」を判定の根拠にしない。
+   **Codex の判事は read-only で動き、書き込み(キャッシュ・ビルド成果物・$TMPDIR)やネットワークを要する
+   テストは失敗しうるので、決定性チェックは指揮が実行し、生の出力を証拠として渡す**(判定は判事が出す。
+   指揮は緑・赤を解釈しない)。spec-kit 契約では、基準 ID からテストを対応づけて特定し基準ごとに実行する
+   (`codex-backend.md`「判事の手順」1。見つからない基準は「テストなし」として渡す)。
 
-`loop-engine`(自律・cloud)はこの設定を読まない。herdr が無い環境では常に Task。
+`loop-engine`(自律・cloud)はこの設定を読まない。herdr / Codex が無い環境では常に Task。
 
 ## Agent Teams(言及のみ)
 

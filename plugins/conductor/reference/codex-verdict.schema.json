@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["verdict", "report"],
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": ["PASS", "REJECT", "RETRY", "ESCALATE"]
+    },
+    "report": {
+      "type": "string",
+      "description": "judge.md の出力形式の本文（基準↔証拠の表、理由）"
+    }
+  }
+}
