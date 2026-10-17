@@ -189,8 +189,16 @@ herdr agent prompt child-<名前> "/conductor:dev specs/<機能>/"
    （worktree の upstream が `origin/main` になっている環境で `main` へ push しないため、push 先を明示する）。
    本文には種別ごとの記載（`Spec: specs/<機能>/`、または「契約」節）と「⚠️ 要注意の変更」節（`loop-engine` 同梱
    `autonomy-gates.md` の書式）を入れ、司法の判定出力を `gh pr comment` で添付する。**マージはしない。**
-5. 終わったら人間（と親）に PR のリンクを伝える。worktree の後始末はマージ後に人間が
-   `/commit-commands:clean_gone` で行う。
+5. **retro（非ブロッキング）** — PR の URL が決まったら、`dev-crew:retro` を Task **@sonnet** で招集し、次を渡す:
+   PR 番号、`trigger=pr-created`、**司法の全ラウンドの判定出力**（1 ラウンド目から最終まで。最終だけでは差し戻しの中身が消える）、
+   **契約に無かった書記の所見**、**人間の介入**（契約の合意後〜PR 作成までの人間の発言を**引用（`>`）で**。
+   許可プロンプトの承認は含めない。契約の合意後〜PR 作成までに人間の発言が無かったときは「介入: なし」と明示して渡す。
+   引用できないときだけ「不足」と書く）。
+   retro は PR コメントと `retro` issue を書くだけで、判定も PR 作成もしない（`dev-crew` 同梱 `agents/retro.md`）。
+   失敗したら「Retro: 未取得（理由）」の 1 行を報告に添えるだけで、**PR も報告も止めない**。
+6. 終わったら人間（と親）に PR のリンクを伝える（retro のコメント URL か「Retro: 未取得（理由）」も添える）。
+   worktree の後始末はマージ後に人間が `/commit-commands:clean_gone` で行う。
+   マージ後の振り返りは、人間が `/dev-crew:retro <PR番号>` で別に積む。
 
 ## 人間が子に直接指示するとき
 
