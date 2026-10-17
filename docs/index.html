@@ -504,8 +504,8 @@ footer {
           <div class="entry-meta">1 skill</div>
         </div>
         <div class="entry-body">
-          開発の単一フロントドア＝<strong>指揮</strong>。<code>main</code> に常駐する<strong>親</strong>が
-          spec-kit で仕様を起草して仕様の PR を作り、承認された仕様を worktree の<strong>子</strong>に送り出す。
+          開発の単一フロントドア＝<strong>指揮</strong>。<code>main</code> に常駐する<strong>親</strong>は
+          依頼を分類して worktree の<strong>子</strong>に送り出し、子が仕様の起草、または Plan Mode 合意→実装→書記→司法→PR を回す。
           子は行政に実装させ、書記に証拠を出させ、<strong>司法に持ち込む</strong>。自分ではコードを書かず、判定も出さない。
           三権のどこにも属さない。行政と司法は、任意で herdr の隣のペインに別の AI コーディングツールとして出せる。
           <div class="needs"><b>needs</b> — dev-crew / review-judge / feature-dev / pr-review-toolkit / commit-commands</div>
@@ -603,7 +603,7 @@ footer {
         <rect x="40" y="74" width="250" height="34" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
         <text x="54" y="96" class="svg-label">② 仕様を書く → PR</text>
         <text x="306" y="96" class="svg-name">spec-kit</text>
-        <text x="372" y="96" class="svg-note">conductor の親か spec-draft が起草</text>
+        <text x="372" y="96" class="svg-note">conductor の子か spec-draft が起草</text>
 
         <path d="M 165 110 L 165 134" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#fl-a)"></path>
         <text x="176" y="127" class="svg-role" font-size="12">人間がマージ＝承認</text>
@@ -656,8 +656,9 @@ footer {
         自律で回していても、この2点は必ず人間を通る。<code>③ Spec:</code> コメントと
         <code>loop-ready</code> ラベルの付与も人間が行う——仕様が main にマージされる前に
         ラベルが付くと、ループが存在しない仕様を指して落ちるため、代行させない。
-        手動で進めるときは、<code>main</code> の親が仕様を起草し、マージ後に worktree の子（同じ
-        <code>conductor:dev</code>）へ送り出す。指揮の席に座るのはその子。
+        手動で進めるときは、<code>main</code> の親は依頼を分類して worktree の子（同じ
+        <code>conductor:dev</code>）に送り出し、子が仕様の起草、または Plan Mode 合意→実装→書記→司法→PR を回す。
+        仕様の起草も実装も、指揮の席に座るのはその子。
       </p>
     </div>
   </section>
@@ -672,7 +673,7 @@ footer {
 
     <div class="roles">
       <div class="role-row"><div class="role-name">立法</div>
-        <div class="role-who">人間が承認した spec-kit の仕様 <code>specs/&lt;機能&gt;/</code> と constitution（起草は <code>conductor</code> の親か <code>spec-intake</code>）</div>
+        <div class="role-who">人間が承認した spec-kit の仕様 <code>specs/&lt;機能&gt;/</code> と constitution（起草は <code>conductor</code> の親が送り出す子（<code>spec-&lt;名前&gt;</code>）か <code>spec-intake</code>）</div>
         <div class="role-lacks">ボットは<strong>承認しない</strong>。書き換えもしない</div></div>
       <div class="role-row"><div class="role-name">行政</div>
         <div class="role-who"><code>dev-crew:implement</code>（＋公式 feature-dev）。自己レビューまでが仕事</div>
@@ -1170,6 +1171,17 @@ footer {
         判事を呼ぶのは子であって実装者ではないので、「行政は司法を呼べない」は保たれる。
         人間は子に直接指示してよいが、仕様の範囲が変わる指示では子は止まり、先に仕様の PR を求める
         （子が <code>spec.md</code> を変えれば判事が ESCALATE する）。
+      </dd>
+
+      <dt>送り出しの条件を「仕様があるか」から「差分が発生するか」に変え、仕様の起草も子に出した</dt>
+      <dd>
+        当初は「spec-kit の仕様 PR がマージ済み」のときだけ子に送り出し、仕様を作らない小さな変更は親子に分けずに進めていた。
+        だが日常の変更の多くは小さな変更なので、<strong>条件が狭すぎて pane が一度も出ない</strong>まま、全部が親の手元に落ちていた。
+        また仕様の起草は、親が <code>main</code> を離れて仕様用のブランチに移り、spec-kit の長い対話で親の画面を占有していた。
+        これは「親は <code>main</code> から動かない」と矛盾する。
+        そこで送り出す条件を<strong>差分が発生するか</strong>にした。親は依頼の分類・spec-kit かインラインかの1問・送り出し・
+        子の様子の把握だけを行い、仕様の起草もインライン契約の Plan Mode 合意も、子が自分の pane で人間と行う。
+        同時に動かす数は pane 4（親1＋子3）・worktree 3 に抑える。人間が並行して目で追い、割り込める数に揃えるため。
       </dd>
 
       <dt>モデルの使い分けはプラグイン側に持つ</dt>

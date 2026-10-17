@@ -6,9 +6,8 @@ description: |
   (feature-dev / pr-review-toolkit / frontend-design / commit-commands / code-simplifier)と
   カスタム職能サブエージェント(dev-crew:business-reviewer / dev-crew:domain-architect)を Task で
   並列招集・委譲する。自分でコードは書かず、指揮・判断・合意形成・並列調整に徹する。
-  main に常駐する「親」は spec-kit で仕様を起草して仕様の PR を作り、承認された仕様を
-  worktree の「子」に送り出す。子は /conductor:dev specs/<機能>/ で実装→書記→司法→PR を回す。
-  小さな変更は仕様を作らず Plan Mode の合意(インライン契約)で直接進める。
+  main に常駐する「親」は依頼を分類して worktree の「子」に送り出し、自分の画面を空けておく。
+  子が仕様の起草、または Plan Mode 合意→実装→書記→司法→PR を回す。親は main を離れない。
 disable-model-invocation: false
 allowed-tools:
   - Task
@@ -46,17 +45,23 @@ allowed-tools:
 ## 大原則(CLAUDE.md と一体)
 
 - **Plan Mode 合意必須** — 実装系は設計を提示しユーザー承認を得るまで1行も書かない。
+  合意＝Plan Mode(インライン契約)または承認済み仕様のマージ(このときは Plan Mode を省く)。
+  合意を取るのは子(worktree の pane)。親は Plan Mode に入らず、依頼を子に送り出す。
 - **立法(契約)は2種類** — 司法が採点する正典(SSOT)は次のどちらか。
   - **spec-kit の機能ディレクトリ** `specs/<タイムスタンプ-名前>/` … 機能追加・振る舞いの変更。
     **仕様を先に PR にし、人間のマージで承認**してから実装する(Living Spec: `spec.md` が契約で、
     振る舞いを変えるなら先に `spec.md` を直す)。実装 PR は `spec.md`・constitution を変えない。
   - **インライン契約** … 仕様を作らない小さな変更(typo・1箇所のバグ修正など)。Plan Mode で合意した
-    完了基準に**検証方法(実行コマンド)を併記**し、招集時に司法へそのまま渡す。ファイルには残さない。
+    完了基準に**検証方法(実行コマンド)を併記**し、招集時に司法へそのまま渡す。リポジトリのファイルには残さない
+    (記録は PR 本文の「契約」節だけ)。
   どちらに当たるか迷ったら人間に1問だけ聞く。
 - **親は main、子は worktree** — 親(このスキルを main で起動したもの)は `main` から動かず、
-  仕様の起草と送り出しに徹する。実装は機能ごとの worktree で動く子が担う。手順は
-  `${CLAUDE_PLUGIN_ROOT}/reference/parent-child.md`。herdr が無い環境では、子を人間に起動してもらうか、
-  従来どおり現在のチェックアウトでブランチを切って1件ずつ進める。
+  依頼の分類・spec-kit かインラインかの1問・送り出し・子の様子の把握に徹する。送り出す条件は
+  **差分が発生するか**: 仕様の起草も、インライン契約の Plan Mode 合意と実装も、承認済み仕様の実装も、
+  仕事ごとの worktree で動く子が担う(差分の無い調査・既存 PR のレビューは親が Task で扱う)。
+  上限は pane 4(親1＋子3)・並行 worktree 3。手順は `${CLAUDE_PLUGIN_ROOT}/reference/parent-child.md`。
+  herdr が無い環境では、親が worktree と依頼ファイルまでを作って子の起動を人間に案内し、止まる
+  (人間が明示したときだけ、親が現在のチェックアウトでブランチを切って1件進める。`parent-child.md`「herdr が無い場合」)。
 - **ブランチ分離** — 実装はブランチ(または worktree)の上で。`main` に直接コミットしない。
 - **DRY / KISS / YAGNI** — 公式で足りるものは公式へ委譲。欠ける職能(ビジネス/ドメイン/
   司法)だけ自前。指揮自身はコードを書かない。
@@ -105,10 +110,12 @@ allowed-tools:
 | 入力の性質 | フェーズ | 招集先 |
 |---|---|---|
 | コード調査 / 既存挙動の把握だけ | explore | `feature-dev:code-explorer` を Task 直接起動 **@haiku** |
-| 機能追加 / 振る舞いの変更の依頼(main 上) | specify | **親**: spec-kit で仕様を起草し仕様の PR を作る(`parent-child.md`「仕様の起草」)。承認(マージ)は人間 |
-| 「<仕様> を実装して」/ マージ済み仕様の送り出し(main 上) | dispatch | **親**: worktree を切って子を起動する(`parent-child.md`「送り出し」) |
+| 機能追加 / 振る舞いの変更の依頼(main 上) | dispatch(起草) | **親**: 依頼ファイルを書き、`spec-<名前>` を送り出す(`parent-child.md`「送り出し」入口 A)。起草と仕様の PR は子。承認(マージ)は人間 |
+| 小さな変更(typo・1箇所のバグ修正・軽いリファクタ)(main 上) | dispatch(インライン) | **親**: 依頼ファイルを書き、`child-<名前>` を送り出す(入口 B。Plan Mode は子) |
+| 「<仕様> を実装して」/ マージ済み仕様の送り出し(main 上) | dispatch | **親**: worktree を切って `child-<名前>` を起動する(入口 C) |
+| `/conductor:dev <依頼ファイル>`(worktree 上) | specify / implement(子) | **子**: 依頼ファイルの種別により、spec-kit で仕様を起草して仕様の PR を作る(マージも実装もしない)、または Plan Mode 合意(＝インライン契約。各基準に検証方法を併記) → 設計が要れば `feature-dev:code-architect` Task **@opus** → 実装は **`dev-crew:implement`**(インライン契約を渡す) → 書記 → 司法 → PR(`parent-child.md`「子の手順」) |
 | `/conductor:dev specs/<機能>/`(機能ブランチ・worktree 上) | implement(子) | **子**: 仕様は承認済みなので Plan Mode は省く → 実装は **`dev-crew:implement`**(契約=機能ディレクトリ。`via: herdr` ならペイン) → 書記 → 司法 → PR(`parent-child.md`「子の手順」) |
-| 小さな変更(typo・1箇所のバグ修正・軽いリファクタ) | implement(直接) | Plan Mode 合意(＝インライン契約。各基準に検証方法を併記) → 設計が要れば `feature-dev:code-architect` Task **@opus** → 実装は **`dev-crew:implement`**(インライン契約を渡す) → 書記 → 司法。行政は決定性の結果までを返し、合否は宣言しない |
+| herdr が無く、人間が現在のチェックアウトで進めるよう明示した | implement(直接) | 親が `parent-child.md`「herdr が無い場合」の例外どおりブランチを切り、「子の手順」を1件だけ自分で進める。行政は決定性の結果までを返し、合否は宣言しない |
 | UI / 画面 / コンポーネントを伴う実装 | implement(FE) | 上記 ＋ `frontend-design`(UI変更で自動発火) |
 | 「レビューして」/ PR番号・URL | review | `/conductor:dev` が pr-review-toolkit 6サブエージェントを **Task 並列・model 上書き**で起動(＝証拠提供) ＋ 必要に応じ dev-crew:business-reviewer / dev-crew:domain-architect を並列 → 最後に **`review-judge:judge`(司法・判事)が束ねて単一判定**(下記レビュー招集ルール) |
 | 軽い整理・可読性改善だけ | refactor | `code-simplifier` を Task 直接起動 **@haiku** |
