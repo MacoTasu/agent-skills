@@ -142,23 +142,27 @@ herdr agent prompt child-<名前> "/conductor:dev specs/<機能>/"
 ### マージ後の retro の掃き出し（親）
 
 マージ後の振り返りを打ち忘れて、レビューでの指摘という一番大きな学びが消えないように、親が**起動時と、子の様子の把握のたびに**掃き出す。
-候補は「`trigger: pr-created` の retro コメントがあり、`trigger: post-merge` の retro コメントが無いマージ済み PR」:
+候補は「`trigger: pr-created` の retro コメントがあり、`trigger: post-merge` の retro コメントが無いマージ済み PR」。
+照合は ```` ```retro ```` ブロックの中だけにする（本文の引用で外れないように）:
 
 ```bash
-gh pr list --state merged --limit 30 --json number,comments --jq '[.[] | select(any(.comments[]; .body | contains("trigger: pr-created")) and (any(.comments[]; .body | contains("trigger: post-merge")) | not)) | .number]'
+gh pr list --state merged --limit 30 --json number,comments --jq '[.[] | select(any(.comments[]; .body | test("```retro[^`]*trigger: pr-created")) and (any(.comments[]; .body | test("```retro[^`]*trigger: post-merge")) | not)) | .number] | sort'
 ```
 
 - pr-created の retro が無い PR（この仕組みより前のもの）は対象外。人間が手動の入口（retro スキルに PR 番号を渡す）で拾う。
-- 1 回で扱うのは**古い順に最大 3 件**。
+- 1 回で扱うのは、番号の小さい（古い）順に**先頭の 3 件**。4 件目以降と `--limit 30` の外は「Retro 掃き出し: 残り N 件」と 1 行で伝え、手動の入口で拾えると添える。
+- **二重起動を防ぐ。** 親はこのセッションで下書きを招集した PR 番号（処理中・確認待ち・「あとで」と答えたもの）を覚え、検出結果から外す。
+  「あとで」は、そのセッション中は再び出さない（次に起動したときにまた挙がる）。投稿側も守る（retro の `publish-draft` は最初に既存の post-merge コメントを確かめ、あれば何も書かない）。
 - **親の主作業を妨げない。** 下書きは retro エージェントを Task **@sonnet** の**バックグラウンド**で、
-  `trigger=post-merge mode=draft` で招集する（PR 番号だけ渡す。事実は retro が集める）。親は人間の依頼の処理を優先し、
-  下書きが揃ったら確認を 1 問出す。
-- **確認は投稿の前。** 下書きの指標と項目の予定を要約して、人間に 4 択で聞く:
-  **全部出す** ／ **issue を選んで出す**（コメントは出す）／ **記録だけ**（指標と項目を載せたコメントだけ出し、
-  issue は作らない。末尾に「人間が issue 化を見送った: N 件」）／ **あとで**（何も出さない）。
-- 「あとで」以外は、`mode=publish-draft` で招集して投稿する（下書きのディレクトリと人間の選択を渡す）。
-  「記録だけ」でも post-merge のコメントは残るので、その PR は再び候補に挙がらない。「あとで」は何も残らないので、次の掃き出しでまた挙がる。
+  `trigger=post-merge mode=draft` で招集する（PR 番号だけ渡す。事実は retro が集め、先行する retro コメントが無ければ `interventions` は `unknown` になる）。
+  親は人間の依頼の処理を優先し、下書きが揃ったら確認を出す。
+- **確認は投稿の前で、PR ごとに 1 件ずつ。** 下書きの指標と項目の予定を要約して、人間に 4 択で聞く:
+  **全部出す**（`choice=all`）／ **issue を選んで出す**（コメントは出す。`choice=items:1,3`）／ **記録だけ**（`choice=record-only`。
+  指標と項目を載せたコメントだけ出し、issue は作らない。末尾に「人間が issue 化を見送った: N 件」）／ **あとで**（何も出さない）。
+- 「あとで」以外は、`mode=publish-draft` で招集して投稿する（下書きのディレクトリと `choice=` を渡す）。
+  「記録だけ」でも post-merge のコメントは残るので、その PR は再び候補に挙がらない。「あとで」は何も残らないので、次に起動したときにまた挙がる。
 - **非ブロッキング。** `gh` が失敗したら「Retro 掃き出し: 未実施（理由）」の 1 行を添えて、人間の依頼を続ける。
+  下書きが「Retro: 未取得」を返したら「Retro 掃き出し: PR #n の下書きに失敗（理由）」を 1 行出し、そのセッションでは再試行しない。
 
 ## 子の手順
 
