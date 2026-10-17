@@ -2,7 +2,16 @@
   "//": "このブロックを各プロジェクトの .claude/settings.json（commit 対象）にマージする。",
   "//validate": "PostToolUse: Edit|Write 直後に .claude/hooks/validate.sh（速いチェック）",
   "//gate": "Stop: 完了時に .claude/hooks/gate.sh（フル決定性ゲート・変更検知ガード付き）",
+  "//guard": "PreToolUse: Bash の git commit / push の前に .claude/hooks/guard.sh（公開物ガードの git hook と gitleaks が有効かの確認。走査は git hook。guard.sh が無ければ素通り）",
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "[ -f \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.sh\" ] || exit 0; bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.sh\"" }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",

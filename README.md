@@ -18,7 +18,7 @@ AI エージェント向けのレビュー知識パック集。
 | `architecture-review` | **事業形態に依存しない**観点3軸（外部連携とトランザクション整合＝outbox / API・スキーマの後方互換 / 観測性と障害時の運用） |
 | `review-judge` | レビューの**拘束力ある最終判定だけ**を下す司法。`Edit` / `Write` を持たないので直せない。PR 本文の「要注意の変更」「見た目の証拠」の申告が差分と一致するかも検査する |
 | `spec-intake` | **立法の支援**。issue での議論を、実装根拠になる spec-kit の仕様まで持ち上げる。`grill-issue` が曖昧な issue を詰め、`spec-draft` が spec-kit で仕様を起草して仕様の PR にする。承認は必ず人間 |
-| `conductor` | 開発の単一フロントドア＝**指揮**。`main` の親が spec-kit で仕様を起草して仕様の PR を作り、承認された仕様を worktree の子に送り出す。子は行政に実装させ、書記に証拠を出させ、**司法に持ち込む**。自分ではコードを書かず、判定も出さない |
+| `conductor` | 開発の単一フロントドア＝**指揮**。`main` の親は依頼を分類して worktree の子に送り出し、子が仕様の起草、または Plan Mode 合意→実装→書記→司法→PR を回す。子は行政に実装させ、書記に証拠を出させ、**司法に持ち込む**。自分ではコードを書かず、判定も出さない |
 | `dev-crew` | **行政（実務）**。契約に沿って実装し、ビルド・型・lint・テストの決定性証拠を揃えるところまで。UI に触れたら before / after の動画（見た目の証拠）も撮る。判定は出さず、証拠を揃えて指揮に返す。出荷・運用と書記の職能エージェントも同梱 |
 | `loop-engine` | 人間が承認した spec-kit の仕様を起点に、拾い上げ→実装→司法検証→PR を回す自律ループ（HOTL）。必ず PR で停止する |
 | `spec-page` | 説明書・仕様書・設計文書を HTML 1枚にまとめる。一覧ではなく**構造と決定の理由**を伝える形式に落とす |
@@ -94,7 +94,7 @@ calendar-tasks  運用   依存: Google カレンダー連携（claude.ai コネ
 
 | 役 | 誰 | 持たないもの |
 |---|---|---|
-| **立法** | 人間が承認した spec-kit の仕様 `specs/<機能>/` と constitution（起草は `conductor` の親か `spec-intake`） | — ボットは承認しない |
+| **立法** | 人間が承認した spec-kit の仕様 `specs/<機能>/` と constitution（起草は `conductor` の親が送り出す子（`spec-<名前>`）か `spec-intake`） | — ボットは承認しない |
 | **行政** | `dev-crew:implement`（＋公式 feature-dev）。**自己レビューまでが仕事** | **司法を呼ぶ権限**と**合否を宣言する権限** |
 | **司法** | `review-judge:judge` | **`Edit` / `Write` ツール**。直せない |
 | 指揮 | `conductor:dev`（手動） / `loop-engine`（自律） | コードを書かない。判定も出さない |
@@ -130,7 +130,7 @@ read-only では書き込み（キャッシュ・ビルド成果物・`$TMPDIR`�
 立法（仕様）には [spec-kit](https://github.com/github/spec-kit) を使い、そのレールに乗る。
 `/speckit-specify` → `clarify` → `plan` → `tasks` → `analyze` で仕様を作り、**仕様を先に PR にして人間がマージ**
 してから実装する（Living Spec: `spec.md` が契約で、振る舞いを変えるなら先に `spec.md` を直す）。
-小さな変更は仕様を作らず `/conductor:dev` で直接進める。
+小さな変更は仕様を作らないが、これも `/conductor:dev` の親が worktree の子に送り出し、子の pane で Plan Mode 合意→実装と進める。
 
 **実装コマンドの `/speckit-implement` は、`dev-crew:implement` の枠の中で使う。** コードを書く部分は spec-kit に任せ、
 その前後を `dev-crew:implement` が受け持つ（直接は呼ばない）。

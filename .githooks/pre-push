@@ -1,0 +1,4 @@
+#!/bin/sh
+# pre-push — 公開物ガードの入口（本体は public-guard.sh。push する ref の一覧は stdin のまま渡る）。
+# 有効化: git config core.hooksPath .githooks
+exec "$(dirname "$0")/public-guard.sh" push "$@"
