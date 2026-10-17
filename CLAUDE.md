@@ -115,6 +115,26 @@ Skill 名で invoke しているのがその形）。
 
 # push 前の確認
 
+**`.claude/hooks/guard.sh`（PreToolUse hook）が、Claude Code の `git commit` / `git push` の直前に
+下と同じパターンで、追加行だけを検査する**（漏れを消すコミットは止めない。設定された `user.email` の
+noreply 確認を含む。違反なら実行させずに理由を返す）。commit では staged に加えて作業ツリーと未追跡ファイルも
+常に見るので、コミット対象でない未追跡ファイルの漏れでも止まる（保守的）。対象リポジトリは特定せず、hook の cwd と
+コマンド中の `cd` / `-C` / `GIT_DIR=` などに現れるリポジトリをすべて検査する。push では、ブランチ・タグ・HEAD から
+到達でき、どのリモート ref からも到達できないローカルのコミットをすべて見る。
+- **過剰に止まることがある**: 発火は語の検出なので、コミットメッセージ・heredoc・コメントの中に `git` と
+  `commit` / `push` の語があるだけで検査が走り、そこに `cd $X` / `-C "$X"` / `--git-dir` などの文字列があると止まる。
+  止まったら言い換えるか、メッセージをファイルから渡す（`git commit -F <file>`）。
+  `-C` も語として拾うので、同じコマンドにある `grep -C 3` や `make -C <存在しないディレクトリ>` でも止まる。
+- **検査しないもの**:
+  - submodule の中（`git submodule foreach` での commit / push）。
+  - 同じコマンド内で `mv` / `ln` / `git clone` / `git worktree add` で作った先のリポジトリ（候補の解決はコマンドの実行前に行うため）。
+  - `env --chdir=<dir>` / `sudo -D <dir>` によるディレクトリ移動（候補に入らない）。
+  - bare リポジトリ（作業ツリーが無いので、commit・push とも検査しない。候補としては 1 行出して読み飛ばす）。
+- **perl が無い環境では遅い**: 走査を awk / grep で行うため、200MB 級の未追跡ファイル 1 つで約 9 秒かかる（perl なら約 1 秒）。
+
+NG ワードは public に書けないので hook には入れていない。下のコマンドは、NG ワードの確認と、
+hook が効かない環境（Claude Code の外からのコミットなど）の予備として残す。
+
 ```bash
 # 端末依存・個人情報・秘匿情報
 git diff --cached | grep -nE '/Users/|/home/|@gmail|@[a-z-]+\.co\.jp|sk-ant|ghp_|gho_|AKIA|BEGIN [A-Z ]*PRIVATE KEY|192\.168\.|127\.0\.0\.1|localhost:[0-9]'

@@ -66,34 +66,66 @@ fi
 # hooks（プロジェクト固有 validation）の雛形を scaffold（既定 no-op・project が中身を書く）
 HOOKS_DIR="$REPO_ROOT/.claude/hooks"
 mkdir -p "$HOOKS_DIR"
-for h in validate gate; do
+for h in validate gate guard; do
   SRC="$HARNESS_DIR/hooks/$h.sh.example"
   DEST="$HOOKS_DIR/$h.sh"
   if [ -f "$DEST" ]; then
     echo "skip:    .claude/hooks/$h.sh は既に存在します"
   elif [ -f "$SRC" ]; then
-    cp "$SRC" "$DEST" && chmod +x "$DEST"
-    echo "created: .claude/hooks/$h.sh（既定 no-op。project 固有チェックを書く）"
+    if ! { cp "$SRC" "$DEST" && chmod +x "$DEST"; }; then
+      echo "error:   .claude/hooks/$h.sh を作成できませんでした（${DEST}）" >&2
+      exit 1
+    fi
+    if [ "$h" = guard ]; then
+      echo "created: .claude/hooks/guard.sh（git commit / push 前の公開物ガード。REQUIRE_NOREPLY と NG_WORDS を設定）"
+    else
+      echo "created: .claude/hooks/$h.sh（既定 no-op。project 固有チェックを書く）"
+    fi
   else
-    echo "warn:    $h.sh.example が見つかりません（$SRC）。スキップ"
+    echo "warn:    $h.sh.example が見つかりません（${SRC}）。スキップ"
   fi
 done
 
-# .claude/settings.json に hooks を配線（無ければ作成・あれば安全マージ・既存 hooks は壊さない）
+# .claude/settings.json に hooks を配線（無ければ作成・hooks が無ければ追記。既存 hooks は書き換えず、guard の配線が無ければ todo を出す）
 SETTINGS="$REPO_ROOT/.claude/settings.json"
+# settings.json は一時ファイルに書いてから mv する（jq が失敗したときに空にしないため）
+settings_write_failed() {
+  rm -f "$SETTINGS.tmp"
+  echo "error:   .claude/settings.json を書けませんでした（元のファイルは変えていません）" >&2
+  exit 1
+}
 SNIPPET="$HARNESS_DIR/hooks/settings.hooks.json"
+# guard.sh.example が無い（＝guard.sh を scaffold できない）ときは PreToolUse を配線しない。
+# 配線だけあると、guard.sh が無いことを理由に全 Bash が止まるため
+GUARD_TODO=""
+HOOKS_FILTER='.hooks'
+if [ ! -f "$HARNESS_DIR/hooks/guard.sh.example" ] && [ ! -f "$HOOKS_DIR/guard.sh" ]; then
+  HOOKS_FILTER='(.hooks | del(.PreToolUse))'
+  echo "warn:    guard.sh.example が無いため PreToolUse（guard）の配線をしません"
+fi
 if ! command -v jq >/dev/null 2>&1; then
   echo "warn:    jq が無いため settings 自動配線をスキップ。手で $SNIPPET の hooks を貼ってください"
 elif [ ! -f "$SNIPPET" ]; then
-  echo "warn:    settings.hooks.json が見つかりません（$SNIPPET）。settings 配線をスキップ"
+  echo "warn:    settings.hooks.json が見つかりません（${SNIPPET}）。settings 配線をスキップ"
+elif [ -f "$SETTINGS" ] && ! jq -e . "$SETTINGS" >/dev/null 2>&1; then
+  echo "error:   .claude/settings.json が JSON として読めません。直してから再実行してください（書き換えていません）" >&2
+  exit 1
 elif [ ! -f "$SETTINGS" ]; then
-  jq '{hooks: .hooks}' "$SNIPPET" > "$SETTINGS"
+  jq "{hooks: $HOOKS_FILTER}" "$SNIPPET" > "$SETTINGS.tmp" || settings_write_failed
+  mv "$SETTINGS.tmp" "$SETTINGS"
   echo "created: .claude/settings.json（hooks 配線済み）"
 elif jq -e '.hooks' "$SETTINGS" >/dev/null 2>&1; then
-  echo "skip:    .claude/settings.json に hooks は既にあります（手で確認）"
+  # 既存の hooks は書き換えない。guard の配線が無いときだけ案内する
+  if jq -e '[.hooks.PreToolUse[]? | select((.matcher // "") | test("(^|\\|)Bash(\\||$)")) | .hooks[]? | select((.command // "") | test("hooks/guard\\.sh"))] | length > 0' "$SETTINGS" >/dev/null 2>&1; then
+    echo "skip:    .claude/settings.json に hooks は既にあります（手で確認）"
+  else
+    echo "todo:    .claude/settings.json の hooks.PreToolUse に guard.sh の配線がありません（$SNIPPET の PreToolUse を手で足す）"
+    GUARD_TODO="  - .claude/settings.json の hooks.PreToolUse に guard.sh を配線する（$SNIPPET の PreToolUse を手で足す）\n"
+  fi
 else
   cp "$SETTINGS" "$SETTINGS.bak"
-  jq --slurpfile s "$SNIPPET" '. + {hooks: $s[0].hooks}' "$SETTINGS.bak" > "$SETTINGS"
+  jq --slurpfile s "$SNIPPET" ". + {hooks: (\$s[0] | $HOOKS_FILTER)}" "$SETTINGS.bak" > "$SETTINGS.tmp" || settings_write_failed
+  mv "$SETTINGS.tmp" "$SETTINGS"
   echo "merged:  .claude/settings.json に hooks を追記（backup: settings.json.bak）"
 fi
 
@@ -113,7 +145,8 @@ if command -v jq >/dev/null 2>&1 && [ -f "$SETTINGS" ]; then
       | .enabledPlugins["review-judge@macotasu-agent-skills"]   //= true
       | .enabledPlugins["dev-crew@macotasu-agent-skills"]       //= true
       | .enabledPlugins["loop-engine@macotasu-agent-skills"]    //= true
-    ' "$SETTINGS.plugins.bak" > "$SETTINGS"
+    ' "$SETTINGS.plugins.bak" > "$SETTINGS.tmp" || settings_write_failed
+    mv "$SETTINGS.tmp" "$SETTINGS"
     echo "merged:  .claude/settings.json にプラグイン宣言を追記（ローカル用。cloud には効かない）"
   fi
 fi
@@ -128,7 +161,7 @@ if [ -n "$LANGS" ]; then
   printf '%b' "$LANGS"
   echo "  ※ monorepo は (cd <dir> && <cmd>) で対象ディレクトリを指定する"
 else
-  echo "言語マーカー未検出。.claude/hooks/{validate,gate}.sh を手で記入してください。"
+  echo "言語マーカー未検出。.claude/hooks/{validate,gate}.sh を手で記入してください（guard.sh は設定変数だけ）。"
 fi
 echo ""
 if [ -n "$SPECKIT_TODO" ]; then
@@ -137,6 +170,9 @@ if [ -n "$SPECKIT_TODO" ]; then
   echo ""
 fi
 echo "残り:"
-echo "  1. .claude/hooks/{validate,gate}.sh に上記コマンドを記入（既定 no-op のまま回しても可）"
+echo "  1. .claude/hooks/{validate,gate}.sh に上記コマンドを記入（既定 no-op のまま回しても可）。"
+echo "     .claude/hooks/guard.sh は既定で秘匿情報の grep のみ。public リポジトリなら REQUIRE_NOREPLY=1、止めたい語は NG_WORDS に"
+echo "     .claude/hooks/guard.sh は .claude/settings.json と一緒にコミットする（配線だけあって guard.sh が無いと全 Bash が止まる）"
+if [ -n "$GUARD_TODO" ]; then printf '%b' "$GUARD_TODO"; fi
 echo "  2. spec-kit で仕様を書いて仕様の PR をマージ（/conductor:dev の親、/spec-intake:spec-draft <issue番号>、または /speckit-specify から手で）"
 echo "  3. /loop-engine:loop-engine <機能> → 実装→司法→PR まで進んで PR で停止（マージは人間）"

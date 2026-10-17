@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "[ -f \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.sh\" ] || { echo \"guard.sh がありません。.claude/hooks/guard.sh を戻すか、.claude/settings.json の PreToolUse から guard の配線を外してください\" >&2; exit 2; }; bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.sh\"" }
+        ]
+      }
+    ]
+  }
+}

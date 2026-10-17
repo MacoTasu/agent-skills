@@ -1,0 +1,417 @@
+#!/bin/bash
+# guard.sh — PreToolUse hook（Bash の git commit / git push の直前に走る公開物ガード）。
+#
+# 人が忘れれば素通りする「push 前の確認」の grep を、コミット・プッシュのたびに機械で当てる。
+# stdin に Claude Code の hook JSON が来る。コマンドは .tool_input.command、起点は .cwd。
+#
+# 発火: コマンドに git という語と、commit または push という語の両方があるとき（順序・構造は見ない）。
+#   シェルの構造（cd・サブシェル・bash -c など）を正しく追うことはできないので、対象リポジトリを
+#   「特定」せず、候補をすべて検査する: hook の cwd、コマンド中の cd/pushd <path>、-C <path>、
+#   GIT_WORK_TREE=<path>、GIT_DIR=<path>。過剰に発火・検査しても、追加行しか見ないので害は小さい。
+#   -C は同じ git 呼び出しの中で連結する（-C a -C b → a/b）。
+#   次のどれかなら止める（fail-closed）: パスが解決できない（$ ` \ * ? % { } を含む・区切り記号・空・
+#   存在しない・cd -・~user）、--git-dir / --work-tree / GIT_INDEX_FILE= を含む、cwd が無い。
+#   ただしクォートの中（メッセージや heredoc の本文）の存在しないパスは 1 行出して読み飛ばす。
+#
+# 注意（過剰に止まる場合）: 発火は語の検出なので、コミットメッセージ・heredoc・コメントの中に git と
+#   commit / push の語があるだけで検査が走る。そこに cd $X・-C "$X"・--git-dir などの文字列があると止まる。
+#   止まったら言い換えるか、メッセージをファイルから渡す（git commit -F <file>）。
+#   -C も語として拾うので、git と同じコマンドにある grep -C 3（3 というディレクトリが無い）や
+#   make -C <存在しないディレクトリ> でも止まる。
+# 検査しないもの:
+#   - submodule の中（git submodule foreach での commit / push）。
+#   - 同じコマンド内で mv / ln / git clone / git worktree add で作った先のリポジトリ
+#     （候補の解決はコマンドの実行前に行うため、その時点で無いパスは解決できない）。
+#   - env --chdir=<dir> / sudo -D <dir> によるディレクトリ移動（候補に入らない）。
+#   - bare リポジトリ（作業ツリーが無いので、commit・push とも検査しない。候補としては 1 行出して読み飛ばす）。
+#
+# 検査（各候補リポジトリの toplevel で。どれも「追加された行」だけを見る＝漏れを消すコミットは止めない）:
+#   commit: git diff --cached ＋ 作業ツリー（git diff HEAD）＋ 未追跡ファイルの全行。
+#           hook は同じコマンド内の git add より前に走るので、作業ツリーも常に見る。
+#           そのため、コミット対象でない未追跡ファイルの漏れでも止まる（保守的）。
+#   push:   ブランチ・タグ・HEAD から到達でき、どのリモート ref からも到達できないローカルのコミットを
+#           すべて見る（git log -p --branches --tags HEAD --not --remotes のコミットごとの差分。
+#           push する ref は解析しない。途中で消した秘密も拾う）。
+#   バイナリもテキストとして走査する（git diff --text）。未追跡ファイルは、先頭 8KB に NUL を含むもの
+#   （バイナリ）だけ見ない。走査は perl があれば perl、無ければ awk / grep（同じ結果だが遅い。
+#   macOS の grep では 200MB の未追跡ファイル 1 つに約 9 秒かかる。perl なら約 1 秒）。
+#
+# 検査せずに素通りする条件（stderr に 1 行出す）: jq が無い／候補が git リポジトリでない／
+#   push でリモートの ref が 1 つも無い。
+#
+# 違反・入力不正・想定外の終了は exit 2 ＋ stderr に理由 → Claude はコマンドを実行せず直す。
+# pass は exit 0。
+set -uo pipefail
+# awk・grep・bash の正規表現をバイト単位で動かす（不正な UTF-8 で落ちないように）
+export LC_ALL=C
+# 注意: 日本語の直後に置く変数は ${VAR} と書く（ロケールによっては bash が全角文字を変数名の続きとして読む）
+
+# ---- ここをプロジェクトに合わせて設定する ----
+# 1 にすると、設定された user.email（git config。--author や GIT_AUTHOR_EMAIL は見ない）が
+# *@users.noreply.github.com で終わらなければ止める（<id>+<name> の形式までは見ない）。
+# このリポジトリは public なので noreply を必須にする（雛形の既定は 0。会社のリポジトリなどでは業務メールが正しいため）。
+REQUIRE_NOREPLY=1
+# 追加で止めたい語の正規表現（大文字小文字を区別しない）。空なら検査しない。不正な正規表現は exit 2。
+# 例: private リポジトリ名や社内のコード名を | でつなぐ。
+# 注意: この値自体がコミットされる。public リポジトリでは private 名をここに書かない。
+NG_WORDS=''
+# ------------------------------------------------
+
+# 端末依存・個人情報・秘匿情報のパターン（CLAUDE.md「push 前の確認」と同じ意味の正規表現）。
+# 各語の 1 文字を [x] で囲んでいるのは、このファイル自身をコミットしたときに自分の
+# パターン定義行に当たって止まらないようにするため（マッチする文字列は元の正規表現と同じ）。
+SECRET_PATTERN='/[U]sers/|/[h]ome/|@[g]mail|@[a-z-]+\.co\.jp|s[k]-ant|g[h]p_|g[h]o_|A[K]IA|B[E]GIN [A-Z ]*PRIVATE KEY|192\.168\.|127\.0\.0\.1|localhost:[0-9]'
+
+# 異常終了の番人: finish を通らない終了（bash のエラーなど）は検査漏れなので exit 2 に倒す
+GUARD_DONE=0
+finish() { GUARD_DONE=1; exit "$1"; }
+trap 'rc=$?; [ "$GUARD_DONE" = 1 ] || { echo "guard: 想定外の理由で終了しました（rc=${rc}）。安全側に倒して止めます" >&2; exit 2; }' EXIT
+block() { echo "guard: $*" >&2; finish 2; }
+
+command -v jq >/dev/null 2>&1 || { echo "guard: jq が無いため公開物の検査をスキップしました" >&2; finish 0; }
+
+INPUT=$(cat)
+printf '%s' "$INPUT" | jq -e . >/dev/null 2>&1 || block "hook の入力が JSON として読めません"
+TOOL=$(printf '%s' "$INPUT" | jq -r '.tool_name // empty')
+[ "$TOOL" = "Bash" ] || finish 0
+CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty')
+[ -n "$CMD" ] || block "Bash の hook 入力に tool_input.command がありません"
+
+# 1 行に正規化する（行末 \ の継続と改行を空白に）
+CMD=${CMD//$'\\\n'/ }
+CMD=${CMD//$'\n'/ }
+
+# 発火判定。git の前は英数字・_・- 以外（/usr/bin/git のような / は許す）、語の後ろは英数字・_・-・/ 以外
+WORD_END='([^[:alnum:]_/-]|$)'
+GIT_WORD_RE="(^|[^[:alnum:]_-])git${WORD_END}"
+COMMIT_WORD_RE="(^|[^[:alnum:]_/-])commit${WORD_END}"
+PUSH_WORD_RE="(^|[^[:alnum:]_/-])push${WORD_END}"
+[[ "$CMD" =~ $GIT_WORD_RE ]] || finish 0
+IS_COMMIT=0; IS_PUSH=0
+[[ "$CMD" =~ $COMMIT_WORD_RE ]] && IS_COMMIT=1
+[[ "$CMD" =~ $PUSH_WORD_RE ]] && IS_PUSH=1
+[ "$IS_COMMIT" = 1 ] || [ "$IS_PUSH" = 1 ] || finish 0
+
+case "$CMD" in
+  *--git-dir*|*--work-tree*|*GIT_INDEX_FILE=*)
+    block "--git-dir / --work-tree / GIT_INDEX_FILE= 付きの git は検査できません。cd してから実行してください" ;;
+esac
+
+CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // empty')
+[ -n "$CWD" ] || block "hook の入力に cwd がないため、対象リポジトリを特定できません"
+[ -d "$CWD" ] || block "hook の cwd（${CWD}）が存在しないため、対象リポジトリを特定できません"
+
+UNRESOLVED_MSG="対象リポジトリを特定できません。パスをリテラルで書くか、cd してから実行してください"
+
+# ---- トークン化（クォートと区切り ; & | ( ) { } ` を見分けるだけ。構造は追わない）----
+# TOKS にトークン、TOK_INNER に「クォートの中から取り出したか」（1/0）を並べる
+TOKS=()
+TOK_INNER=()
+RE_SPACE='^[[:space:]]+'
+RE_DQ='^"[^"]*"'
+RE_SQ="^'[^']*'"
+RE_WORD='^[^[:space:];&|(){}`"'"'"']+'
+tokenize() {   # $1=文字列, $2=1 ならクォートの中
+  local s="$1" tok
+  while [ -n "$s" ]; do
+    if [[ "$s" =~ $RE_SPACE ]]; then s=${s:${#BASH_REMATCH[0]}}; continue; fi
+    if [[ "$s" =~ $RE_DQ ]] || [[ "$s" =~ $RE_SQ ]] || [[ "$s" =~ $RE_WORD ]]; then
+      tok=${BASH_REMATCH[0]}
+    else
+      tok=${s:0:1}   # 区切り文字、または閉じていないクォート
+    fi
+    TOKS+=("$tok"); TOK_INNER+=("$2")
+    s=${s:${#tok}}
+  done
+}
+# クォートを 1 段外した結果を UQ に入れる（トークンごとに subshell を作らないため関数の戻り値にしない）
+unquote() {
+  UQ=$1
+  case "$UQ" in
+    \"*\") UQ=${UQ#\"}; UQ=${UQ%\"} ;;
+    \'*\') UQ=${UQ#\'}; UQ=${UQ%\'} ;;
+  esac
+}
+is_sep() { case "$1" in ';'|'&'|'|'|'('|')'|'{'|'}'|'`'|'"'|"'") return 0 ;; esac; return 1; }
+# コマンドの終わりを表す区切り（cd の引数が無い＝$HOME とみなしてよいもの）
+is_cmd_end() { case "$1" in ';'|'&'|'|'|')') return 0 ;; esac; return 1; }
+
+tokenize "$CMD" 0
+# クォートの中（bash -c "cd X && git commit" など）も、区切りを挟んでトークンに足す
+i=0
+while [ "$i" -lt "${#TOKS[@]}" ]; do
+  t=${TOKS[$i]}
+  case "$t" in
+    \"*\"|\'*\')
+      unquote "$t"
+      if [[ "$UQ" =~ [[:space:]] ]]; then TOKS+=(";"); TOK_INNER+=(1); tokenize "$UQ" 1; fi ;;
+  esac
+  i=$((i + 1))
+done
+
+# ---- 候補の収集 ----
+CANDS="$CWD"$'\n'
+LAST_CD=$CWD
+# 引数が解決できないときの扱い。コマンド本体（クォートの外）なら止める。クォートの中
+# （コミットメッセージや heredoc の本文であることが多い）では、存在しないパスだけは 1 行出して読み飛ばす
+# （「cd into the repo」のような文で止めないため。存在しないパスへの git -C / cd は失敗するので、そこからは漏れない）
+unresolved() {   # $1=トークン, $2=1 ならクォートの中, $3=1 なら理由が「存在しない」
+  if [ "${2:-0}" = 1 ] && [ "${3:-0}" = 1 ]; then
+    echo "guard: クォート内のパス ${1} は存在しないため候補にしませんでした" >&2
+    return 0
+  fi
+  block "対象リポジトリを特定できません（${1}）。リテラルの絶対パスで書くか、cd してから実行してください"
+}
+# $1=パスのトークン, $2=1 なら cd の行き先として LAST_CD を更新, $3=1 ならクォートの中,
+# $4=相対パスの基準を 1 つに固定する（git -C の連結用。空なら cwd と直前の cd 先の両方）
+# 解決できたパスは RESOLVED に入れる（解決できず読み飛ばしたときは空）
+add_path() {
+  local p a b inner="${3:-0}" fixed="${4:-}"
+  RESOLVED=""
+  unquote "$1"; p=$UQ
+  if [ -z "$p" ] || is_sep "$1"; then unresolved "${1:-（空）}" "$inner" 0; return 0; fi
+  case "$p" in
+    *'$'*|*'`'*|*'\'*|*'*'*|*'?'*|*'%'*|*'{'*|*'}'*) unresolved "$p" "$inner" 0; return 0 ;;
+    '~') p=$HOME ;;
+    '~/'*) p="$HOME/${p#\~/}" ;;
+    '~'*) unresolved "$p" "$inner" 0; return 0 ;;
+  esac
+  case "$p" in
+    /*)
+      [ -d "$p" ] || { unresolved "$p" "$inner" 1; return 0; }
+      CANDS="${CANDS}${p}"$'\n'; RESOLVED=$p
+      ;;
+    *)
+      if [ -n "$fixed" ]; then
+        a="$fixed/$p"; b=""
+      else
+        # 相対パスは cwd から・直前の cd の行き先から、の両方で解決し、存在するほうを候補にする（両方あれば両方）
+        a="$CWD/$p"; b="$LAST_CD/$p"
+      fi
+      [ -d "$a" ] && { CANDS="${CANDS}${a}"$'\n'; RESOLVED=$a; }
+      [ -n "$b" ] && [ -d "$b" ] && { CANDS="${CANDS}${b}"$'\n'; RESOLVED=$b; }
+      [ -n "$RESOLVED" ] || { unresolved "$p" "$inner" 1; return 0; }
+      ;;
+  esac
+  [ "${2:-0}" = 1 ] && LAST_CD=$RESOLVED
+  return 0
+}
+
+N=${#TOKS[@]}
+PREV=""
+CBASE=""   # 同じ git 呼び出しの中で直前の -C が指した先（-C a -C b を a/b と連結するため）
+for ((i = 0; i < N; i++)); do
+  t=${TOKS[$i]}; inner=${TOK_INNER[$i]}
+  if is_sep "$t"; then CBASE=""; PREV=""; continue; fi
+  unquote "$t"; u=$UQ
+  case "$u" in
+    git|*/git) CBASE="" ;;
+    cd|pushd)
+      j=$((i + 1))
+      while [ "$j" -lt "$N" ]; do
+        unquote "${TOKS[$j]}"
+        case "$UQ" in -P|-L|-e|-@|--) j=$((j + 1)) ;; *) break ;; esac
+      done
+      if [ "$j" -ge "$N" ] || is_cmd_end "${TOKS[$j]}"; then
+        add_path "$HOME" 1 "$inner"
+      else
+        unquote "${TOKS[$j]}"
+        [ "$UQ" = "-" ] && block "対象リポジトリを特定できません（cd -）。リテラルの絶対パスで書くか、cd してから実行してください"
+        add_path "${TOKS[$j]}" 1 "$inner"
+      fi ;;
+    -C|-C?*)
+      if [ "$PREV" != commit ]; then
+        if [ "$u" = "-C" ]; then
+          if [ $((i + 1)) -lt "$N" ]; then arg=${TOKS[$((i + 1))]}; else arg=""; fi
+        else
+          arg=${u#-C}
+        fi
+        add_path "$arg" 0 "$inner" "$CBASE"
+        [ -n "$RESOLVED" ] && CBASE=$RESOLVED
+      fi ;;
+    GIT_WORK_TREE=*|GIT_DIR=*)
+      v=${u#*=}
+      if [ -z "$v" ] && [ $((i + 1)) -lt "$N" ]; then v=${TOKS[$((i + 1))]}; fi
+      unquote "$v"; v=$UQ
+      case "$u" in GIT_DIR=*) v=${v%/}; v=${v%/.git}; [ "$v" = ".git" ] && v="." ;; esac
+      add_path "$v" 0 "$inner" ;;
+  esac
+  PREV=$u
+done
+
+# 候補を toplevel にまとめる（git リポジトリでない候補は 1 行出して読み飛ばす）
+TOPS=""
+SEEN=""
+while IFS= read -r c; do
+  [ -n "$c" ] || continue
+  case $'\n'"$SEEN" in *$'\n'"$c"$'\n'*) continue ;; esac
+  SEEN="${SEEN}${c}"$'\n'
+  if [ ! -d "$c" ]; then
+    echo "guard: 候補 ${c} はディレクトリではないため読み飛ばしました" >&2; continue
+  fi
+  if ! top=$(git -C "$c" rev-parse --show-toplevel 2>/dev/null) || [ -z "$top" ]; then
+    if [ "$(git -C "$c" rev-parse --is-bare-repository 2>/dev/null)" = true ]; then
+      echo "guard: 候補 ${c} は bare リポジトリ（作業ツリーが無い）のため検査しませんでした" >&2
+    else
+      echo "guard: 候補 ${c} は git リポジトリではないため読み飛ばしました" >&2
+    fi
+    continue
+  fi
+  case $'\n'"$TOPS" in *$'\n'"$top"$'\n'*) ;; *) TOPS="${TOPS}${top}"$'\n' ;; esac
+done <<< "$CANDS"
+
+# ---- 検査 ----
+FAIL=0
+DIFF_OPTS=(--no-ext-diff --no-textconv --text --no-color -U0)
+
+# 走査は perl があれば perl で行う（macOS の grep / awk は 200MB 級で 10 秒近くかかるため）。
+# 無ければ awk / grep で同じ検査をする（遅いが結果は同じ）。正規表現は ERE の範囲で書けば両方で同じ意味になる。
+if command -v perl >/dev/null 2>&1; then HAVE_PERL=1; else HAVE_PERL=0; fi
+
+# git diff / git log -p の出力から、追加行のうち秘匿パターン（S）・NG ワード（N）に当たる行を出す。
+# ファイル見出し（+++）は diff ヘッダの中（diff 行〜最初の @@）だけで判定する（内容が ++ で始まる追加行を落とさない）。
+# 正規表現は環境変数で渡す（awk -v はバックスラッシュを解釈して \. の意味が変わるため）。
+match_added() {
+  if [ "$HAVE_PERL" = 1 ]; then
+    GUARD_SEC="$SECRET_PATTERN" GUARD_NG="$NG_WORDS" perl -ne '
+      BEGIN { $s = qr/$ENV{GUARD_SEC}/; $n = length($ENV{GUARD_NG}) ? qr/$ENV{GUARD_NG}/i : undef; $h = 0; $f = "" }
+      if (/^diff /) { $h = 1; $f = ""; next }
+      if (/^@@/) { $h = 0; next }
+      if ($h) { $f = $1 if /^\+\+\+ (?:b\/)?(.*)$/; next }
+      if (/^\+(.*)$/) { my $l = $1; print "S$f: $l\n" if $l =~ $s; print "N$f: $l\n" if $n && $l =~ $n }'
+    return
+  fi
+  GUARD_SEC="$SECRET_PATTERN" GUARD_NG="$NG_WORDS" awk '
+    BEGIN { sec = ENVIRON["GUARD_SEC"]; ng = ENVIRON["GUARD_NG"]; lng = tolower(ng); inhdr = 0 }
+    /^diff / { inhdr = 1; f = ""; next }
+    /^@@/ { inhdr = 0; next }
+    inhdr { if ($0 ~ /^\+\+\+ /) { f = substr($0, 5); sub(/^b\//, "", f) }; next }
+    /^\+/ {
+      line = substr($0, 2)
+      if (line ~ sec) print "S" f ": " line
+      if (ng != "" && tolower(line) ~ lng) print "N" f ": " line
+    }'
+}
+
+report_hits() {   # $1=説明, $2=S/N 付きの行
+  local label="$1" out="$2" l sec="" ng=""
+  while IFS= read -r l; do
+    case "$l" in S*) sec="${sec}${l#S}"$'\n' ;; N*) ng="${ng}${l#N}"$'\n' ;; esac
+  done <<< "$out"
+  if [ -n "$sec" ]; then
+    echo "guard: ${label}に端末依存・個人情報・秘匿情報らしき行があります:" >&2
+    printf '%s' "$sec" >&2
+    FAIL=1
+  fi
+  if [ -n "$ng" ]; then
+    echo "guard: ${label}に NG ワード（NG_WORDS）に当たる行があります:" >&2
+    printf '%s' "$ng" >&2
+    FAIL=1
+  fi
+}
+
+# $1=説明, $2..=git のサブコマンドと引数（DIFF_OPTS はここで足す）
+check_git() {
+  local label="$1" sub="$2" out rc
+  shift 2
+  out=$(git "$sub" "${DIFF_OPTS[@]}" "$@" 2>/dev/null | match_added); rc=$?
+  if [ "$rc" -ne 0 ]; then
+    echo "guard: ${label}の取得または評価に失敗しました（rc=${rc}。NG_WORDS の正規表現も確認）" >&2
+    FAIL=1; return
+  fi
+  report_hits "$label" "$out"
+}
+
+# 未追跡ファイル（.gitignore で除外されたものは除く）の全行を検査する。
+# 先頭 8KB に NUL を含むファイルはバイナリとして読み飛ばす（grep -I と同じ扱い）。読めないファイルは失敗として止める。
+untracked_perl() {
+  git ls-files -o --exclude-standard -z | GUARD_SEC="$SECRET_PATTERN" GUARD_NG="$NG_WORDS" perl -0 -e '
+    my $s = qr/$ENV{GUARD_SEC}/; my $n = length($ENV{GUARD_NG}) ? qr/$ENV{GUARD_NG}/i : undef; my $err = 0;
+    while (defined(my $f = <STDIN>)) {
+      chomp $f;
+      next unless -f $f;
+      my $fh;
+      unless (open($fh, "<:raw", $f)) { print STDERR "guard: 未追跡ファイル $f を読めません: $!\n"; $err = 1; next }
+      my $head = ""; read($fh, $head, 8192);
+      if (index($head, "\0") >= 0) { close $fh; next }
+      seek($fh, 0, 0);
+      local $/ = "\n"; my $ln = 0;
+      while (my $l = <$fh>) { $ln++; chomp $l; print "S$f:$ln:$l\n" if $l =~ $s; print "N$f:$ln:$l\n" if $n && $l =~ $n }
+      close $fh;
+    }
+    exit($err ? 2 : 0);'
+}
+# perl が無いときの経路。grep の終了コード 2 以上（読めないなど）は失敗として止める。
+# xargs の分割実行でも区別できるよう sh で包む。行頭に S / N を付けて perl の経路と同じ形にする
+grep_untracked_fallback() {   # $1=S か N, $2=grep のオプション, $3=正規表現
+  local out rc
+  out=$(git ls-files -o --exclude-standard -z \
+    | xargs -0 sh -c '[ "$#" -gt 2 ] || exit 0; o=$1; p=$2; shift 2; grep $o -e "$p" -- "$@"; r=$?; [ "$r" -ge 2 ] && exit 255; exit 0' guard "$2" "$3"); rc=$?
+  [ "$rc" -eq 0 ] || return "$rc"
+  [ -z "$out" ] || printf '%s\n' "$out" | sed "s/^/$1/"
+}
+check_untracked() {   # $1=toplevel
+  local label="$1 の未追跡ファイル（git ls-files -o --exclude-standard）" out rc out2
+  if [ "$HAVE_PERL" = 1 ]; then
+    out=$(untracked_perl); rc=$?
+  else
+    out=$(grep_untracked_fallback "S" "-IHnE -d skip -D skip" "$SECRET_PATTERN"); rc=$?
+    if [ "$rc" -eq 0 ] && [ -n "$NG_WORDS" ]; then
+      out2=$(grep_untracked_fallback "N" "-IiHnE -d skip -D skip" "$NG_WORDS"); rc=$?
+      out="${out}"$'\n'"${out2}"
+    fi
+  fi
+  if [ "$rc" -ne 0 ]; then
+    echo "guard: ${label}を検査できませんでした（rc=${rc}。NG_WORDS の正規表現も確認）" >&2
+    FAIL=1; return
+  fi
+  report_hits "$label" "$out"
+}
+
+check_email() {
+  [ "$REQUIRE_NOREPLY" = 1 ] || return 0
+  local email
+  email=$(git config user.email 2>/dev/null || true)
+  case "$email" in
+    *@users.noreply.github.com) ;;
+    *)
+      echo "guard: git config user.email が GitHub の noreply 形式ではありません（$1。現在: ${email:-未設定}）。" >&2
+      echo "       git config user.email '<id>+<username>@users.noreply.github.com' を設定してください。" >&2
+      FAIL=1 ;;
+  esac
+}
+
+while IFS= read -r top; do
+  [ -n "$top" ] || continue
+  cd "$top" 2>/dev/null || block "対象リポジトリ（${top}）に移動できません"
+  check_email "$top"
+  if [ "$IS_COMMIT" = 1 ]; then
+    check_git "${top} のステージ済みの差分（git diff --cached）" diff --cached
+    if git diff --quiet --no-ext-diff 2>/dev/null; then
+      :   # 作業ツリーが index と同じなら git diff HEAD は --cached と同じ（大きな差分で二度走らせない）
+    elif git rev-parse -q --verify HEAD >/dev/null 2>&1; then
+      check_git "${top} の作業ツリーの変更（git diff HEAD）" diff HEAD
+    else
+      check_git "${top} の作業ツリーの変更（git diff）" diff
+    fi
+    check_untracked "$top"
+  fi
+  if [ "$IS_PUSH" = 1 ]; then
+    # refspec は解析しない。ブランチ・タグ・HEAD から到達でき、リモートのどの ref からも到達できない
+    # コミットをすべて走査する（push -u origin feat・--all・--tags・detached HEAD からの push も拾う）
+    if [ -n "$(git for-each-ref --count=1 refs/remotes 2>/dev/null)" ]; then
+      PUSH_REVS=(--branches --tags)
+      # コミットの無いリポジトリでは HEAD が解決できず git log が失敗するので、解決できるときだけ足す
+      git rev-parse -q --verify HEAD >/dev/null 2>&1 && PUSH_REVS+=(HEAD)
+      check_git "${top} の未 push のコミット（--branches --tags HEAD --not --remotes の各コミット）" log -p --format= "${PUSH_REVS[@]}" --not --remotes
+    else
+      echo "guard: ${top} にリモートの ref が 1 つも無いため push 差分の検査をスキップしました" >&2
+    fi
+  fi
+done <<< "$TOPS"
+
+if [ "$FAIL" = 1 ]; then
+  echo "guard: 該当箇所を直してから再実行してください（意図した記述なら人間に確認する）。" >&2
+  finish 2
+fi
+finish 0

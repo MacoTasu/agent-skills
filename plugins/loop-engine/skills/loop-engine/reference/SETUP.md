@@ -50,7 +50,8 @@ specify init --here --force --non-interactive --integration claude --script sh
 これで揃う・確認されるもの:
 - spec-kit の設定の確認（`.specify/` の有無・タイムスタンプ方式・constitution）。**足りなければ案内するだけで書き換えない**
 - `.claude/hooks/{validate,gate}.sh` … project 固有 validation の雛形（既定 no-op）
-- `.claude/settings.json` … hooks 配線（PostToolUse=validate / Stop=gate）とプラグイン宣言を追記（既存は壊さず jq マージ）
+- `.claude/hooks/guard.sh` … コミット/プッシュ前の公開物ガード。既定は秘匿情報の grep のみ、`REQUIRE_NOREPLY` と `NG_WORDS` は project が設定
+- `.claude/settings.json` … hooks 配線（PreToolUse=guard / PostToolUse=validate / Stop=gate）とプラグイン宣言を追記。既存 hooks があるときは書き換えず、guard の配線が無ければ todo を出す（手で足す）
 
 `loop-init` は **言語を検出**して、その言語向けの validation コマンドを提案する。冪等なので何度実行しても安全。
 
@@ -62,6 +63,11 @@ specify init --here --force --non-interactive --integration claude --script sh
 
 - `validate.sh`（PostToolUse・**速い**）: 編集ファイルの format / lint / 構文（例: `gofmt -l`、`tsc --noEmit`）。
 - `gate.sh`（Stop・**フル**）: build / test。**変更検知ガード＋`stop_hook_active` ガード**は雛形に内蔵済み。
+- `guard.sh`（PreToolUse・Bash の `git commit` / `git push` の直前）: 差分の追加行に端末依存・個人情報・秘匿情報が無いかを grep する。
+  発火は語の検出なので、コミットメッセージや heredoc に `git` と `commit` / `push` の語があるだけで検査が走り、`cd $X` / `-C "$X"` / `--git-dir`
+  などの文字列があると止まる（言い換えるか `git commit -F <file>` で渡す）。submodule の中（`git submodule foreach`）は検査しない。
+  perl が無い環境では 200MB 級の未追跡ファイル 1 つで約 9 秒かかる。
+  public リポジトリなら `REQUIRE_NOREPLY=1`（作者メールを noreply に限定）、止めたい語は `NG_WORDS` に（この値もコミットされる点に注意）。
 
 > **既存の lint/test/build hook があれば再利用する（DRY）**。失敗時は `exit 2` ＋ stderr に理由（Claude が受け取って直す）。
 
@@ -136,7 +142,7 @@ issue テンプレートを置くなら、**仕様パス欄は作らない**（�
 - [ ] 0. ハーネス（プラグイン）と spec-kit の CLI を確認（マシン一度だけ）。
 - [ ] 1. `specify init`、タイムスタンプ方式、constitution のテスト原則、コミット。
 - [ ] 2. `/loop-engine:init`。
-- [ ] 3. `.claude/hooks/{validate,gate}.sh` に project 固有チェック。
+- [ ] 3. `.claude/hooks/{validate,gate}.sh` に project 固有チェック。`guard.sh` は `REQUIRE_NOREPLY` / `NG_WORDS` を設定し、`.claude/settings.json` と一緒にコミット。
 - [ ] 4. 仕様を書いて仕様の PR をマージ。
 - [ ] 5. `/loop-engine:loop-engine <機能>` → 実装→司法→PR。人間がマージ。
 - [ ] 6.（任意）issue 運用するなら `loop-ready` label を作成。

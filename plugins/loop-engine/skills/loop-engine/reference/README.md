@@ -24,6 +24,7 @@
 | `loop-intake-triage.md` | intake（loop/dev/人間）のトリアージ規範 |
 | `routine.md` | cloud routine が定期実行する発火プロンプトと routine の設定手順（current repo 対象） |
 | `hooks/{validate,gate}.sh.example`・`hooks/settings.hooks.json` | プロジェクト固有 validation hook の雛形＋配線 snippet（`.claude/hooks/` へ scaffold・G4 と補完） |
+| `hooks/guard.sh.example` | コミット/プッシュ前の公開物ガード（PreToolUse）。既定は秘匿情報の grep のみ、`REQUIRE_NOREPLY` と `NG_WORDS` は project が設定 |
 | `SETUP.md` | 別プロジェクトで立ち上げる実践ランブック（手順・チェックリスト・落とし穴） |
 
 ## 新しいプロジェクトで loop engineering を回す手順
@@ -35,7 +36,7 @@
    「各 FR と受け入れシナリオは自動テストで検証する（MUST）」を入れる。`.specify/` と `.claude/skills/speckit-*` はコミットする
    （cloud の routine にはプラグインが届かないが、リポジトリにコミットされたスキルは届く）。
 2. **初期化**: `/loop-engine:init` を実行する（spec-kit の設定の確認・hooks の scaffold・settings の配線）。
-3. **hooks（プロジェクト固有 validation）**: `.claude/hooks/{validate,gate}.sh` にそのプロジェクトの決定性チェックを書く。
+3. **hooks（プロジェクト固有 validation）**: `.claude/hooks/{validate,gate}.sh` にそのプロジェクトの決定性チェックを書く。`.claude/hooks/guard.sh`（公開物ガード）は `REQUIRE_NOREPLY` / `NG_WORDS` を設定する。
 4. **最初の仕様を書く**: `/conductor:dev` の親、または `/spec-intake:spec-draft <issue番号>` で spec-kit の仕様を起草し、
    仕様の PR をマージする（人間が立法）。
 5. **回す**: issue に `Spec: specs/<機能>/` と `loop-ready` を付け、手動 `/loop-engine:loop-engine <N>` か

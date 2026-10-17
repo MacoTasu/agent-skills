@@ -14,7 +14,8 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/loop-init"
 |---|---|
 | spec-kit の設定（`.specify/`・`feature_numbering`・constitution） | 仕様（SSOT）は spec-kit の `specs/<機能>/`。**確認して足りないものを案内するだけで、書き換えない** |
 | `.claude/hooks/{validate,gate}.sh` | プロジェクト固有 validation の雛形（既定 no-op） |
-| `.claude/settings.json` | hooks 配線（PostToolUse=validate / Stop=gate）＋**プラグイン宣言**を安全マージ |
+| `.claude/hooks/guard.sh` | コミット/プッシュ前の公開物ガード。既定は秘匿情報の grep のみ、`REQUIRE_NOREPLY` と `NG_WORDS` は project が設定 |
+| `.claude/settings.json` | hooks 配線（PreToolUse=guard / PostToolUse=validate / Stop=gate）＋**プラグイン宣言**。既存 hooks があるときは書き換えず、guard の配線が無ければ todo を出す（手で足す） |
 
 実行後、出力の言語検出結果に従って `.claude/hooks/` の中身を埋める。**ハーネスはコマンドを
 持たない＝ここが唯一の拡張点。**
