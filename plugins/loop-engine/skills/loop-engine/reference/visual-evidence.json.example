@@ -1,0 +1,13 @@
+{
+  "ui_paths": [
+    "src/components/**",
+    "src/pages/**",
+    "src/**/*.css"
+  ],
+  "scenarios": [
+    "e2e/visual/**/*.spec.ts"
+  ],
+  "record": "npx playwright test --project=visual-evidence",
+  "setup": "npm ci",
+  "max_attach_mb": 10
+}

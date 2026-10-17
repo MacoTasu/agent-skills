@@ -113,7 +113,7 @@ allowed-tools:
 | 「レビューして」/ PR番号・URL | review | `/conductor:dev` が pr-review-toolkit 6サブエージェントを **Task 並列・model 上書き**で起動(＝証拠提供) ＋ 必要に応じ dev-crew:business-reviewer / dev-crew:domain-architect を並列 → 最後に **`review-judge:judge`(司法・判事)が束ねて単一判定**(下記レビュー招集ルール) |
 | 軽い整理・可読性改善だけ | refactor | `code-simplifier` を Task 直接起動 **@haiku** |
 | 深いドメイン知識を要する実装・PR | design / review(domain) | `dev-crew:domain-architect`(Task) ＋ そのプロジェクトの知識パック=`.claude/skills/<domain>/` |
-| コミット / プッシュ / PR作成 | ship | 公式 `/commit-commands:commit` `/commit-commands:commit-push-pr` `/commit-commands:clean_gone` |
+| コミット / プッシュ / PR作成 | ship | 公式 `/commit-commands:commit` `/commit-commands:commit-push-pr` `/commit-commands:clean_gone`。PR 本文には「⚠️ 要注意の変更」と「🎬 見た目の証拠」の節を入れる。行政が撮った動画があれば `gh pr create --help | grep -q -- '--attach'` で機能を確かめて `gh pr create --attach <動画>…` し、作成後に `gh pr view --json body` で添付 URL が入ったことを読み戻す。`/commit-commands:commit-push-pr` 経由で作ったときは `--attach` を渡せないので、作成後に `gh pr comment --attach <動画>…` で添付する（手順は `review-judge` 同梱 `reference/visual-evidence.md`「添付手順」。添付できないときは本文の「添付」の行にそう書き、黙って省かない） |
 | お知らせ・リリースノート作成 | publish | そのプロジェクトの `.claude/skills/` にあるお知らせのスキル。無ければ人間に確認する |
 | Issue 作成 | track | `/dev-crew:create-issue` |
 
@@ -175,13 +175,16 @@ allowed-tools:
    ペイン / Codex で招集)。
    引数で渡すもの: **(a) 契約** — spec-kit の機能ディレクトリのパス `specs/<機能>/`、または
    インライン契約(Plan Mode で合意した完了基準と検証方法。単発レビューならレビュー基準)、
-   **(b) 差分**(`git diff` の範囲)、**(c) 証拠**(上記各観点の所見 + テスト/CI/lint の決定性結果)。
-   司法は契約の各完了基準に併記された検証方法を、自分の決定性チェックに対応づける。
+   **(b) 差分**(`git diff` の範囲)、**(c) 証拠**(上記各観点の所見 + テスト/CI/lint の決定性結果)、
+   **(d) PR 本文案**(**必須の引数**。「⚠️ 要注意の変更」節と「🎬 見た目の証拠」節。後者は行政が返した「見た目の証拠（案）」をそのまま使う。
+   書式は `loop-engine` 同梱 `autonomy-gates.md` と `review-judge` 同梱 `reference/visual-evidence.md`。渡さないと司法は差分 ∩ `ui_paths` を
+   自分で計算し、UI に触れていれば RETRY で本文案を求める)。
+   司法は契約の各完了基準に併記された検証方法を、自分の決定性チェックに対応づけ、本文案の申告が差分と一致するかを検査する。
 2. review-judge:judge は**決定性チェック + セマンティックチェックの二系統**で採点し、
    `PASS / REJECT / RETRY / ESCALATE` のいずれか1つを基準↔証拠付きで返す（ファイルには書かない）。
    `/conductor:dev` はその出力をユーザーへのサマリに含める。
 3. `/conductor:dev` はその判定を**そのままルーティング**する(自分で結論を上書きしない):
-   - `PASS` → ship フェーズへ(コミット/PR を案内)。
+   - `PASS` → ship フェーズへ(コミット/PR を案内。PR 本文は司法に渡した本文案のまま、動画は `--attach` で添付)。
    - `REJECT` / `RETRY` → 指摘を実装側(行政)へ戻す。フル自律 driver(Phase 3)なら
      自動で次ラウンド、現状(Phase 1)はユーザーへ差し戻し。
    - `ESCALATE` → ユーザー(立法)へ判断を仰ぐ。

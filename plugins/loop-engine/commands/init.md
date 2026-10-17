@@ -15,6 +15,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/loop-init"
 | spec-kit の設定（`.specify/`・`feature_numbering`・constitution） | 仕様（SSOT）は spec-kit の `specs/<機能>/`。**確認して足りないものを案内するだけで、書き換えない** |
 | `.claude/hooks/{validate,gate}.sh` | プロジェクト固有 validation の雛形（既定 no-op） |
 | `.claude/settings.json` | hooks 配線（PostToolUse=validate / Stop=gate）＋**プラグイン宣言**を安全マージ |
+| `.claude/visual-evidence.json`（UI があるプロジェクト） | 見た目の証拠（before / after の動画）の config。**有無と必須キー（`ui_paths` / `scenarios` / `record`）を確認して案内するだけで、書かない**。無ければ `info:` で雛形の場所を示す（UI が無ければ不要） |
 
 実行後、出力の言語検出結果に従って `.claude/hooks/` の中身を埋める。**ハーネスはコマンドを
 持たない＝ここが唯一の拡張点。**

@@ -24,6 +24,7 @@
 | `loop-intake-triage.md` | intake（loop/dev/人間）のトリアージ規範 |
 | `routine.md` | cloud routine が定期実行する発火プロンプトと routine の設定手順（current repo 対象） |
 | `hooks/{validate,gate}.sh.example`・`hooks/settings.hooks.json` | プロジェクト固有 validation hook の雛形＋配線 snippet（`.claude/hooks/` へ scaffold・G4 と補完） |
+| `visual-evidence.json.example` | 見た目の証拠（before / after の動画）の config `.claude/visual-evidence.json` の雛形。契約と判定表は **`review-judge` 側**の `visual-evidence.md`、録画手順は **`dev-crew` 側**の `record-visual-evidence.md` |
 | `SETUP.md` | 別プロジェクトで立ち上げる実践ランブック（手順・チェックリスト・落とし穴） |
 
 ## 新しいプロジェクトで loop engineering を回す手順

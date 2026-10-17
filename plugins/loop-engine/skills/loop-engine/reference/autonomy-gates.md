@@ -62,7 +62,7 @@ PR ブランチだけに絞れなくなる。
 | **G2 立法** | SSOT が実装可能か | `spec.md` に **`[NEEDS CLARIFICATION]` が無い**／`checklists/` が全てチェック済み／**`/speckit-analyze` に CRITICAL が無い**／constitution と矛盾しない（issue は使わない）。セッション内の試行カウンタをインクリメント（永続化しない） | 曖昧/欠落/**constitution と矛盾**は ESCALATE | 3.0 |
 | **G3 実装** | — | **`dev-crew:implement` の手順**で実装（前の確認 → `/speckit-implement` で書く → 後の確認: 範囲外の変更・自己レビュー・`/speckit-converge`・証拠表）。差分はスコープ内・ブランチ分離。**`spec.md`・`plan.md`・constitution は変えない**。**issue に `loop-running` ラベルを付与**（ロック取得） | スコープ逸脱・仕様の誤りの発見で停止 | 3.0 |
 | **G4 司法** | 緑か | **`review-judge:judge` PASS**（決定性緑＋**各基準に対応するテストがある**＋サーフェス充足＋セマンティックOK＋**正典を変えていない**）。契約 `specs/<機能>/` を渡す。**セッション内カウンタが N=3 超なら司法を呼ばずロールバック/ESCALATE** | RETRY/REJECT→G3 へ（**テストの無い基準は RETRY**）。N=3 超で ロールバック/ESCALATE | 3.0 |
-| **G5 PR** | PR 化してよいか | G4 PASS ＋ `gh pr create`（**本文の先頭に「⚠️ 要注意の変更」節**。対象 spec の git ref も本文に書く）＋ **司法の判定出力を `gh pr comment` で添付**（恒久の記録）。**issue から `loop-running` ラベルを外す**（以後は open PR の存在が Watching を表す） | 停止 | 3.0 |
+| **G5 PR** | PR 化してよいか | G4 PASS ＋ `gh pr create`（**本文の先頭に「⚠️ 要注意の変更」節、続けて「🎬 見た目の証拠」節**（下記）。対象 spec の git ref も本文に書く。行政が撮った動画があれば `--attach`）＋ **司法の判定出力を `gh pr comment` で添付**（恒久の記録）。**issue から `loop-running` ラベルを外す**（以後は open PR の存在が Watching を表す） | 停止 | 3.0 |
 | **G6 マージ** | 自動マージしてよいか | 司法 PASS ＋ **CI 緑** ＋ コンフリクトなし ＋ **`auto-merge` ラベル**（opt-in）＋ 影響度しきい値以下。**merge で `Closes #N` により issue が close ＝ Done** | 未充足は **PR で停止（人間がマージ）** | **定義のみ・runtime=3.1 はスキップ中。常に PR 停止** |
 
 ## 要注意の変更（PR で申告する）
@@ -95,6 +95,38 @@ PR ブランチだけに絞れなくなる。
 
 - 仕様自体の矛盾・欠落（`[NEEDS CLARIFICATION]` の残存・`/speckit-analyze` の CRITICAL）
 - constitution の MUST の原則への抵触
+
+## 見た目の証拠（PR で添える）
+
+UI に触れた変更は、人間がマージ判断で**変更前と変更後を並べて見られる**ように、before / after の動画を PR に添える。
+「要注意の変更」と同じ型で、**PR 本文に「🎬 見た目の証拠」節を必ず置く**（該当が無くても「該当なし」と書く）。
+書式・該当の決め方（差分 ∩ プロジェクトの `.claude/visual-evidence.json` の `ui_paths`）・判定表の正は
+**`review-judge` 同梱 `reference/visual-evidence.md`**。節は3状態のどれか:
+
+```
+## 🎬 見た目の証拠
+- base: <merge-base の SHA>
+- シナリオ: <パス>（<record コマンド>）
+- before: <緑 ／ 対応画面なし（<step> で停止）／ 録画不能（<理由>）>
+- after: 緑
+- 添付: before/<名>.webm / after/<名>.webm
+```
+
+```
+## 🎬 見た目の証拠
+該当なし（差分が `ui_paths` に触れない ／ UI サーフェスの宣言なし）
+```
+
+```
+## 🎬 見た目の証拠
+未録画: <理由>（UI に触れた差分: …）
+```
+
+撮るのは行政（G3。`dev-crew:implement` の手順「見た目の証拠」）、添付するのはループ（G5。`gh pr create --attach`。
+`gh pr create --help | grep -q -- '--attach'` で機能を確かめ、添付できなければ本文にそう書く）。司法（G4）は**申告が差分と一致しているか・
+動画が実在するか・シナリオが緑か**を検査し、UI に触れているのに「該当なし」なら **RETRY**。動画の中身は判定に使わない（人間向け）。
+**cloud の発火はブラウザを起動できないので「未録画（実行環境にブラウザなし）」の申告になり**、司法は再試行で変わらない環境要因として
+**初回で ESCALATE** する（N=3 を回さない。人間が手元で回すか、プロジェクトが CI 録画を持つ）。
 
 ## 停止条件・コスト
 
