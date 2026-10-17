@@ -182,13 +182,23 @@ herdr agent prompt child-<名前> "/conductor:dev specs/<機能>/"
 
 1. **行政** — `dev-crew:implement` に契約を渡す（`.claude/conductor.json` で `via: herdr` ならペインで）。
 2. **書記** — `SKILL.md` のレビュー招集ルールどおり（Task。worktree の中なので実装を正しく見る）。
-3. **司法** — 契約・差分（`origin/main...HEAD`）・証拠を渡す。行政の決定性結果は「申告（未検証）」として。
+3. **司法** — 契約・差分（`origin/main...HEAD`）・証拠・**PR 本文案**（「⚠️ 要注意の変更」節と、
+   行政が返した「🎬 見た目の証拠（案）」を節にしたもの）を渡す。行政の決定性結果は「申告（未検証）」として。
    - `REJECT` / `RETRY` → 指摘を行政へ戻す（最大3ラウンド。超えたら人間へ）。
    - `ESCALATE` → 止まって人間へ。
 4. **PASS なら PR** — 変更したファイルを明示してコミットし、`git push -u origin HEAD` で push して `gh pr create`
    （worktree の upstream が `origin/main` になっている環境で `main` へ push しないため、push 先を明示する）。
    本文には種別ごとの記載（`Spec: specs/<機能>/`、または「契約」節）と「⚠️ 要注意の変更」節（`loop-engine` 同梱
-   `autonomy-gates.md` の書式）を入れ、司法の判定出力を `gh pr comment` で添付する。**マージはしない。**
+   `autonomy-gates.md` の書式）、「🎬 見た目の証拠」節（司法に渡した本文案のまま）を入れる。
+   動画の添付は `review-judge` 同梱 `reference/visual-evidence.md`「添付手順」:
+   - 該当なし／未録画で動画が無い → `--attach` なしで `gh pr create --body-file <本文>`。
+   - 録画あり → `gh pr create --help | grep -q -- '--attach'` で機能を確かめ、
+     `gh pr create --body-file <本文> --attach <before/名.webm> --attach <after/名.webm> [--attach <side-by-side.mp4>]`。
+     作成後に `gh pr view <番号> --json body -q .body` で添付 URL が入ったことを読み戻す。
+   - 録画ありだがサイズ超過（`max_attach_mb`）→ そのファイルは添付せず、本文の「添付」の行に「サイズ超過（<size>MB）。手元 <path>」。
+   - `gh` が `--attach` を持たない → 添付せず、本文の「添付」の行に「添付不可（gh に --attach なし）。手元 <path>」と書いて `gh pr edit --body-file` で直し、
+     人間に `gh` の更新を伝える（司法に渡した本文との差はこの行だけ）。黙って省かない。
+   司法の判定出力を `gh pr comment` で添付する。**マージはしない。**
 5. 終わったら人間（と親）に PR のリンクを伝える。worktree の後始末はマージ後に人間が
    `/commit-commands:clean_gone` で行う。
 
