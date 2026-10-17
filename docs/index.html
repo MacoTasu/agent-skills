@@ -1044,6 +1044,21 @@ footer {
         この差を受け入れられない利用者のために、既定は Task のまま据え置いている。
       </dd>
 
+      <dt>別ベンダーの判事は Codex を既定にし、決定性チェックは指揮が実行する</dt>
+      <dd>
+        Copilot CLI の判事が「禁止＋事後検出」に弱まったのは、シェル経由の書き込みを止められないからだった。
+        Codex CLI の <code>codex exec -s read-only</code> は<strong>OS のサンドボックスでシェル経由の書き込みも
+        遮断する</strong>（実測: cwd・<code>.git/</code>・<code>$TMPDIR</code>・<code>$HOME</code> への書き込みと
+        ネットワークを遮断、<code>-o</code> の結果ファイルは Codex 本体が外で書く）。
+        herdr のペインも要らず、<code>--output-schema</code> で判定を JSON に固定できるので、判定行の解析や
+        画面読みの脆さも消える。そこで別ベンダーの判事は Codex を既定の手段にし、herdr は実装を目視したい
+        ときに残した。代償は、read-only では書き込み（キャッシュ・ビルド成果物・<code>$TMPDIR</code>）や
+        ネットワークを要するテストが失敗しうること。
+        <strong>決定性チェックは指揮が実行して生の出力を証拠として渡し、判事はセマンティック判定と総合判定だけを
+        担う</strong>。指揮は事実を採るだけで、緑・赤の解釈も判定もしない。証拠の無い基準は判事が PASS しない。
+        事後検出は保険として残す。Copilot の経路は、Codex の経路が運用で固まるまで残している。
+      </dd>
+
       <dt>立法を自前の goals/ から spec-kit に移し、そのレールに乗る</dt>
       <dd>
         以前は仕様を自前の形式（<code>goals/&lt;slug&gt;.md</code>）で書き、「今の振る舞い」を別の
