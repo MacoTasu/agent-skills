@@ -6,7 +6,7 @@
 |---|---|---|
 | どこで | `main` のチェックアウト | 仕事ごとの worktree（ブランチ `spec/<名前>` か `feat/<名前>`） |
 | 起動 | `/conductor:dev <依頼>` | `/conductor:dev <依頼ファイルの絶対パス>` または `/conductor:dev specs/<機能>/`（親が送る、または人間が打つ） |
-| 仕事 | 依頼の分類、spec-kit かインラインかの 1 問、依頼ファイルの作成、送り出し、子の様子の把握 | **仕様の起草** → 仕様の PR ／ **Plan Mode 合意（インライン契約）** → 実装 → 書記 → 司法 → PR ／ **承認済み仕様の実装** → 書記 → 司法 → PR |
+| 仕事 | 依頼の分類、spec-kit かインラインかの 1 問、依頼ファイルの作成、送り出し、子の様子の把握、マージ後の retro の掃き出し | **仕様の起草** → 仕様の PR ／ **Plan Mode 合意（インライン契約）** → 実装 → 書記 → 司法 → PR ／ **承認済み仕様の実装** → 書記 → 司法 → PR |
 | しないこと | コードを書く・**ブランチを切る**（自分のチェックアウトで。子の worktree を作るのは送り出しの一部）・`main` にコミットする・長い対話を抱える・PR をマージする | `spec.md` や constitution を変える（実装の子）・`main` に触る |
 
 親を `main` に置き、差分を作る仕事をすべて子に出すのは、人間が親と話し続けている間も子が並行して動けるように
@@ -139,6 +139,27 @@ herdr agent prompt child-<名前> "/conductor:dev specs/<機能>/"
 - 仕様の PR のマージ後の渡し先は2通り。人間が親に「実装して」と言えば入口 C、`loop-engine` に任せるなら
   issue に `Spec: specs/<機能>/` のコメントと `loop-ready` ラベルを付ける（`loop-engine` の手順）。
 
+### マージ後の retro の掃き出し（親）
+
+マージ後の振り返りを打ち忘れて、レビューでの指摘という一番大きな学びが消えないように、親が**起動時と、子の様子の把握のたびに**掃き出す。
+候補は「`trigger: pr-created` の retro コメントがあり、`trigger: post-merge` の retro コメントが無いマージ済み PR」:
+
+```bash
+gh pr list --state merged --limit 30 --json number,comments --jq '[.[] | select(any(.comments[]; .body | contains("trigger: pr-created")) and (any(.comments[]; .body | contains("trigger: post-merge")) | not)) | .number]'
+```
+
+- pr-created の retro が無い PR（この仕組みより前のもの）は対象外。人間が手動の入口（retro スキルに PR 番号を渡す）で拾う。
+- 1 回で扱うのは**古い順に最大 3 件**。
+- **親の主作業を妨げない。** 下書きは retro エージェントを Task **@sonnet** の**バックグラウンド**で、
+  `trigger=post-merge mode=draft` で招集する（PR 番号だけ渡す。事実は retro が集める）。親は人間の依頼の処理を優先し、
+  下書きが揃ったら確認を 1 問出す。
+- **確認は投稿の前。** 下書きの指標と項目の予定を要約して、人間に 4 択で聞く:
+  **全部出す** ／ **issue を選んで出す**（コメントは出す）／ **記録だけ**（指標と項目を載せたコメントだけ出し、
+  issue は作らない。末尾に「人間が issue 化を見送った: N 件」）／ **あとで**（何も出さない）。
+- 「あとで」以外は、`mode=publish-draft` で招集して投稿する（下書きのディレクトリと人間の選択を渡す）。
+  「記録だけ」でも post-merge のコメントは残るので、その PR は再び候補に挙がらない。「あとで」は何も残らないので、次の掃き出しでまた挙がる。
+- **非ブロッキング。** `gh` が失敗したら「Retro 掃き出し: 未実施（理由）」の 1 行を添えて、人間の依頼を続ける。
+
 ## 子の手順
 
 1. **場所の確認** — `main` の上ではないこと、`git rev-parse --show-toplevel` が自分の worktree であること。
@@ -198,7 +219,7 @@ herdr agent prompt child-<名前> "/conductor:dev specs/<機能>/"
    失敗したら「Retro: 未取得（理由）」の 1 行を報告に添えるだけで、**PR も報告も止めない**。
 6. 終わったら人間（と親）に PR のリンクを伝える（retro のコメント URL か「Retro: 未取得（理由）」も添える）。
    worktree の後始末はマージ後に人間が `/commit-commands:clean_gone` で行う。
-   マージ後の振り返りは、人間が `/dev-crew:retro <PR番号>` で別に積む。
+   マージ後の振り返りは、親の掃き出しが拾う（手動なら `/dev-crew:retro <PR番号>`）。
 
 ## 人間が子に直接指示するとき
 
