@@ -506,8 +506,8 @@ footer {
         <div class="entry-body">
           開発の単一フロントドア＝<strong>指揮</strong>。<code>main</code> に常駐する<strong>親</strong>は
           依頼を分類して worktree の<strong>子</strong>に送り出し、子が仕様の起草、または Plan Mode 合意→実装→書記→司法→PR を回す。
-          子は行政に実装させ、書記に証拠を出させ、<strong>司法に持ち込む</strong>。自分ではコードを書かず、判定も出さない。
-          三権のどこにも属さない。行政と司法は、任意で herdr の隣のペインに別の AI コーディングツールとして出せる。
+          子は行政に実装させ、書記に証拠を出させ、<strong>司法に持ち込む</strong>。PR 作成後に retro を招集（非ブロッキング）。マージ後は親が自動で下書きし、人間が確認して投稿。
+          自分ではコードを書かず、判定も出さない。三権のどこにも属さない。行政と司法は、任意で herdr の隣のペインに別の AI コーディングツールとして出せる。
           <div class="needs"><b>needs</b> — dev-crew / review-judge / feature-dev / pr-review-toolkit / commit-commands</div>
         </div>
       </div>
@@ -515,13 +515,14 @@ footer {
       <div class="entry">
         <div>
           <div class="entry-name">dev-crew</div>
-          <div class="entry-meta">3 skills · 2 agents</div>
+          <div class="entry-meta">3 skills · 3 agents</div>
         </div>
         <div class="entry-body">
           <strong>行政（実務）</strong>。契約に沿って実装し、ビルド・型・lint・テストの決定性証拠を
           揃えるところまで。<strong>司法を呼ぶ権限を持たず、合否も宣言しない</strong> —
           証拠を揃えて指揮に返す。spec-kit の仕様では <code>/speckit-implement</code> を枠の中で呼び、
           前後の確認（仕様の確定・範囲外の変更・自己レビュー・証拠表）を受け持つ。出荷・運用と書記の職能エージェントも同梱。
+          PR 単位の振り返りを PR コメントと <code>retro</code> issue に残す<strong>学ぶループ</strong>（<code>dev-crew:retro</code>。PR は作らず、反映は人間のマージだけ）も同梱。
           <div class="needs"><b>needs</b> — feature-dev / spec-kit（仕様を契約にするとき）</div>
         </div>
       </div>

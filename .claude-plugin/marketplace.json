@@ -33,13 +33,13 @@
     },
     {
       "name": "conductor",
-      "description": "開発の指揮。main に常駐する親が spec-kit で仕様を起草して仕様の PR を作り、承認された仕様を worktree の子に送り出す。子は行政に実装させ、書記に証拠を出させ、司法に持ち込む。自分ではコードを書かず判定も出さない。行政が司法を呼べない構造にすることで、実装した主体が合否を決められないようにする。",
+      "description": "開発の指揮。main に常駐する親が spec-kit で仕様を起草して仕様の PR を作り、承認された仕様を worktree の子に送り出す。子は行政に実装させ、書記に証拠を出させ、司法に持ち込み、PR 作成後に retro(学ぶループ)を非ブロッキングで招集し、マージ後は親が自動で下書きして人間の確認の後に投稿する。自分ではコードを書かず判定も出さない。行政が司法を呼べない構造にすることで、実装した主体が合否を決められないようにする。",
       "source": "./plugins/conductor",
       "category": "workflow"
     },
     {
       "name": "dev-crew",
-      "description": "行政(実務)の一式。契約に沿って実装し決定性証拠を揃える implement、出荷/運用の create-issue、書記の職能エージェント。判定は出さず、証拠を揃えて指揮に返す。",
+      "description": "行政(実務)の一式。契約に沿って実装し決定性証拠を揃える implement、出荷/運用の create-issue、書記の職能エージェント、PR 単位の振り返りを PR コメントと retro issue に残す学ぶループ(retro)。判定は出さず、証拠を揃えて指揮に返す。",
       "source": "./plugins/dev-crew",
       "category": "workflow"
     },
