@@ -82,15 +82,16 @@ git branch --show-current          # 実装ブランチであること（main �
 ## 共通: ペインを開いてツールを起動する
 
 ```bash
-# 1. 隣にペインを開く。フォーカスは奪わない。作業ディレクトリは今と同じ
-herdr pane layout --pane "$HERDR_PANE_ID"            # 横長なら right、縦長なら down
-herdr pane split --current --direction right --cwd "$PWD" --no-focus
+# 1. 自分のペインの下に開く。フォーカスは奪わない。作業ディレクトリは今と同じ
+herdr pane split --pane "$HERDR_PANE_ID" --direction down --cwd "$PWD" --no-focus
 #    → .result.pane.pane_id を控える（推測しない）
 
 # 2. ツールを起動する。名前は役割＋契約 slug（[a-z][a-z0-9_-]{0,31}）
 herdr agent start <name> --kind <kind> --pane <pane_id> -- <起動引数>
 ```
 
+- 下に開くのは、親のタブで子が横に並んでいるため（`parent-child.md`「herdr がある場合」）。右に開くと列が増えて
+  子の並びに割り込み、親が数える列の上限（5）も食う。自分の列の中で上下に割れば、横の並びは変わらない。
 - 名前は `impl-<slug>` / `judge-<slug>`。slug は機能ディレクトリ名から先頭のタイムスタンプを除いた部分
   （`20260927-143022-user-export` → `user-export`）。インライン契約ならブランチ名から作る。
   32文字を超えるなら slug を切り詰める。

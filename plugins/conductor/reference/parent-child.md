@@ -72,12 +72,13 @@ issue: #<番号>（あれば）
 
 ### 上限
 
-pane は親 1 ＋ 子 3 ＝ **4**、並行する worktree は **3** 本まで。
+親のタブに横に並ぶ列は親 1 ＋ 子 4 ＝ **5**、並行する worktree は **4** 本まで。
+人間が 1 画面で親と子を全部見て、直接話しかけられる数に揃えている（画面幅 393 桁で 1 列 約 78 桁）。
 
-- `git worktree list` で本体以外の worktree が **3 本**あれば送り出さない（別セッションの worktree も数える）。
-- `herdr agent list` で、名前が `spec-` / `child-` で始まり、この repo の本体以外の worktree を `cwd` に持つエージェントが
-  **3 つ**あれば送り出さない（起草の子も数える。親 1 と合わせて pane 4）。
-  `via: herdr` で子が開く `impl-*` / `judge-*` のペインは子の内部の作業なので、pane 4 の対象外。
+- `git worktree list` で本体以外の worktree が **4 本**あれば送り出さない（別セッションの worktree も数える）。
+- 親のタブの列が **5** あれば送り出さない。列は上端に並ぶペインの x 座標の種類で数える（人間が開いたペインも画面を使うので数える）:
+  `herdr pane layout --pane "$HERDR_PANE_ID" | jq '.result.layout | .area.y as $y | [.panes[] | select(.rect.y == $y) | .rect.x] | unique | length'`
+  `via: herdr` で子が開く `impl-*` / `judge-*` のペインは子の列を上下に割って開く（`herdr-backend.md`）ので、列を増やさず、5 の対象外。
 - 上限に当たったら「待たせるか、どれを片付けるかを人間が判断する」と伝えて止まる。**勝手に子を閉じない・worktree を消さない。**
 
 ### 入口 C の前提
@@ -91,31 +92,51 @@ pane は親 1 ＋ 子 3 ＝ **4**、並行する worktree は **3** 本まで。
 
 ### herdr がある場合（`HERDR_ENV=1`）
 
-入口 A:
+子は**親のタブの中で、全高の列のうちいちばん右の列の、さらに右**に開く。送り出すたびに列が右へ並び、人間は 1 画面で親と子を全部見て、
+どの子にも直接話しかけられる。子ごとに workspace を作る herdr の worktree 作成（`herdr worktree` の create）は使わない（人間が workspace を切り替えないと子が見えず、
+linked worktree の workspace から呼ぶとエラーになるので、親が worktree の中にいると送り出せない）。
+
+1〜4 は入口 A・B・C で共通（`<ブランチ>` は入口 A なら `spec/<名前>`、B・C なら `feat/<名前>`）。
+`<reference>` は**このファイルを Read したディレクトリ**（`equalize-columns.sh` はこのファイルと同じ場所にある。
+`CLAUDE_PLUGIN_ROOT` はシェルに渡らないことがあるので使わない）。
+**各手順の検査に落ちたら、そこで止めて人間に伝え、次の手順に進まない**（推測で補わない）:
 
 ```bash
-herdr worktree create --branch spec/<名前> --base origin/main --label <名前> --no-focus
-#   → 応答の JSON から新しい workspace とその root pane の ID を読む（推測しない）
-herdr agent start spec-<名前> --kind claude --pane <root_pane_id> -- --add-dir "<dir>"
-herdr agent prompt spec-<名前> "/conductor:dev <dir>/request.md"
+# 1. worktree を作る。置き場所は本体のチェックアウトの隣（herdr が無い場合と同じ）
+main_root=$(git worktree list --porcelain | sed -n '1s/^worktree //p')   # 本体（1 行目）。親が worktree の中にいても同じ
+wt="$(dirname "$main_root")/$(basename "$main_root")-<名前>"
+git worktree add "$wt" -b <ブランチ> origin/main && test -d "$wt"
+
+# 2. いちばん右の列を求める（推測しない）。タブの全高を持つペインのうち、右端がいちばん右のもの。
+#    見つからなければ jq -e が失敗して right は空になる → 止める
+right=$(herdr pane layout --pane "$HERDR_PANE_ID" | jq -er '.result.layout | .area.height as $h
+  | [.panes[] | select(.rect.height == $h)] | max_by(.rect.x + .rect.width) | .pane_id // empty')
+test -n "$right"
+
+# 3. その右に分割して開く。フォーカスは奪わない → 新しいペインの ID を控える。空なら止める
+new=$(herdr pane split --pane "$right" --direction right --cwd "$wt" --no-focus | jq -er '.result.pane.pane_id // empty')
+test -n "$new"
+
+# 4. 列の幅をそろえる（分割は右端を半分にするだけなので、そろえないと 4〜5 列目が読めない幅になる）
+bash "<reference>/equalize-columns.sh" "$HERDR_PANE_ID"
 ```
 
-入口 B:
+5. 子を起動して依頼を送る:
 
-```bash
-herdr worktree create --branch feat/<名前> --base origin/main --label <名前> --no-focus
-herdr agent start child-<名前> --kind claude --pane <root_pane_id> -- --add-dir "<dir>"
-herdr agent prompt child-<名前> "/conductor:dev <dir>/request.md"
-```
+| 入口 | コマンド |
+|---|---|
+| A | `herdr agent start spec-<名前> --kind claude --pane "$new" -- --add-dir "<dir>"` → `herdr agent prompt spec-<名前> "/conductor:dev <dir>/request.md"` |
+| B | `herdr agent start child-<名前> --kind claude --pane "$new" -- --add-dir "<dir>"` → `herdr agent prompt child-<名前> "/conductor:dev <dir>/request.md"` |
+| C | `herdr agent start child-<名前> --kind claude --pane "$new"` → `herdr agent prompt child-<名前> "/conductor:dev specs/<機能>/"` |
 
-入口 C:
-
-```bash
-herdr worktree create --branch feat/<名前> --base origin/main --label <名前> --no-focus
-herdr agent start child-<名前> --kind claude --pane <root_pane_id>
-herdr agent prompt child-<名前> "/conductor:dev specs/<機能>/"
-```
-
+- 手順 2 で全高のペインに限るのは、`impl-*` / `judge-*` が上下に割っている列を右に割ると、新しい子がその半分の高さになるため。
+  いちばん右の列が上下に割れている間は、新しい子はその列の左に入る（並び順よりも、全員が全高で見えることを取る）。
+- 手順 4 はペインの大きさを変えるだけで、**失敗しても送り出しは止めない**（幅は見た目の問題で、子はもう開いている）。
+  終了コードが 0 以外なら、stderr の 1 行（「幅はそろえていない」＝列の一部だけを左右に割ったペインがある、
+  「そろえきれなかった」、または herdr の失敗）を人間に伝えて手順 5 に進む。全高の列を人間が左右に割ったものは 1 列として数え、そろえる。
+- **途中で止まったときの後始末は人間が決める。** 手順 2・3 で止まると worktree とブランチは残る（作り直すと "already exists" で失敗する）。
+  親は消さずに「`$wt` とブランチ `<ブランチ>` が残っている。手順 2 から再開するか、片付けるか」を人間に伝える。
+  手順 3 の後で止まったときは開いたペインも残る（閉じない）。
 - `-- --add-dir "<dir>"` は、リポジトリの外にある依頼ファイルを子が読めるようにするため（`herdr-backend.md`「行政」と同じ理由）。
 - herdr が Git の信頼確認（`--trust-repository`）を求めたら、付けずに人間に確認する。
 - **送ったら待たずに人間との対話に戻る。** 様子は下の「子の様子の把握」で見る。
@@ -123,7 +144,7 @@ herdr agent prompt child-<名前> "/conductor:dev specs/<機能>/"
 
 ### herdr が無い場合
 
-親は `git worktree add ../<リポジトリ名>-<名前> -b <ブランチ> origin/main` で worktree を作り（入口 A・B なら依頼ファイルも書き）、
+親は上の手順 1 と同じ置き場所（本体のチェックアウトの隣の `<リポジトリ名>-<名前>`）に `git worktree add` で worktree を作り（入口 A・B なら依頼ファイルも書き）、
 「そのディレクトリで `claude --add-dir "<dir>"` を起動し `/conductor:dev <dir>/request.md` を実行してください」
 （入口 C なら「`claude` を起動し `/conductor:dev specs/<機能>/`」）と人間に案内して止まる。
 
@@ -232,7 +253,8 @@ gh pr list --state merged --limit 30 --json number,comments --jq '[.[] | select(
    retro は PR コメントと `retro` issue を書くだけで、判定も PR 作成もしない（`dev-crew` 同梱 `agents/retro.md`）。
    失敗したら「Retro: 未取得（理由）」の 1 行を報告に添えるだけで、**PR も報告も止めない**。
 6. 終わったら人間（と親）に PR のリンクを伝える（retro のコメント URL か「Retro: 未取得（理由）」も添える）。
-   worktree の後始末はマージ後に人間が `/commit-commands:clean_gone` で行う。
+   worktree の後始末はマージ後に人間が `/commit-commands:clean_gone` で行う（`git worktree add` で作ったので herdr の
+   worktree 一覧には載らず、herdr からは消えない）。子のペインも人間が閉じる（親も子も閉じない）。
    マージ後の振り返りは、親の掃き出しが拾う（手動なら `/dev-crew:retro <PR番号>`）。
 
 ## 人間が子に直接指示するとき
