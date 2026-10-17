@@ -32,7 +32,7 @@
 
 | キー | 意味 |
 |---|---|
-| `via` | `task`（既定）/ `herdr` / `codex`（`codex` は judge のみ。`codex-backend.md` 参照） |
+| `via` | `task`（既定）/ `herdr` / `codex`（`codex` は judge のみ。`codex-backend.md` 参照）/ `headless`（implement のみ。`headless-backend.md` 参照） |
 | `kind` | ペインで起動するツール。herdr の `agent start --kind` の値 |
 | `model` | 任意。ツールの `--model` にそのまま渡す（モデル階層ポリシーの代わり） |
 

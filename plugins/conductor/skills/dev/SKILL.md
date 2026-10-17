@@ -115,7 +115,7 @@ allowed-tools:
 | 小さな変更(typo・1箇所のバグ修正・軽いリファクタ)(main 上) | dispatch(インライン) | **親**: 依頼ファイルを書き、`child-<名前>` を送り出す(入口 B。Plan Mode は子) |
 | 「<仕様> を実装して」/ マージ済み仕様の送り出し(main 上) | dispatch | **親**: worktree を切って `child-<名前>` を起動する(入口 C) |
 | `/conductor:dev <依頼ファイル>`(worktree 上) | specify / implement(子) | **子**: 依頼ファイルの種別により、spec-kit で仕様を起草して仕様の PR を作る(マージも実装もしない)、または Plan Mode 合意(＝インライン契約。各基準に検証方法を併記) → 設計が要れば `feature-dev:code-architect` Task **@opus** → 実装は **`dev-crew:implement`**(インライン契約を渡す) → 書記 → 司法 → PR(`parent-child.md`「子の手順」) |
-| `/conductor:dev specs/<機能>/`(機能ブランチ・worktree 上) | implement(子) | **子**: 仕様は承認済みなので Plan Mode は省く → 実装は **`dev-crew:implement`**(契約=機能ディレクトリ。`via: herdr` ならペイン) → 書記 → 司法 → PR(`parent-child.md`「子の手順」) |
+| `/conductor:dev specs/<機能>/`(機能ブランチ・worktree 上) | implement(子) | **子**: 仕様は承認済みなので Plan Mode は省く → 実装は **`dev-crew:implement`**(契約=機能ディレクトリ。`via: herdr` ならペイン、`via: headless` なら `claude -p`) → 書記 → 司法 → PR(`parent-child.md`「子の手順」) |
 | herdr が無く、人間が現在のチェックアウトで進めるよう明示した | implement(直接) | 親が `parent-child.md`「herdr が無い場合」の例外どおりブランチを切り、「子の手順」を1件だけ自分で進める。行政は決定性の結果までを返し、合否は宣言しない |
 | UI / 画面 / コンポーネントを伴う実装 | implement(FE) | 上記 ＋ `frontend-design`(UI変更で自動発火) |
 | 「レビューして」/ PR番号・URL | review | `/conductor:dev` が pr-review-toolkit 6サブエージェントを **Task 並列・model 上書き**で起動(＝証拠提供) ＋ 必要に応じ dev-crew:business-reviewer / dev-crew:domain-architect を並列 → 最後に **`review-judge:judge`(司法・判事)が束ねて単一判定**(下記レビュー招集ルール) |
@@ -258,24 +258,31 @@ PR コメントと `retro` issue を書くだけ。反映は人間がハーネ�
 3. feature-dev/pr-review の code-reviewer 系を回した後、追加で回すのは
    **domain / business 観点のみ**。コード品質の二重レビューはしない。
 
-## 実行方式(Task / herdr ペイン / Codex)
+## 実行方式(Task / herdr ペイン / Codex / headless)
 
 判事を別ベンダーにする既定の手段は Codex(ペイン不要)。herdr は実装を目視したいときに使う。
 
 行政(`dev-crew:implement`)と司法(`review-judge:judge`)は、Task の代わりに
 **herdr の隣のペインで動く別の AI コーディングツール**に担わせられる(判事を別ベンダーの
 モデルにする / 実装を目視して割り込む、のため)。司法はさらに **Codex CLI の `codex exec`**
-(OS サンドボックスで read-only)にも担わせられる。書記は Task(加えて任意で `codex-review`。
+(OS サンドボックスで read-only)にも担わせられる。行政はさらに **非対話の `claude -p`**(`via: headless`)
+にも担わせられる(使い捨ての実装にペインを残さない)。書記は Task(加えて任意で `codex-review`。
 レビュー招集ルール「別ベンダーの所見」)。
 
 1. 招集の直前に、対象リポジトリの `.claude/conductor.json` を Read する。
-   無い、または該当役割の `via` が `herdr` / `codex` のどちらでもなければ **Task(既定・上記のまま)**。
+   無い、または該当役割の `via` が `herdr` / `codex` / `headless` のどれでもなければ **Task(既定・上記のまま)**。
 2. `via: herdr` なら `${CLAUDE_PLUGIN_ROOT}/reference/herdr-backend.md` を Read し、
    **その手順どおり**に招集する。前提(`HERDR_ENV=1`・`herdr`・指定ツールの存在・
    対応している kind)が1つでも欠けたら、**理由を1行表示して Task にフォールバック**する。
    `via: codex`(judge のみ)なら `${CLAUDE_PLUGIN_ROOT}/reference/codex-backend.md` を Read し、
    **その手順どおり**に招集する。前提(`codex` の存在・`codex login status`・`judge.md`・
    main 以外のブランチ)が1つでも欠けたら、**理由を1行表示して Task にフォールバック**する。
+   `via: headless`(implement のみ)なら `${CLAUDE_PLUGIN_ROOT}/reference/headless-backend.md` を Read し、
+   **その手順どおり**に招集する。前提(`claude`・`jq` の存在・main 以外のブランチ)が1つでも欠けたら、
+   **理由を1行表示して Task にフォールバック**する。judge に `via: headless` が指定されていたら、
+   **理由を1行表示して Task にフォールバック**する(Task を呼べない指揮なら止まって人間へ)。
+   `<dir>/exit` が 0 でない・`out.json` が無い・`subtype`≠success・`is_error`・`.result` が空は
+   「結果不明」で、次の段に進まず人間へ。
 3. ペインの判事では「直せない」をツールの不在で強制できない。**判事の前後で作業ツリーの
    スナップショットを取り、変わっていたら判定に関わらず `ESCALATE`**(手順書の「改ざん検出」)。
    これを省いて判事をペインで動かさない。Codex の判事は read-only のサンドボックスで書けないが、
@@ -291,7 +298,11 @@ PR コメントと `retro` issue を書くだけ。反映は人間がハーネ�
    指揮は緑・赤を解釈しない)。spec-kit 契約では、基準 ID からテストを対応づけて特定し基準ごとに実行する
    (`codex-backend.md`「判事の手順」1。見つからない基準は「テストなし」として渡す)。
 
-`loop-engine`(自律・cloud)はこの設定を読まない。herdr / Codex が無い環境では常に Task。
+**指揮が Task を呼べないとき**(指揮が Claude Code でない、など)は、書記と retro も
+`headless-backend.md`(「書記」「retro」「Task を呼べない指揮のときの置き場」)の手順で `claude -p` に回す。
+前提が欠けたら Task へのフォールバックではなく、止まって人間へ。
+
+`loop-engine`(自律・cloud)はこの設定を読まない。herdr / Codex / claude が無い環境では常に Task。
 
 ## Agent Teams(言及のみ)
 

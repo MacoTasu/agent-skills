@@ -227,7 +227,9 @@ gh pr list --state merged --limit 30 --json number,comments --jq '[.[] | select(
 ### 実装から PR まで（インライン契約・承認済み仕様で共通）
 
 1. **行政** — `dev-crew:implement` に契約を渡す（`.claude/conductor.json` で `via: herdr` ならペインで）。
+   `via: headless` なら `claude -p` で（`headless-backend.md`「行政」）。
 2. **書記** — `SKILL.md` のレビュー招集ルールどおり（Task。worktree の中なので実装を正しく見る）。
+   指揮が Task を呼べないなら、`headless-backend.md`「書記」の `claude -p` で。
 3. **司法** — 契約・差分（`origin/main...HEAD`）・証拠・**PR 本文案**（「⚠️ 要注意の変更」節と、
    行政が返した「🎬 見た目の証拠（案）」を節にしたもの）を渡す。行政の決定性結果は「申告（未検証）」として。
    - `REJECT` / `RETRY` → 指摘を行政へ戻す（最大3ラウンド。超えたら人間へ）。
@@ -252,6 +254,7 @@ gh pr list --state merged --limit 30 --json number,comments --jq '[.[] | select(
    引用できないときだけ「不足」と書く）。
    retro は PR コメントと `retro` issue を書くだけで、判定も PR 作成もしない（`dev-crew` 同梱 `agents/retro.md`）。
    失敗したら「Retro: 未取得（理由）」の 1 行を報告に添えるだけで、**PR も報告も止めない**。
+   指揮が Task を呼べないなら、`headless-backend.md`「retro」の `claude -p --agent dev-crew:retro` で。
 6. 終わったら人間（と親）に PR のリンクを伝える（retro のコメント URL か「Retro: 未取得（理由）」も添える）。
    worktree の後始末はマージ後に人間が `/commit-commands:clean_gone` で行う（`git worktree add` で作ったので herdr の
    worktree 一覧には載らず、herdr からは消えない）。子のペインも人間が閉じる（親も子も閉じない）。

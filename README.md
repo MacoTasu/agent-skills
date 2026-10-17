@@ -128,6 +128,13 @@ read-only では書き込み（キャッシュ・ビルド成果物・`$TMPDIR`�
 `scribes` に `codex-review` を足すと、`codex exec review` の所見も書記として証拠に加わる。
 手順と制約は [`plugins/conductor/reference/codex-backend.md`](plugins/conductor/reference/codex-backend.md)。
 
+**目視の要らない実装は、`claude -p` で走らせられる（ペイン不要）。** `implement` を `via: headless` にすると、
+行政を非対話の `claude -p` で動かし、プロセスが終われば何も残らない。権限は承認待ちで止めない設定にし、
+拒否された操作は結果の JSON から事実として拾う。拒否ルールは前方一致ですり抜けうるので、
+保証は事後の確認（HEAD と作業ツリーの取り直し）に置く。指揮が Task を呼べない（Claude Code でない）ときは、
+書記と retro も同じ手段で回す。判事の `via: codex` とは独立に組み合わせられる。
+手順と制約は [`plugins/conductor/reference/headless-backend.md`](plugins/conductor/reference/headless-backend.md)。
+
 ## spec-kit との分担
 
 立法（仕様）には [spec-kit](https://github.com/github/spec-kit) を使い、そのレールに乗る。
