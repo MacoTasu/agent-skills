@@ -14,6 +14,7 @@
 | ハーネスが導入されている | `/plugin` で `loop-engine` が active | `/plugin marketplace add MacoTasu/agent-skills` → `/plugin install loop-engine@macotasu-agent-skills` |
 | 行政と司法が導入されている | `/plugin` で `dev-crew` と `review-judge` が active | `/plugin install dev-crew@macotasu-agent-skills` / `review-judge@macotasu-agent-skills`（**loop-engine は単体では動かない**） |
 | spec-kit の CLI がある | `specify version` | `uv tool install specify-cli`（版を固定するなら `specify-cli==<版>`） |
+| gitleaks がある（公開物ガード） | `gitleaks version` | `brew install gitleaks`（ほかの方法は gitleaks の README）。**無い間は commit / push が止まる** |
 
 > **ハーネスの更新 = `/plugin marketplace update macotasu-agent-skills` → `/plugin update`**。
 > ライブが古いと感じたら、まず marketplace の update を疑う（最頻の落とし穴）。
@@ -50,7 +51,14 @@ specify init --here --force --non-interactive --integration claude --script sh
 これで揃う・確認されるもの:
 - spec-kit の設定の確認（`.specify/` の有無・タイムスタンプ方式・constitution）。**足りなければ案内するだけで書き換えない**
 - `.claude/hooks/{validate,gate}.sh` … project 固有 validation の雛形（既定 no-op）
-- `.claude/settings.json` … hooks 配線（PostToolUse=validate / Stop=gate）とプラグイン宣言を追記（既存は壊さず jq マージ）
+- `.githooks/{pre-commit,pre-push,public-guard.sh}`・`.gitleaks.toml` … 公開物ガード（下の §3）。`core.hooksPath` は**未設定で、
+  `.git/hooks/` に自前の hook（`.sample` 以外）も無いときだけ** `.githooks` に設定する（別の値が設定済み、または既存の hook があるときは
+  触らず todo を出す。既存の hook を `.githooks/` に移し、pre-commit / pre-push は `public-guard.sh` も呼ぶ形に統合してから設定する）。
+  linked worktree で実行したときも設定しない（設定は worktree 間で共有され、`.githooks/` の無いツリーでは git が hook を黙って無視するため）。
+  `.githooks/` をコミットしてから、メインの作業ツリーで `git config core.hooksPath .githooks`
+- `.claude/hooks/guard.sh` … `git commit` / `push` の前に公開物ガードが有効かだけを確かめる（PreToolUse）
+- `.claude/settings.json` … hooks 配線（PreToolUse=guard / PostToolUse=validate / Stop=gate）とプラグイン宣言を追記（既存は壊さず jq マージ）。
+  既存 hooks があるときは書き換えず、guard の配線が無ければ todo を出す。jq があるとき、JSON として読めなければ何も変えずに止まる
 
 `loop-init` は **言語を検出**して、その言語向けの validation コマンドを提案する。冪等なので何度実行しても安全。
 
@@ -64,6 +72,32 @@ specify init --here --force --non-interactive --integration claude --script sh
 - `gate.sh`（Stop・**フル**）: build / test。**変更検知ガード＋`stop_hook_active` ガード**は雛形に内蔵済み。
 
 > **既存の lint/test/build hook があれば再利用する（DRY）**。失敗時は `exit 2` ＋ stderr に理由（Claude が受け取って直す）。
+
+### 公開物ガード（git hook ＋ gitleaks）
+
+漏らしたくないもの（秘密・端末依存のパス・個人情報）を、**git の hook が commit / push の直前に** gitleaks で検査する。
+git が自分のリポジトリで実行するので、Claude Code の外からの commit / push や worktree でも効く。
+
+- `pre-commit` → `public-guard.sh commit`: staged の追加行だけを見る（秘密を消すコミットは止めない）。
+  `REQUIRE_NOREPLY=1` なら作者メールが noreply かも見る。
+- `pre-push` → `public-guard.sh push`: push する各 ref の「まだリモートに無いコミット」だけを見る（新規ブランチ・タグ・detached HEAD からの
+  push も含む。削除の push は見ない）。`REQUIRE_NOREPLY=1` なら同じ範囲の作者メールも見るので、`git commit --author=...` で変えた作者はここで止まる。
+- ルールは `.gitleaks.toml`（gitleaks の既定ルール＋端末依存・個人情報のパターン）。プロジェクトに合わせて足してよい。
+- **誤検知の行**は行末に `gitleaks:allow` を書くと許可される。
+- gitleaks の既定 allowlist に入るパス（`.svg`・`.pdf` などの拡張子、`go.mod`、`node_modules/` など）は検査されない。
+  そこが気になる差分は手動の grep（リポジトリの CLAUDE.md の例など）を予備に使う。
+- **公開できない NG ワード**（private リポジトリ名など）は `.gitleaks.toml` に書かない（コミットされる）。未追跡の
+  `.gitleaks.local.toml` に置いて `.gitignore` に追加する。`public-guard.sh` が `-c` で渡す。書き方は `.gitleaks.toml` の先頭のコメント。
+  linked worktree（`git worktree add` の先）には未追跡ファイルが無いので、そこではメインの作業ツリーの直下のものが使われる。
+  worktree 側に `.gitleaks.local.toml` があればそちらだけを使う（メイン側と合算しない）。
+  メインの作業ツリーが無い配置（bare リポジトリ＋worktree）では `.gitleaks.local.toml` を引き継がない（各 worktree に置く）。
+- public リポジトリなら `.githooks/public-guard.sh` の `REQUIRE_NOREPLY=1`（作者メールを `<id>+<user>@users.noreply.github.com` に限る）。
+- gitleaks が無いときは**止める**（検査せずには通さない）。`--no-verify` で外すのは**人間の判断でのみ**。
+- **効かない場所**: `core.hooksPath` は clone ごとの設定でリポジトリには入らない。新しい clone や cloud の routine の checkout では、
+  `git config core.hooksPath .githooks` を実行するまで検査されない。
+- `.claude/hooks/guard.sh`（PreToolUse）は走査しない。`git` と `commit` / `push` の語を含むコマンドの前に、
+  hook の cwd のリポジトリで `core.hooksPath` と gitleaks が揃っているかだけを確かめ、欠けていれば設定コマンドを返す。
+  語だけで判定するので、未設定の clone では読み取りのコマンド（`git log --grep push` など）でも止まる。設定コマンド 1 行で直る。
 
 hooks は G4 司法（review-judge:judge）と**重複ではなく多層防御**（hooks=連続・強制／G4=PR の拘束判定）。
 
@@ -136,7 +170,7 @@ issue テンプレートを置くなら、**仕様パス欄は作らない**（�
 - [ ] 0. ハーネス（プラグイン）と spec-kit の CLI を確認（マシン一度だけ）。
 - [ ] 1. `specify init`、タイムスタンプ方式、constitution のテスト原則、コミット。
 - [ ] 2. `/loop-engine:init`。
-- [ ] 3. `.claude/hooks/{validate,gate}.sh` に project 固有チェック。
+- [ ] 3. `.claude/hooks/{validate,gate}.sh` に project 固有チェック。`.githooks/`・`.gitleaks.toml`・`.claude/settings.json` を一緒にコミット（public なら `REQUIRE_NOREPLY=1`）。
 - [ ] 4. 仕様を書いて仕様の PR をマージ。
 - [ ] 5. `/loop-engine:loop-engine <機能>` → 実装→司法→PR。人間がマージ。
 - [ ] 6.（任意）issue 運用するなら `loop-ready` label を作成。

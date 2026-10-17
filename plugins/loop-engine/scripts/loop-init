@@ -1,7 +1,8 @@
 #!/bin/bash
 # loop-init — 任意のリポジトリで loop-engine を回すための初期セットアップ。
-# spec-kit の設定確認・hooks scaffold・settings.json の hooks 配線までを一括で行う。
-# 何度実行しても安全（既存物はスキップ・settings は壊さずマージ・spec-kit の設定は確認して案内するだけ）。
+# spec-kit の設定確認・hooks scaffold・公開物ガード（git hook ＋ gitleaks）・settings.json の hooks 配線までを一括で行う。
+# 何度実行しても安全（既存物はスキップ・settings は壊さずマージ・core.hooksPath は未設定で既存の hook も無いときだけ設定・
+# spec-kit の設定は確認して案内するだけ）。
 set -e
 
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
@@ -10,6 +11,13 @@ REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
 }
 
 REPO_NAME=$(basename "$REPO_ROOT")
+
+# settings.json が壊れていたら、何も作らないうちに止める（途中まで scaffold した状態を残さない）
+if [ -f "$REPO_ROOT/.claude/settings.json" ] && command -v jq >/dev/null 2>&1 \
+   && ! jq -e . "$REPO_ROOT/.claude/settings.json" >/dev/null 2>&1; then
+  echo "error:   .claude/settings.json が JSON として読めません。直してから再実行してください（何も変更していません）" >&2
+  exit 1
+fi
 # ハーネス参照物は本スクリプトと同じプラグイン内にある。
 # 自身の位置から解決するので PATH 登録も symlink も不要
 # （プラグイン配布・リポジトリ直実行のどちらでも動く）。
@@ -66,34 +74,125 @@ fi
 # hooks（プロジェクト固有 validation）の雛形を scaffold（既定 no-op・project が中身を書く）
 HOOKS_DIR="$REPO_ROOT/.claude/hooks"
 mkdir -p "$HOOKS_DIR"
-for h in validate gate; do
+for h in validate gate guard; do
   SRC="$HARNESS_DIR/hooks/$h.sh.example"
   DEST="$HOOKS_DIR/$h.sh"
   if [ -f "$DEST" ]; then
     echo "skip:    .claude/hooks/$h.sh は既に存在します"
   elif [ -f "$SRC" ]; then
-    cp "$SRC" "$DEST" && chmod +x "$DEST"
-    echo "created: .claude/hooks/$h.sh（既定 no-op。project 固有チェックを書く）"
+    if ! { cp "$SRC" "$DEST" && chmod +x "$DEST"; }; then
+      echo "error:   .claude/hooks/$h.sh を作成できませんでした（${DEST}）" >&2
+      exit 1
+    fi
+    if [ "$h" = guard ]; then
+      echo "created: .claude/hooks/guard.sh（git commit / push の前に公開物ガードが有効かを確かめる。走査はしない）"
+    else
+      echo "created: .claude/hooks/$h.sh（既定 no-op。project 固有チェックを書く）"
+    fi
   else
-    echo "warn:    $h.sh.example が見つかりません（$SRC）。スキップ"
+    echo "warn:    $h.sh.example が見つかりません（${SRC}）。スキップ"
   fi
 done
 
-# .claude/settings.json に hooks を配線（無ければ作成・あれば安全マージ・既存 hooks は壊さない）
+# 公開物ガード: git の pre-commit / pre-push から gitleaks を呼ぶ（検査の本体。git が自分のリポジトリで実行する）
+GUARD_TODO=""
+GITHOOKS_DIR="$REPO_ROOT/.githooks"
+mkdir -p "$GITHOOKS_DIR"
+for h in pre-commit pre-push public-guard.sh; do
+  SRC="$HARNESS_DIR/hooks/$h.example"
+  DEST="$GITHOOKS_DIR/$h"
+  if [ -f "$DEST" ]; then
+    echo "skip:    .githooks/$h は既に存在します"
+  elif [ -f "$SRC" ]; then
+    if ! { cp "$SRC" "$DEST" && chmod +x "$DEST"; }; then
+      echo "error:   .githooks/$h を作成できませんでした（${DEST}）" >&2
+      exit 1
+    fi
+    echo "created: .githooks/$h"
+  else
+    echo "warn:    $h.example が見つかりません（${SRC}）。スキップ"
+  fi
+done
+# ルール（既存のルールは触らない）
+if [ -f "$REPO_ROOT/.gitleaks.toml" ]; then
+  echo "skip:    .gitleaks.toml は既に存在します"
+elif [ -f "$HARNESS_DIR/hooks/gitleaks.toml.example" ]; then
+  if ! cp "$HARNESS_DIR/hooks/gitleaks.toml.example" "$REPO_ROOT/.gitleaks.toml"; then
+    echo "error:   .gitleaks.toml を作成できませんでした" >&2
+    exit 1
+  fi
+  echo "created: .gitleaks.toml（gitleaks の既定ルール＋端末依存・個人情報のパターン）"
+else
+  echo "warn:    gitleaks.toml.example が見つかりません。スキップ"
+fi
+# core.hooksPath は未設定のときだけ設定する（別の値が設定済みなら既存の hook を壊さないよう触らない）。
+# 未設定でも .git/hooks/ に自前の hook（.sample 以外）があれば設定しない。設定するとそれが黙って動かなくなるため
+HOOKS_PATH=$(git -C "$REPO_ROOT" config core.hooksPath || true)
+GIT_HOOKS_DIR=$(cd "$REPO_ROOT" && git rev-parse --git-path hooks)
+case $GIT_HOOKS_DIR in /*) ;; *) GIT_HOOKS_DIR="$REPO_ROOT/$GIT_HOOKS_DIR" ;; esac
+EXISTING_HOOKS=""
+if [ -z "$HOOKS_PATH" ] && [ -d "$GIT_HOOKS_DIR" ]; then
+  for f in "$GIT_HOOKS_DIR"/*; do
+    [ -f "$f" ] || continue
+    case $f in *.sample) continue ;; esac
+    EXISTING_HOOKS="${EXISTING_HOOKS} $(basename "$f")"
+  done
+fi
+# linked worktree では設定しない。共有設定だけ先に入ると、.githooks/ の無いツリーで git が hook を黙って無視するため
+GIT_DIR_ABS=$(cd "$REPO_ROOT" && cd "$(git rev-parse --git-dir)" && pwd -P)
+GIT_COMMON_ABS=$(cd "$REPO_ROOT" && cd "$(git rev-parse --git-common-dir)" && pwd -P)
+if [ -z "$HOOKS_PATH" ] && [ "$GIT_DIR_ABS" != "$GIT_COMMON_ABS" ]; then
+  echo "todo:    linked worktree で実行されたため core.hooksPath は設定していません"
+  GUARD_TODO="${GUARD_TODO}  - .githooks/ をコミットし、メインの作業ツリーで git config core.hooksPath .githooks\n"
+elif [ -n "$EXISTING_HOOKS" ]; then
+  echo "todo:    .git/hooks/ に既存の hook があります（${EXISTING_HOOKS# }）。core.hooksPath は設定していません"
+  GUARD_TODO="${GUARD_TODO}  - .git/hooks/ の既存 hook（${EXISTING_HOOKS# }）を .githooks/ に移し（pre-commit / pre-push は public-guard.sh も呼ぶ形に統合）、git config core.hooksPath .githooks\n"
+elif [ -z "$HOOKS_PATH" ]; then
+  git -C "$REPO_ROOT" config core.hooksPath .githooks
+  echo "set:     core.hooksPath = .githooks（この clone のローカル設定。clone ごとに 1 回要る）"
+elif [ "$HOOKS_PATH" = ".githooks" ]; then
+  echo "skip:    core.hooksPath は既に .githooks です"
+else
+  echo "todo:    core.hooksPath が別の値（${HOOKS_PATH}）です。変更していません"
+  GUARD_TODO="${GUARD_TODO}  - core.hooksPath（${HOOKS_PATH}）の hook から .githooks/public-guard.sh を呼ぶか、既存の hook を .githooks/ に移して git config core.hooksPath .githooks\n"
+fi
+if command -v gitleaks >/dev/null 2>&1; then
+  echo "ok:      gitleaks があります"
+else
+  echo "todo:    gitleaks がありません（無い間は commit / push が止まります）"
+  GUARD_TODO="${GUARD_TODO}  - gitleaks を導入: brew install gitleaks（ほかの方法: https://github.com/gitleaks/gitleaks#installing）\n"
+fi
+
+# .claude/settings.json に hooks を配線（無ければ作成・hooks が無ければ追記。既存 hooks は書き換えず、guard の配線が無ければ todo を出す。
+# 不正な JSON は先頭で止めている）
 SETTINGS="$REPO_ROOT/.claude/settings.json"
+# settings.json は一時ファイルに書いてから mv する（jq が失敗したときに空にしないため）
+settings_write_failed() {
+  rm -f "$SETTINGS.tmp"
+  echo "error:   .claude/settings.json を書けませんでした（元のファイルは変えていません）" >&2
+  exit 1
+}
 SNIPPET="$HARNESS_DIR/hooks/settings.hooks.json"
 if ! command -v jq >/dev/null 2>&1; then
   echo "warn:    jq が無いため settings 自動配線をスキップ。手で $SNIPPET の hooks を貼ってください"
 elif [ ! -f "$SNIPPET" ]; then
-  echo "warn:    settings.hooks.json が見つかりません（$SNIPPET）。settings 配線をスキップ"
+  echo "warn:    settings.hooks.json が見つかりません（${SNIPPET}）。settings 配線をスキップ"
 elif [ ! -f "$SETTINGS" ]; then
-  jq '{hooks: .hooks}' "$SNIPPET" > "$SETTINGS"
+  jq '{hooks: .hooks}' "$SNIPPET" > "$SETTINGS.tmp" || settings_write_failed
+  mv "$SETTINGS.tmp" "$SETTINGS"
   echo "created: .claude/settings.json（hooks 配線済み）"
 elif jq -e '.hooks' "$SETTINGS" >/dev/null 2>&1; then
-  echo "skip:    .claude/settings.json に hooks は既にあります（手で確認）"
+  # 既存の hooks は書き換えない。guard の配線が無いときだけ案内する
+  if jq -e '[.hooks.PreToolUse[]? | select((.matcher // "") | test("(^|\\|)Bash(\\||$)")) | .hooks[]? | select((.command // "") | test("hooks/guard\\.sh"))] | length > 0' "$SETTINGS" >/dev/null 2>&1; then
+    echo "skip:    .claude/settings.json に hooks は既にあります（手で確認）"
+  else
+    echo "todo:    .claude/settings.json の hooks.PreToolUse に guard.sh の配線がありません（$SNIPPET の PreToolUse を手で足す）"
+    GUARD_TODO="${GUARD_TODO}  - .claude/settings.json の hooks.PreToolUse に guard.sh を配線する（$SNIPPET の PreToolUse を手で足す）\n"
+  fi
 else
   cp "$SETTINGS" "$SETTINGS.bak"
-  jq --slurpfile s "$SNIPPET" '. + {hooks: $s[0].hooks}' "$SETTINGS.bak" > "$SETTINGS"
+  jq --slurpfile s "$SNIPPET" '. + {hooks: $s[0].hooks}' "$SETTINGS.bak" > "$SETTINGS.tmp" || settings_write_failed
+  mv "$SETTINGS.tmp" "$SETTINGS"
   echo "merged:  .claude/settings.json に hooks を追記（backup: settings.json.bak）"
 fi
 
@@ -113,7 +212,8 @@ if command -v jq >/dev/null 2>&1 && [ -f "$SETTINGS" ]; then
       | .enabledPlugins["review-judge@macotasu-agent-skills"]   //= true
       | .enabledPlugins["dev-crew@macotasu-agent-skills"]       //= true
       | .enabledPlugins["loop-engine@macotasu-agent-skills"]    //= true
-    ' "$SETTINGS.plugins.bak" > "$SETTINGS"
+    ' "$SETTINGS.plugins.bak" > "$SETTINGS.tmp" || settings_write_failed
+    mv "$SETTINGS.tmp" "$SETTINGS"
     echo "merged:  .claude/settings.json にプラグイン宣言を追記（ローカル用。cloud には効かない）"
   fi
 fi
@@ -138,5 +238,9 @@ if [ -n "$SPECKIT_TODO" ]; then
 fi
 echo "残り:"
 echo "  1. .claude/hooks/{validate,gate}.sh に上記コマンドを記入（既定 no-op のまま回しても可）"
+echo "     .githooks/ と .gitleaks.toml と .claude/settings.json（.claude/hooks/ も）を一緒にコミットする"
+echo "     public リポジトリなら .githooks/public-guard.sh の REQUIRE_NOREPLY=1（作者メールを noreply に限る）"
+echo "     公開できない NG ワードは未追跡の .gitleaks.local.toml に置き、.gitignore に追加する（書き方は .gitleaks.toml の先頭）"
+if [ -n "$GUARD_TODO" ]; then printf '%b' "$GUARD_TODO"; fi
 echo "  2. spec-kit で仕様を書いて仕様の PR をマージ（/conductor:dev の親、/spec-intake:spec-draft <issue番号>、または /speckit-specify から手で）"
 echo "  3. /loop-engine:loop-engine <機能> → 実装→司法→PR まで進んで PR で停止（マージは人間）"

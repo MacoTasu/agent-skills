@@ -24,6 +24,8 @@
 | `loop-intake-triage.md` | intake（loop/dev/人間）のトリアージ規範 |
 | `routine.md` | cloud routine が定期実行する発火プロンプトと routine の設定手順（current repo 対象） |
 | `hooks/{validate,gate}.sh.example`・`hooks/settings.hooks.json` | プロジェクト固有 validation hook の雛形＋配線 snippet（`.claude/hooks/` へ scaffold・G4 と補完） |
+| `hooks/{pre-commit,pre-push,public-guard.sh}.example`・`hooks/gitleaks.toml.example` | 公開物ガード。git の pre-commit / pre-push が gitleaks で差分を検査する（`.githooks/` と `.gitleaks.toml` へ scaffold） |
+| `hooks/guard.sh.example` | Claude Code の PreToolUse。`git commit` / `push` の前に公開物ガードが有効か（`core.hooksPath` と gitleaks）だけを確かめる |
 | `SETUP.md` | 別プロジェクトで立ち上げる実践ランブック（手順・チェックリスト・落とし穴） |
 
 ## 新しいプロジェクトで loop engineering を回す手順
@@ -34,7 +36,7 @@
    `.specify/init-options.json` の `feature_numbering` を `"timestamp"` にし、constitution に
    「各 FR と受け入れシナリオは自動テストで検証する（MUST）」を入れる。`.specify/` と `.claude/skills/speckit-*` はコミットする
    （cloud の routine にはプラグインが届かないが、リポジトリにコミットされたスキルは届く）。
-2. **初期化**: `/loop-engine:init` を実行する（spec-kit の設定の確認・hooks の scaffold・settings の配線）。
+2. **初期化**: `/loop-engine:init` を実行する（spec-kit の設定の確認・hooks の scaffold・公開物ガード（git hook ＋ gitleaks）・settings の配線）。
 3. **hooks（プロジェクト固有 validation）**: `.claude/hooks/{validate,gate}.sh` にそのプロジェクトの決定性チェックを書く。
 4. **最初の仕様を書く**: `/conductor:dev` の親、または `/spec-intake:spec-draft <issue番号>` で spec-kit の仕様を起草し、
    仕様の PR をマージする（人間が立法）。

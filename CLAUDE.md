@@ -115,9 +115,37 @@ Skill 名で invoke しているのがその形）。
 
 # push 前の確認
 
+**git の hook が [gitleaks](https://github.com/gitleaks/gitleaks) で自動的に検査する。**
+`.githooks/pre-commit` / `pre-push` が `.githooks/public-guard.sh` を呼び、gitleaks の既定ルールに
+`.gitleaks.toml` のカスタムルール（下の grep と同じパターン）を足して見る。違反なら git が止める。
+
+- **commit**: staged の追加行（秘密を消すコミットは止めない）と、作者メールが noreply か
+- **push**: push する各 ref の「まだリモートに無いコミット」の追加行と、その作者メール
+
+有効化は clone ごとに 1 回（gitleaks は別途導入。無い間は commit / push が止まる）:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Claude Code では `.claude/hooks/guard.sh`（PreToolUse）が、`git` と `commit` / `push` の語を含むコマンドの前に
+この有効化と gitleaks の有無だけを確かめ、欠けていれば設定コマンドを返す（走査はしない）。
+
+- **誤検知の行**は行末に `gitleaks:allow` を書くと許可される（下の例示コマンドがその例）。
+- **NG ワード**（private リポジトリ名など）は public に書けないので、未追跡の `.gitleaks.local.toml`（`.gitignore` 済み）に置く。
+  書き方は `.gitleaks.toml` の先頭のコメント。メインの作業ツリーの直下に置けば、`git worktree add` の先でも効く。
+- `core.hooksPath` が未設定の clone では、コマンドに `git` と `commit` / `push` の語があるだけで（読み取りのコマンドでも）
+  配線確認が止める。返ってくる設定コマンド 1 行で直る。
+- **検査しないもの**:
+  - hook の設定が無い checkout（cloud の routine など。`core.hooksPath` はリポジトリに入らない）
+  - `--no-verify` を付けた commit / push（外すのは人間の判断でのみ）
+  - `git commit --author=...` で変えた作者は pre-commit からは見えない（pre-push の作者メール検査で止まる。このリポジトリは `REQUIRE_NOREPLY=1`）
+
+下のコマンドは、hook が効かない環境の予備として残す。
+
 ```bash
 # 端末依存・個人情報・秘匿情報
-git diff --cached | grep -nE '/Users/|/home/|@gmail|@[a-z-]+\.co\.jp|sk-ant|ghp_|gho_|AKIA|BEGIN [A-Z ]*PRIVATE KEY|192\.168\.|127\.0\.0\.1|localhost:[0-9]'
+git diff --cached | grep -nE '/Users/|/home/|@gmail|@[a-z-]+\.co\.jp|sk-ant|ghp_|gho_|AKIA|BEGIN [A-Z ]*PRIVATE KEY|192\.168\.|127\.0\.0\.1|localhost:[0-9]'  # gitleaks:allow
 
 # private リポジトリ名など、自分が決めた NG ワード
 git diff --cached | grep -niE '<自分のプロジェクト名>'
