@@ -13,7 +13,7 @@
   - **`.specify/memory/constitution.md`（守るもの）** … プロジェクトの原則。**トリガ対象外**。
     司法・`/conductor:dev`・spec-kit の各コマンドが参照し enforcement する。
   - 雛形は spec-kit のテンプレート（対象リポジトリの `.specify/templates/`）。更新は人間の仕様の PR。版管理は git。
-- **出力** … ボットはリポジトリに記録ファイルを書かない。出力は PR（本文・司法判定のコメント）と issue のラベル・コメントだけ。
+- **出力** … ボットはリポジトリに記録ファイルを書かない。出力は PR（本文・司法判定と retro のコメント）と issue のラベル・コメントだけ（retro は `retro` ラベルの issue を作ることがある。宛先は dev-crew 同梱 `agents/retro.md` の宛先表）。
 - **ハーネス = `.claude/`** … 判事・本ゲート・検証カタログ・loop-engine（汎用・dotfiles で配布）。
 
 ## ループの状態は GitHub に置く（ファイルに持たない）
@@ -62,7 +62,7 @@ PR ブランチだけに絞れなくなる。
 | **G2 立法** | SSOT が実装可能か | `spec.md` に **`[NEEDS CLARIFICATION]` が無い**／`checklists/` が全てチェック済み／**`/speckit-analyze` に CRITICAL が無い**／constitution と矛盾しない（issue は使わない）。セッション内の試行カウンタをインクリメント（永続化しない） | 曖昧/欠落/**constitution と矛盾**は ESCALATE | 3.0 |
 | **G3 実装** | — | **`dev-crew:implement` の手順**で実装（前の確認 → `/speckit-implement` で書く → 後の確認: 範囲外の変更・自己レビュー・`/speckit-converge`・証拠表）。差分はスコープ内・ブランチ分離。**`spec.md`・`plan.md`・constitution は変えない**。**issue に `loop-running` ラベルを付与**（ロック取得） | スコープ逸脱・仕様の誤りの発見で停止 | 3.0 |
 | **G4 司法** | 緑か | **`review-judge:judge` PASS**（決定性緑＋**各基準に対応するテストがある**＋サーフェス充足＋セマンティックOK＋**正典を変えていない**）。契約 `specs/<機能>/` を渡す。**セッション内カウンタが N=3 超なら司法を呼ばずロールバック/ESCALATE** | RETRY/REJECT→G3 へ（**テストの無い基準は RETRY**）。N=3 超で ロールバック/ESCALATE | 3.0 |
-| **G5 PR** | PR 化してよいか | G4 PASS ＋ `gh pr create`（**本文の先頭に「⚠️ 要注意の変更」節、続けて「🎬 見た目の証拠」節**（下記）。対象 spec の git ref も本文に書く。行政が撮った動画があれば `--attach`）＋ **司法の判定出力を `gh pr comment` で添付**（恒久の記録）。**issue から `loop-running` ラベルを外す**（以後は open PR の存在が Watching を表す） | 停止 | 3.0 |
+| **G5 PR** | PR 化してよいか | G4 PASS ＋ `gh pr create`（**本文の先頭に「⚠️ 要注意の変更」節、続けて「🎬 見た目の証拠」節**（下記）。対象 spec の git ref も本文に書く。行政が撮った動画があれば `--attach`）＋ **司法の判定出力を `gh pr comment` で添付**（恒久の記録）。**issue から `loop-running` ラベルを外す**（以後は open PR の存在が Watching を表す）＋ **retro を `trigger=pr-created` で招集**（非ブロッキング。失敗しても停止の手順は変えない。`SKILL.md` G5 の ④） | 停止 | 3.0 |
 | **G6 マージ** | 自動マージしてよいか | 司法 PASS ＋ **CI 緑** ＋ コンフリクトなし ＋ **`auto-merge` ラベル**（opt-in）＋ 影響度しきい値以下。**merge で `Closes #N` により issue が close ＝ Done** | 未充足は **PR で停止（人間がマージ）** | **定義のみ・runtime=3.1 はスキップ中。常に PR 停止** |
 
 ## 要注意の変更（PR で申告する）

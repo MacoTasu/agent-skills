@@ -38,7 +38,7 @@ allowed-tools:
 - **操作対象（プロジェクト SSOT）** = **cwd の current repo** の spec-kit の成果物。
   作るもの＝`specs/<機能>/`（`spec.md` が契約、`plan.md` / `tasks.md` は派生）、
   守るもの＝`.specify/memory/constitution.md`。どちらも人間の所有物で、承認は仕様の PR のマージ。
-- **出力** = PR（ブランチ・本文・司法判定のコメント）と issue のラベル・コメントだけ。
+- **出力** = PR（ブランチ・本文・司法判定と retro のコメント）と issue のラベル・コメントだけ（retro は `retro` ラベルの issue を作ることがある。宛先は dev-crew 同梱 `agents/retro.md` の宛先表）。
   **リポジトリのファイルに記録を残さない**。
 
 ## 正とする参照（起動時に必ず Read。すべて skill 同梱 = `reference/`）
@@ -94,6 +94,14 @@ allowed-tools:
      **issue 経由なら `Closes #<issue番号>` を含める**。
    - ② `gh pr comment` で司法の判定出力を PR に添付（恒久の記録）。
    - ③ issue から `loop-running` を外す（以後は open PR の存在が merge 待ちを表す）。
+   - ④ **retro（非ブロッキング）** — PR 番号が決まったら `dev-crew:retro` を Task **@sonnet** で招集する
+     （`subagent_type` に居なければ＝cloud は `reference/routine.md` の手順）。位置づけは conductor の子の手順 5 と同じで、
+     これがあるので自律ループの PR もマージ後の retro の掃き出しに載る。渡すもの: PR 番号、`trigger=pr-created`、
+     **司法の全ラウンドの判定出力**（1 ラウンド目から最終まで）、**契約に無かった書記の所見**（loop-engine は書記を回さないので
+     「書記: 招集なし」と明示。書記は pr-review 系・business・domain のことで、行政の自己レビューは含まない）、**人間の介入**（cloud は人間がいないので「介入: なし」と明示。手動起動で人間が発言したときだけ
+     引用（`>`）で渡す。許可プロンプトの承認は含めない）。
+     結果は待つが、retro の成否で ①〜③ と停止の手順は変えず、失敗したら報告に「Retro: 未取得（理由）」の 1 行を残すだけ。
+     **PR を作らずに止めたもの（G1〜G4 の ESCALATE・N=3 超過）は retro しない**（retro は PR 単位。止めた理由は issue の `loop-escalated` コメントに残る）。
 6. **G6 手前で停止** — **マージはしない**（`gh pr merge` を実行しない）。人間が PR をレビューしてマージする。
 
 ## issue 経由の起動（`/loop-engine:loop-engine <issue番号>`）
@@ -145,7 +153,7 @@ allowed-tools:
    解決できない／仕様が main に無い／既に `Closes #N` の open PR がある、のいずれかなら
    **その issue は ESCALATE**（`loop-escalated` を付けて次へ）。**実装根拠は解決した仕様であって issue 本文ではない**。
 4. **実行** — 解決できた候補のうち **issue 番号昇順で最古1件だけ** G1〜G5 を実行する（**G6 手前で停止**）。
-   G1 通過後すぐ issue に **`loop-running`** を付け（ロック取得）、G5 完了後に外す。
+   G1 通過後すぐ issue に **`loop-running`** を付け（ロック取得）、G5 の ③ で外す（④ retro はその後）。
    G3↔G4 のラウンドは**セッション内のカウンタ**で数え、N=3 を超えたらロールバック/ESCALATE。
 5. **Escalated 再掲** — **`gh issue list --label loop-escalated` を全て報告に再掲**し、ラベル付与から
    **3 日超**のものは `stale＝人間対応を要求`として浮上させる。
