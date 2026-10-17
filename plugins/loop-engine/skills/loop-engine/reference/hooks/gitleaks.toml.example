@@ -1,0 +1,39 @@
+# .gitleaks.toml — 公開物ガードのルール（.githooks/public-guard.sh が呼ぶ gitleaks が読む）。
+#
+# gitleaks の既定ルール（各種 API キーなど）に、公開リポジトリへ載せたくない
+# 端末依存・個人情報のパターンを足す。リポジトリ直下に置けば gitleaks が自動で読む。
+# このファイル自身は gitleaks の既定 allowlist で検査対象から外れる。
+#
+# 誤検知の行（例示のコマンドなど）は、行末に gitleaks:allow を書くと許可される。
+#
+# private リポジトリ名など公開できない NG ワードは、ここに書かない（この値もコミットされる）。
+# 未追跡の .gitleaks.local.toml に置き、.gitignore に追加する（public-guard.sh が -c で渡す。
+# linked worktree では、メインの作業ツリーの直下に置いたものが使われる）:
+#   [extend]
+#   path = ".gitleaks.toml"
+#   [[rules]]
+#   id = "ng-words"
+#   regex = '''(?i)<止めたい語>'''
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "machine-path"
+description = "開発マシンの絶対パス"
+regex = '''/Users/|/home/'''
+
+[[rules]]
+id = "personal-email"
+description = "個人・企業のメールアドレス"
+regex = '''@gmail|@[a-z-]+\.co\.jp'''
+
+[[rules]]
+id = "local-network"
+description = "ローカルのネットワーク情報"
+regex = '''192\.168\.|127\.0\.0\.1|localhost:[0-9]'''
+
+[[rules]]
+id = "loose-token"
+description = "トークン・鍵の接頭辞（既定ルールより緩い部分一致）"
+regex = '''sk-ant|ghp_|gho_|AKIA|BEGIN [A-Z ]*PRIVATE KEY'''

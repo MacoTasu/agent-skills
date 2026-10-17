@@ -1,0 +1,3 @@
+#!/bin/sh
+# pre-commit — 公開物ガードの入口（本体は public-guard.sh）。有効化: git config core.hooksPath .githooks
+exec "$(dirname "$0")/public-guard.sh" commit
