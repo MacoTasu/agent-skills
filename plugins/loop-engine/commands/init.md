@@ -17,6 +17,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/loop-init"
 | `.githooks/{pre-commit,pre-push,public-guard.sh}`・`.gitleaks.toml` | 公開物ガード。git の hook が commit / push の直前に gitleaks で差分を検査する（既定ルール＋端末依存・個人情報のパターン）。`core.hooksPath` は**未設定で、`.git/hooks/` に自前の hook（`.sample` 以外）も無いときだけ** `.githooks` に設定する。別の値が設定済み、または既存の hook があるときは触らず、統合の手順を案内する（既存の hook を黙って無効にしない）。linked worktree（`git worktree add` の先）で実行したときも設定せず、`.githooks/` をコミットしてからメインの作業ツリーで設定するよう案内する。gitleaks が無ければ導入を案内する（無い間は commit / push が止まる） |
 | `.claude/hooks/guard.sh` | Claude Code の PreToolUse。`git commit` / `push` の前に、上の公開物ガードが有効か（`core.hooksPath` と gitleaks）だけを確かめる。走査はしない |
 | `.claude/settings.json` | hooks 配線（PreToolUse=guard / PostToolUse=validate / Stop=gate）＋**プラグイン宣言**。既存 hooks があるときは書き換えず、guard の配線が無ければ todo を出す。jq があるとき、JSON として読めなければ何も変えずに止まる |
+| `.claude/visual-evidence.json`（UI があるプロジェクト） | 見た目の証拠（before / after の動画）の config。**有無と必須キー（`ui_paths` / `scenarios` / `record`）を確認して案内するだけで、書かない**。無ければ `info:` で雛形の場所を示す（UI が無ければ不要） |
 
 実行後、出力の言語検出結果に従って `.claude/hooks/` の中身を埋める。**ハーネスはコマンドを
 持たない＝ここが唯一の拡張点。**

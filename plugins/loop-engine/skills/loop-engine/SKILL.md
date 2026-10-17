@@ -82,13 +82,15 @@ allowed-tools:
    `/speckit-converge` での点検・証拠表）。**`/speckit-implement` を枠の外で直接呼ばない**（理由は同 SKILL.md）。
    差分はスコープ内に保つ（逸脱は停止）。
 4. **G4 司法** — Task で `review-judge:judge`(opus) を起動し、**契約 `specs/<機能>/`**・差分（`origin/main...HEAD`）・
-   証拠（行政の決定性結果は「申告（未検証）」として）を渡す。判定を受ける:
+   証拠（行政の決定性結果は「申告（未検証）」として）・**PR 本文案**（「⚠️ 要注意の変更」節＋行政が返した「🎬 見た目の証拠（案）」）を渡す。判定を受ける:
    - `PASS` → G5 へ。
    - `RETRY`/`REJECT` → 指摘で修正し G3↔G4 を再試行（**最大 N=3**）。超過は ロールバック/ESCALATE。
    - `ESCALATE` → 停止して人間へ。
 5. **G5 PR** — PASS で:
-   - ① `gh pr create` で PR 作成。**PR 本文の先頭に「⚠️ 要注意の変更」節を必ず置く**
-     （書式は autonomy-gates「要注意の変更」。該当が無くても「なし」と書く）。本文に `Spec: specs/<機能>/` を書く。
+   - ① `gh pr create` で PR 作成。**PR 本文の先頭に「⚠️ 要注意の変更」節、続けて「🎬 見た目の証拠」節を必ず置く**
+     （書式は autonomy-gates「要注意の変更」「見た目の証拠」。該当が無くても「なし」「該当なし」と書く。
+     後者は G4 で司法に渡した本文案のまま）。行政が撮った動画があれば `gh pr create --help | grep -q -- '--attach'` で
+     機能を確かめて `gh pr create --attach <動画>…`（添付できなければ本文の「添付」の行にそう書く）。本文に `Spec: specs/<機能>/` を書く。
      **issue 経由なら `Closes #<issue番号>` を含める**。
    - ② `gh pr comment` で司法の判定出力を PR に添付（恒久の記録）。
    - ③ issue から `loop-running` を外す（以後は open PR の存在が merge 待ちを表す）。

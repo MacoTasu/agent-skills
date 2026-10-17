@@ -94,6 +94,22 @@ for h in validate gate guard; do
   fi
 done
 
+# 見た目の証拠（before/after の動画）の config。UI の無いプロジェクトには不要なので、有無を見て案内するだけで書かない
+VISUAL_CFG="$REPO_ROOT/.claude/visual-evidence.json"
+# 必須キーの条件は review-judge 同梱 visual-evidence.md の「差分 ∩ ui_paths」の式と同じ
+VISUAL_REQ='(.ui_paths|type=="array" and length>0) and (.scenarios|type=="array") and (.record|type=="string" and length>0)'
+if [ -f "$VISUAL_CFG" ]; then
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "warn:    .claude/visual-evidence.json あり。jq が無く検証できません"
+  elif jq -e "$VISUAL_REQ" "$VISUAL_CFG" >/dev/null 2>&1; then
+    echo "ok:      .claude/visual-evidence.json あり（UI に触れた PR に before/after の動画を求める）"
+  else
+    echo "warn:    .claude/visual-evidence.json が JSON として不正、または必須キー ui_paths/scenarios/record が欠けています"
+  fi
+else
+  echo "info:    .claude/visual-evidence.json なし（UI の無いプロジェクトなら不要。あるなら雛形 $HARNESS_DIR/visual-evidence.json.example を置く）"
+fi
+
 # 公開物ガード: git の pre-commit / pre-push から gitleaks を呼ぶ（検査の本体。git が自分のリポジトリで実行する）
 GUARD_TODO=""
 GITHOOKS_DIR="$REPO_ROOT/.githooks"

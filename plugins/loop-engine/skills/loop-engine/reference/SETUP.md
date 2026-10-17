@@ -103,6 +103,25 @@ hooks は G4 司法（review-judge:judge）と**重複ではなく多層防御**
 
 ---
 
+## 3b. 見た目の証拠の配線（UI があるプロジェクト）
+
+UI に触れた PR には、人間がマージ判断で見る **before / after の動画**を添える（PR 本文の「🎬 見た目の証拠」節。
+UI の無いプロジェクトは何もしなくてよく、config が base にも作業ツリーにも無ければ「該当なし」になる。判定不能になるのは base を解決できないときだけ）。配線は3つ:
+
+1. **`.claude/visual-evidence.json`** を置く（雛形＝同梱 [`visual-evidence.json.example`](visual-evidence.json.example)。
+   `/loop-engine:init` は有無を確認して案内するだけで書かない）。キーの意味は `review-judge` 同梱 `reference/visual-evidence.md`:
+   `ui_paths`（UI とみなす glob）／`scenarios`（録画シナリオの glob）／`record`（録画コマンド1つ）／`setup`（任意。before の準備）／
+   `max_attach_mb`（任意。既定 10）。
+2. **Playwright に録画用の project** を持たせる（`use: { video: 'on' }`、`webServer` でアプリを起動）。`record` は
+   「まっさらな worktree でこのコマンド1つで走る」こと。
+3. **シナリオ**を `scenarios` の glob 配下に置く（通常の Playwright テスト＝フロントの挙動テスト。二重管理にならない）。
+
+撮るのは行政（after＝作業ツリー、before＝merge-base の一時 worktree）、添付するのはループ（`gh pr create --attach`。gh 2.99.0 以上）、
+申告と実物の一致を検査するのが司法。**cloud の発火はブラウザを起動できないので未録画の申告になり、司法が初回で ESCALATE する**
+（UI の変更は手元の `/conductor:dev` で回すか、プロジェクトで CI 録画を持つ）。
+
+---
+
 ## 4. 最初の仕様を書く（人間が立法）
 
 次のどれかで spec-kit の仕様（`spec.md`・`plan.md`・`tasks.md`）を作り、**仕様の PR をマージする**:
@@ -171,6 +190,7 @@ issue テンプレートを置くなら、**仕様パス欄は作らない**（�
 - [ ] 1. `specify init`、タイムスタンプ方式、constitution のテスト原則、コミット。
 - [ ] 2. `/loop-engine:init`。
 - [ ] 3. `.claude/hooks/{validate,gate}.sh` に project 固有チェック。`.githooks/`・`.gitleaks.toml`・`.claude/settings.json` を一緒にコミット（public なら `REQUIRE_NOREPLY=1`）。
+- [ ] 3b.（UI があるなら）`.claude/visual-evidence.json`・Playwright の録画 project・シナリオ。
 - [ ] 4. 仕様を書いて仕様の PR をマージ。
 - [ ] 5. `/loop-engine:loop-engine <機能>` → 実装→司法→PR。人間がマージ。
 - [ ] 6.（任意）issue 運用するなら `loop-ready` label を作成。
@@ -182,3 +202,6 @@ issue テンプレートを置くなら、**仕様パス欄は作らない**（�
 - ボットはリポジトリに記録ファイルを書かない。ループの動的状態は **GitHub の issue ラベル**が持つ。
 - constitution にテストの原則が無いと、`tasks.md` にテストが入らず、司法が毎回 RETRY する。
 - 既存の hook と二重検証にしない（再利用する）。
+- UI があるのに `.claude/visual-evidence.json` を置かないと、節の宣言は常に「該当なし（宣言なし）」になる。それとは別に、
+  既存のフロント規則（拡張子から front と推定されれば視覚・挙動の証拠を要求）はそのまま効き、司法は所見で「UI らしい差分なのに `ui_paths` の宣言が無い」と指摘する。
+  置いたのに cloud で回すと、UI の変更は毎回「未録画」で初回 ESCALATE する。
