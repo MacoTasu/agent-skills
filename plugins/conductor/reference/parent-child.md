@@ -6,8 +6,8 @@
 |---|---|---|
 | どこで | `main` のチェックアウト | 仕事ごとの worktree（ブランチ `spec/<名前>` か `feat/<名前>`） |
 | 起動 | `/conductor:dev <依頼>` | `/conductor:dev <依頼ファイルの絶対パス>` または `/conductor:dev specs/<機能>/`（親が送る、または人間が打つ） |
-| 仕事 | 依頼の分類、spec-kit かインラインかの 1 問、依頼ファイルの作成、送り出し、子の様子の把握、マージ後の retro の掃き出し | **仕様の起草** → 仕様の PR ／ **Plan Mode 合意（インライン契約）** → 実装 → 書記 → 司法 → PR ／ **承認済み仕様の実装** → 書記 → 司法 → PR |
-| しないこと | コードを書く・**ブランチを切る**（自分のチェックアウトで。子の worktree を作るのは送り出しの一部）・`main` にコミットする・長い対話を抱える・PR をマージする | `spec.md` や constitution を変える（実装の子）・`main` に触る |
+| 仕事 | 依頼の分類、spec-kit かインラインかの 1 問、依頼ファイルの作成、送り出し、子の様子の把握、マージ後の retro の掃き出し、マージ済みの worktree の片付け | **仕様の起草** → 仕様の PR ／ **Plan Mode 合意（インライン契約）** → 実装 → 書記 → 司法 → PR ／ **承認済み仕様の実装** → 書記 → 司法 → PR |
+| しないこと | コードを書く・**ブランチを切る**（自分のチェックアウトで。子の worktree を作るのは送り出しの一部、マージ済みの子の worktree とブランチを消すのは片付けの一部）・`main` にコミットする・長い対話を抱える・PR をマージする | `spec.md` や constitution を変える（実装の子）・`main` に触る |
 
 親を `main` に置き、差分を作る仕事をすべて子に出すのは、人間が親と話し続けている間も子が並行して動けるように
 （親の画面を常に空けておくように）するため。子が worktree の中にいるので、書記（Task）も判事も自然に実装のある場所を見る
@@ -79,7 +79,8 @@ issue: #<番号>（あれば）
 - 親のタブの列が **5** あれば送り出さない。列は上端に並ぶペインの x 座標の種類で数える（人間が開いたペインも画面を使うので数える）:
   `herdr pane layout --pane "$HERDR_PANE_ID" | jq '.result.layout | .area.y as $y | [.panes[] | select(.rect.y == $y) | .rect.x] | unique | length'`
   `via: herdr` で子が開く `impl-*` / `judge-*` のペインは子の列を上下に割って開く（`herdr-backend.md`）ので、列を増やさず、5 の対象外。
-- 上限に当たったら「待たせるか、どれを片付けるかを人間が判断する」と伝えて止まる。**勝手に子を閉じない・worktree を消さない。**
+- 上限に当たったら「待たせるか、どれを片付けるかを人間が判断する」と伝えて止まる。**勝手に子を閉じない。**
+  worktree を消すのは、下の「マージ済みの worktree の片付け」の条件をすべて満たしたものだけ（`HERDR_ENV` が無ければ消さず、報告だけ）。
 
 ### 入口 C の前提
 
@@ -185,6 +186,124 @@ gh pr list --state merged --limit 30 --json number,comments --jq '[.[] | select(
 - **非ブロッキング。** `gh` が失敗したら「Retro 掃き出し: 未実施（理由）」の 1 行を添えて、人間の依頼を続ける。
   下書きが「Retro: 未取得」を返したら「Retro 掃き出し: PR #n の下書きに失敗（理由）」を 1 行出し、そのセッションでは再試行しない。
 
+### マージ済みの worktree の片付け（親）
+
+子の PR がマージされても worktree は残る。溜まると上限の 4 本に当たり、次の子を送り出せない。
+手動の片付けはリモートで消えた（gone）ブランチしか拾わないので、マージ後もリモートにブランチが残るリポジトリでは何も消さない。
+そこで親が、retro の掃き出しと同じく**起動時と、子の様子の把握のたびに**、安全条件を満たす worktree だけを片付ける。
+子の worktree とそのブランチを消すのは、親がブランチを操作しない原則の例外で、この片付けの中だけで行う。
+
+**前提は `HERDR_ENV=1`。** 生きた子が居ないことを `herdr agent list` で確かめられないので、無ければ**片付けず、報告だけ**にする。
+
+**対象**は `git worktree list --porcelain` の本体以外で、ブランチが `spec/*` / `feat/*`、かつマージ済みの PR があるもの
+（`gh pr list --state merged --head <ブランチ>`。未マージは黙って対象外）。
+対象ごとに次の条件を**上から順に**確かめ、最初に落ちた理由で「片付けなかった: <worktree>（理由）」と 1 行出す:
+
+1. **置き場所が本体の隣の `<リポジトリ名>-<名前>`**（送り出しの手順 1 の場所）— 違えば「conductor が作った場所ではない」。
+   herdr の worktree 作成で作ったものや別セッションのものは、ここで報告だけになる。herdr 製なら人間が `herdr worktree remove` で消す。
+   （`herdr worktree list` は cwd ではなくいまの workspace のリポジトリを列挙し、`git worktree add` で作ったものも載るので、判別には使わない）
+2. **`locked` / `prunable` でない** — 人間が錠をかけたもの・実体の無いものには触れない。
+3. **生きた子が居ない** — `herdr agent list` の agent の `cwd` か `foreground_cwd` が、その worktree かその配下のものが無い。
+   名前の無い agent もいるので、名前ではなく cwd で照合する。居れば「生きた子がいる: <名前か pane_id>（ペインを閉じれば次の掃き出しで片付く）」。
+   `herdr agent list` の出力を解釈できない（`.result.agents` が配列でない、jq が失敗した）ときは、生きた子を確かめられないので**何も片付けない**。
+4. **ローカルの先端が PR の `headRefOid` と同じ** — push していないコミットも、マージ後に積んだコミットも無い。
+   違えば「先端が PR と違う（<先端> ≠ <headRefOid>）」。
+5. **作業ツリーがきれい** — `git -C <worktree> status --porcelain --ignored` が空。
+   - 未追跡のファイルも数える（Codex が置く `AGENTS.md` / `.codex/` / `.agents/` など）。あれば「作業ツリーが汚れている: <先頭の数件>」。
+   - **gitignore 済みのファイルも数える。** `git worktree remove` は無視されたファイル（`.env`、ビルド成果物など）を確認なしで消し、
+     消したものは戻せない。`!!` の行があれば「無視されたファイルがある: <先頭の数件>（git worktree remove は確認なしで消し、戻せない）」。
+
+**検出**（読み取りのみ。何も消さない）。関数にしてあるので、貼って実行しても呼び出し元のシェルは閉じない:
+
+```bash
+# 全角文字の直前の変数は ${} で囲む（UTF-8 でないロケールの bash は全角文字を変数名の続きとして読む）
+sweep_detect() {
+  local list main_root prefix agents report_only=1 wt head b flags pr n oid rest live st ig
+  list=$(git worktree list --porcelain) || { echo "worktree の片付け: 未実施（git worktree list が失敗）"; return 0; }
+  main_root=$(printf '%s\n' "$list" | sed -n '1s/^worktree //p')   # 本体（1 行目）
+  [ -n "$main_root" ] || { echo "worktree の片付け: 未実施（本体の worktree を特定できない）"; return 0; }
+  prefix="$(dirname "$main_root")/$(basename "$main_root")-"
+  agents='{"result":{"agents":[]}}'
+  if [ "${HERDR_ENV:-}" = 1 ]; then
+    agents=$(herdr agent list) || { echo "worktree の片付け: 未実施（herdr agent list が失敗）"; return 0; }
+    jq -e '.result.agents | type == "array"' <<<"$agents" >/dev/null 2>&1 \
+      || { echo "worktree の片付け: 未実施（herdr agent list の解釈に失敗）"; return 0; }
+    report_only=
+  fi
+  while IFS=$'\037' read -r wt head b flags <&3; do
+    case "$b" in spec/*|feat/*) ;; *) continue ;; esac
+    pr=$(gh pr list --state merged --head "$b" --json number,headRefOid --jq '.[0] // empty | "\(.number) \(.headRefOid)"') \
+      || { echo "worktree の片付け: 未実施（gh pr list が失敗: ${b}）"; return 0; }
+    [ -n "$pr" ] || continue                                  # 未マージは黙って対象外
+    n=${pr%% *}; oid=${pr#* }
+    rest=${wt#"$prefix"}
+    case "$rest" in "$wt"|*/*) echo "片付けなかった: ${wt}（conductor が作った場所ではない）"; continue ;; esac
+    [ -z "$flags" ] || { echo "片付けなかった: ${wt}（${flags% }）"; continue; }
+    live=$(jq -r --arg wt "$wt" '[.result.agents[]
+      | select(any(.cwd, .foreground_cwd; . != null and (. == $wt or startswith($wt + "/"))))
+      | (.name // .pane_id | tostring)] | join(",")' <<<"$agents") \
+      || { echo "worktree の片付け: 未実施（herdr agent list の解釈に失敗）"; return 0; }
+    [ -z "$live" ] || { echo "片付けなかった: ${wt}（生きた子がいる: ${live}。ペインを閉じれば次の掃き出しで片付く）"; continue; }
+    [ "$head" = "$oid" ] || { echo "片付けなかった: ${wt}（先端が PR と違う（${head} ≠ ${oid}））"; continue; }
+    st=$(git -C "$wt" status --porcelain --ignored) || { echo "片付けなかった: ${wt}（git status が失敗）"; continue; }
+    ig=$(printf '%s\n' "$st" | grep '^!! ' | head -n 3 | cut -c4- | paste -sd, -)
+    [ -z "$ig" ] || { echo "片付けなかった: ${wt}（無視されたファイルがある: ${ig}（git worktree remove は確認なしで消し、戻せない））"; continue; }
+    [ -z "$st" ] || { echo "片付けなかった: ${wt}（作業ツリーが汚れている: $(printf '%s\n' "$st" | head -n 3 | cut -c4- | paste -sd, -)）"; continue; }
+    if [ -n "$report_only" ]; then
+      echo "報告のみ（HERDR_ENV が無く生きた子を確かめられない）: ${wt}（${b}、PR #${n}、${oid}）"
+    else
+      echo "候補: ${wt}（${b}、PR #${n}、${oid}）"
+    fi
+  done 3< <(printf '%s\n' "$list" | awk -v OFS='\037' '
+    /^worktree /{wt=substr($0, 10); h=""; b=""; f=""}
+    /^HEAD /{h=$2}
+    /^branch refs\/heads\//{b=substr($0, 19)}
+    /^(locked|prunable)/{f=f $1 " "}
+    /^$/ && wt != "" {print wt, h, b, f; wt=""}
+    END{if (wt != "") print wt, h, b, f}' | tail -n +2)    # 1 行目（本体）を除く
+}
+sweep_detect
+```
+
+**消し方**（「候補」の行ごとに、その行の 4 つの値で。「報告のみ」の行は消さない）:
+
+```bash
+# sweep_remove <worktree> <ブランチ> <PR 番号> <headRefOid>
+sweep_remove() {
+  local wt=$1 b=$2 n=$3 oid=$4 tip st
+  [ "${HERDR_ENV:-}" = 1 ] || { echo "片付けなかった: ${wt}（HERDR_ENV が無い。報告だけ）"; return 0; }
+  [ -n "$wt" ] && [ -n "$b" ] && [ -n "$n" ] && [ -n "$oid" ] || { echo "worktree の片付け: 未実施（引数が足りない）"; return 0; }
+  tip=$(git rev-parse --verify -q "refs/heads/${b}") || { echo "片付けなかった: ${wt}（ブランチ ${b} が無い）"; return 0; }
+  [ "$tip" = "$oid" ] || { echo "片付けなかった: ${wt}（先端が動いた（${tip} ≠ ${oid}））"; return 0; }
+  st=$(git -C "$wt" status --porcelain --ignored) || { echo "片付けなかった: ${wt}（git status が失敗）"; return 0; }
+  [ -z "$st" ] || { echo "片付けなかった: ${wt}（作業ツリーが変わった）"; return 0; }
+  git worktree remove "$wt" || { echo "片付けなかった: ${wt}（git worktree remove が拒否した）"; return 0; }
+  tip=$(git rev-parse --verify -q "refs/heads/${b}") || { echo "片付けなかった: ブランチ ${b}（ブランチが無い。worktree は消えた）"; return 0; }
+  [ "$tip" = "$oid" ] || { echo "片付けなかった: ブランチ ${b}（先端が動いた。worktree は消えた）"; return 0; }
+  git branch -D "$b" >/dev/null || { echo "片付けなかった: ブランチ ${b}（git branch -D が失敗。worktree は消えた）"; return 0; }
+  echo "片付けた: ${wt}（${b}、PR #${n}）。戻し方: git fetch origin pull/${n}/head:${b}"
+}
+```
+
+- `HERDR_ENV=1` でなければ何も消さない（関数の先頭で確かめる）。
+- 消す直前に、ローカルの先端が検出時の `headRefOid` と同じこと・作業ツリーが（無視されたファイルも含めて）空のことを確かめ直す。
+  どちらかが変わっていれば消さない。
+- `git worktree remove` に `--force` は付けない（変更や未追跡のファイルがあれば git が拒否する。無視されたファイルは拒否しないので、上で確かめる）。
+- ブランチは `git branch -d` ではなく、`git rev-parse` で先端が `headRefOid` と同じことを確かめた直後に `git branch -D` で消す
+  （スカッシュマージやローカルの `main` が古いと `-d` は拒否する。先端が PR と同じなので、消えるコミットはすべて PR に残っている）。
+- 戻し方 `git fetch origin pull/<N>/head:<ブランチ>` を「片付けた」の行に添える。
+
+**リモートのブランチ**: 片付けたブランチのうち、`git ls-remote --heads origin <ブランチ>` で残っていて、その sha が
+`headRefOid` と同じものを一覧にし、**人間に 1 回だけ**確かめる。承認されたものだけ `git push origin --delete <ブランチ>` で消す。
+sha が違うもの（マージ後に誰かが push した）は報告だけ。戻し方は PR 画面の「Restore branch」。
+
+- **戻せるものだけ消す**（`CLAUDE.md` C-1）。消すのは、コミットがすべて PR に残っている（条件 4）ことと、
+  作業ツリーに何も無い（条件 5。無視されたファイルも含む）ことを確かめたものだけ。消したブランチと worktree は、
+  PR の先端から作り直せる（worktree はコミットされた内容だけが戻る。条件 5 で、それ以外のものが無いことを確かめている）。
+  条件に落ちたものは消さず、理由を伝えて人間に任せる。
+- **子のペインは閉じない**（生きた子の居る worktree は条件 3 で外れる。ペインを閉じるのは人間）。
+- **非ブロッキング。** `git` / `herdr` / `gh` が失敗したら、その回は何も消さず「worktree の片付け: 未実施（理由）」の 1 行を添えて、人間の依頼を続ける。
+
 ## 子の手順
 
 1. **場所の確認** — `main` の上ではないこと、`git rev-parse --show-toplevel` が自分の worktree であること。
@@ -256,8 +375,10 @@ gh pr list --state merged --limit 30 --json number,comments --jq '[.[] | select(
    失敗したら「Retro: 未取得（理由）」の 1 行を報告に添えるだけで、**PR も報告も止めない**。
    指揮が Task を呼べないなら、`headless-backend.md`「retro」の `claude -p --agent dev-crew:retro` で。
 6. 終わったら人間（と親）に PR のリンクを伝える（retro のコメント URL か「Retro: 未取得（理由）」も添える）。
-   worktree の後始末はマージ後に人間が `/commit-commands:clean_gone` で行う（`git worktree add` で作ったので herdr の
-   worktree 一覧には載らず、herdr からは消えない）。子のペインも人間が閉じる（親も子も閉じない）。
+   worktree の後始末は、マージ後に親の片付け（「マージ済みの worktree の片付け」）が拾う
+   （`HERDR_ENV` が無ければ報告だけ。子の worktree の片付けだけは親が行う）。
+   手で行うなら `/commit-commands:clean_gone`（マージ時にリモートのブランチが消える運用のときだけ効く）。
+   子のペインは人間が閉じる（親も子も閉じない）。
    マージ後の振り返りは、親の掃き出しが拾う（手動なら `/dev-crew:retro <PR番号>`）。
 
 ## 人間が子に直接指示するとき

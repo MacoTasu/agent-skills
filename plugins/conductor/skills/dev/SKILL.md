@@ -60,6 +60,7 @@ allowed-tools:
   **差分が発生するか**: 仕様の起草も、インライン契約の Plan Mode 合意と実装も、承認済み仕様の実装も、
   仕事ごとの worktree で動く子が担う(差分の無い調査・既存 PR のレビューは親が Task で扱う)。
   子は親のタブのいちばん右に分割して並べ、上限は pane 5(親1＋子4。列で数える)・並行 worktree 4。手順は `${CLAUDE_PLUGIN_ROOT}/reference/parent-child.md`。
+  マージ済みの子の worktree は、親が条件を満たすものだけ片付ける(`HERDR_ENV` が無ければ報告だけ。`parent-child.md`「マージ済みの worktree の片付け」)。
   herdr が無い環境では、親が worktree と依頼ファイルまでを作って子の起動を人間に案内し、止まる
   (人間が明示したときだけ、親が現在のチェックアウトでブランチを切って1件進める。`parent-child.md`「herdr が無い場合」)。
 - **ブランチ分離** — 実装はブランチ(または worktree)の上で。`main` に直接コミットしない。
