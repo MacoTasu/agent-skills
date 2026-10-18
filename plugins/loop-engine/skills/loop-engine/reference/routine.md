@@ -154,7 +154,12 @@ API から更新しても**黙って捨てられる**（200 が返るのに値�
      - 結果は待つが、retro の成否で PR・ラベル・停止の手順は変えず、失敗したら発火の報告に「Retro: 未取得（理由）」の 1 行を書くだけ。
        **PR を作らずに止めたもの（ESCALATE・N=3 超過）は retro しない**（理由は issue の `loop-escalated` コメントに残る）。
 
-     > 検証状況（2026-10-18）: cloud での retro の招集（`general-purpose` ＋ clone した `retro.md`、MCP での投稿）は**未実測**。
+     > 検証状況（2026-10-18）: **ローカル**の auto mode で、この節と同じ形（`general-purpose` ＋ `model: sonnet` に `retro.md` を Read させる）で
+     > retro（pr-created）を回し、`retro.md` の「投稿の形」（1 回 1 コマンド・`--body-file`）で打った `gh issue create` ×2・`sed`・`test -s` が、
+     > 許可ルールの無い状態で許可プロンプトも安全確認の拒否も無く通ることを**実測で確認済み**（PR #39）。
+     > `gh pr comment` も通ったが、メインのチェックアウトのローカル設定に `Bash(gh pr comment:*)` があり、それが効いていた可能性を切り分けていない。
+     > PR #24 では同じ許可ルールがある状態で、コマンド置換で包んだ形が拒否された（観察）。対照実験はしていないので、原因は断定しない。
+     > **cloud**（clone した `retro.md`、MCP での投稿、cloud の安全判定）は**未実測**。
 
 4. **G6 手前で必ず停止する。PR をマージしない**（自動マージ runtime=Phase 3.1 は未出荷）。
    人間が PR をレビューしてマージする＝HOTL。
