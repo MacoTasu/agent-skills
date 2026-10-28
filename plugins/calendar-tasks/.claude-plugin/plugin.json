@@ -1,7 +1,7 @@
 {
   "name": "calendar-tasks",
-  "version": "0.1.1",
-  "description": "Google カレンダー 1 本でタスクを管理する窓口と夜間処理。タスクは接頭辞付きの終日予定（☐ 未完了 / ☑ 完了 / ⏸ 保留 / ✖ 中止）で、属性は description の末尾行、設定はカレンダーの説明欄に置く。データは Google カレンダーの中だけ。窓口の skill が自然言語の CRUD・一覧・集計を規約どおりの操作に落とし、同梱の nightly.md を cloud routine に読ませると、毎晩 未完了を次の営業日へ繰り越し、繰越が閾値に達したものを保留にして月末に集める。通知は送らない。前提: Google カレンダー連携（claude.ai コネクタ、編集権限付き）。",
+  "version": "0.2.0",
+  "description": "Google カレンダー 1 本でタスクを管理する窓口と夜間処理。タスクは接頭辞付きの終日予定（☐ 未完了 / ☑ 完了 / ✖ 中止）で、属性は description の末尾行、設定はカレンダーの説明欄に置く。データは Google カレンダーの中だけ。窓口の skill が自然言語の CRUD・一覧・集計を規約どおりの操作に落とし、同梱の nightly.md を cloud routine に読ませると、毎晩 未完了を次の営業日へ繰り越す（上限なし）。通知は送らない。前提: Google カレンダー連携（claude.ai コネクタ、編集権限付き）。",
   "author": {
     "name": "MacoTasu",
     "url": "https://github.com/MacoTasu"
