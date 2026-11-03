@@ -21,6 +21,7 @@ AI エージェント向けのレビュー知識パック集。
 | `conductor` | 開発の単一フロントドア＝**指揮**。`main` の親は依頼を分類して worktree の子に送り出し、子が仕様の起草、または Plan Mode 合意→実装→書記→司法→PR を回す。子は行政に実装させ、書記に証拠を出させ、**司法に持ち込む**。自分ではコードを書かず、判定も出さない |
 | `dev-crew` | **行政（実務）**。契約に沿って実装し、ビルド・型・lint・テストの決定性証拠を揃えるところまで。UI に触れたら before / after の動画（見た目の証拠）も撮る。判定は出さず、証拠を揃えて指揮に返す。出荷・運用と書記の職能エージェント、PR 単位の振り返りを PR コメントと `retro` issue に残す**学ぶループ**（`dev-crew:retro` ＋ マージ後は親が自動で下書きし人間が確認して投稿、手動の入口は `/dev-crew:retro <PR番号>`）も同梱 |
 | `loop-engine` | 人間が承認した spec-kit の仕様を起点に、拾い上げ→実装→司法検証→PR を回す自律ループ（HOTL）。必ず PR で停止する |
+| `factory` | **software factory**。実行しているリポジトリの issue を作業票にして、受付（無人で仕様を起草）→昇格→製造（loop-engine）→振り返り（post-merge retro）→改善（retro の再発を掲示）を下流から 1 巡ずつ進める。課題も retro もそのリポジトリに置く。人間の関門は付ける・マージする・マージするの 3 つ。**AI は Claude のサブスクだけ**（発火の最初に従量課金の経路を確かめて止まる） |
 | `spec-page` | 説明書・仕様書・設計文書を HTML 1枚にまとめる。一覧ではなく**構造と決定の理由**を伝える形式に落とす |
 | `calendar-tasks` | **Google カレンダー 1 本でタスクを管理**する窓口と夜間処理。タスクは接頭辞付きの終日予定、毎晩 未完了を次の営業日へ繰り越し、慢性的な繰越は保留にして月末に集める。データは Google カレンダーの中だけ |
 
@@ -38,6 +39,7 @@ AI エージェント向けのレビュー知識パック集。
 /plugin install dev-crew@macotasu-agent-skills
 /plugin install conductor@macotasu-agent-skills
 /plugin install loop-engine@macotasu-agent-skills
+/plugin install factory@macotasu-agent-skills
 
 # ドキュメント。依存ゼロ
 /plugin install spec-page@macotasu-agent-skills
@@ -64,6 +66,9 @@ conductor       指揮   必須: dev-crew / review-judge
 
 loop-engine     自律   必須: dev-crew / review-judge ／ spec-kit（外部）
                        （自律モードでは loop-engine 自身が指揮の席に座る）
+
+factory         ライン 必須: spec-intake / loop-engine / dev-crew / review-judge ／ spec-kit（外部）
+                       （工程をラベルでつなぐだけで、職能は足さない）
 
 calendar-tasks  運用   依存: Google カレンダー連携（claude.ai コネクタ）／ cloud routine（夜間処理を自動で回すとき）
 ```

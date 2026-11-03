@@ -50,6 +50,12 @@
       "category": "workflow"
     },
     {
+      "name": "factory",
+      "description": "software factory。実行しているリポジトリの issue を作業票にして、受付(無人で仕様を起草)→昇格→製造(loop-engine)→振り返り(post-merge retro)→改善(retro の再発を掲示)を下流から 1 巡ずつ進める。課題も retro もそのリポジトリに置く。人間の関門は付ける・マージする・マージするの 3 つ。AI はサブスクだけ。spec-intake / loop-engine / dev-crew / review-judge が前提。",
+      "source": "./plugins/factory",
+      "category": "workflow"
+    },
+    {
       "name": "spec-page",
       "description": "説明書・仕様書・設計文書を HTML 1枚にまとめる。一覧ではなく構造と決定の理由を伝える形式に落とし、配信環境で初めて出る欠陥を公開前チェックで潰す。Artifact と GitHub Pages の両方に対応。",
       "source": "./plugins/spec-page",

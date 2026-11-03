@@ -538,6 +538,19 @@ footer {
           <div class="needs"><b>needs</b> — dev-crew / review-judge / spec-kit（外部）</div>
         </div>
       </div>
+
+      <div class="entry">
+        <div>
+          <div class="entry-name">factory</div>
+          <div class="entry-meta">1 skill · 1 command · 3 scripts</div>
+        </div>
+        <div class="entry-body">
+          <strong>software factory</strong>。実行しているリポジトリの issue を作業票にして、受付（無人で仕様を起草）→昇格→製造（<code>loop-engine</code>）→振り返り（post-merge retro）→改善（retro の再発を掲示）を<strong>下流から 1 巡ずつ</strong>進める。
+          課題も retro もそのリポジトリに置く。人間の関門は <code>factory:intake</code> を付ける・仕様の PR をマージする・実装の PR をマージするの 3 つで、マージはしない。
+          <strong>AI は Claude のサブスクだけ</strong>——発火の最初に従量課金の経路（API キーなど）を確かめて止まる。
+          <div class="needs"><b>needs</b> — spec-intake / loop-engine / dev-crew / review-judge / spec-kit（外部）</div>
+        </div>
+      </div>
     </div>
 
     <p class="group-label">文書化 — 構造と理由を書き残す</p>
@@ -847,6 +860,7 @@ footer {
 /plugin install dev-crew@macotasu-agent-skills
 /plugin install conductor@macotasu-agent-skills
 /plugin install loop-engine@macotasu-agent-skills
+/plugin install factory@macotasu-agent-skills
 
 <span class="c"># ドキュメント。依存ゼロ</span>
 /plugin install spec-page@macotasu-agent-skills</code></pre>

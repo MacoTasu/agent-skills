@@ -120,6 +120,9 @@ allowed-tools:
    （本文編集ではなく**コメント**＝いつ昇格したかが履歴に残る）。
 4. issue に **`loop-ready` label** を付ける（＝「loop に投げてよい」の意思表示）。
 
+> `factory` プラグインで回しているリポジトリでは、②は factory が無人で起草し、③④は factory が仕様の PR のマージを検出して行う
+> （人間の承認は `factory:intake` の付与と仕様の PR のマージ）。このスキルの解決手順は変わらない。
+
 ### 解決手順（手順 0 の実体・すべて満たさなければ ESCALATE）
 
 1. **label 確認** — `gh issue view <N> --json labels` に **`loop-ready` が無ければ ESCALATE**。

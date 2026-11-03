@@ -81,6 +81,7 @@ model: sonnet
    指揮が**引用（`>`）で**渡す。herdr があれば子の pane の履歴が補助になるが、引用が無いものは数えない。
 
 6. **モード** `mode`: `publish`（既定。省略したら `publish`）| `draft` | `publish-draft`（下の「mode」）
+7. **宛先** `destination`: `default`（既定。下の「宛先」の表で決める）| `self`（**すべて対象リポジトリに作る**。`factory` が渡す。課題と retro を実行しているリポジトリで管理する運用）
 
 `post-merge` では PR 番号だけを渡されることがある。次は**自分で集める**（下の「post-merge の事実収集」）:
 人間のレビューコメント（PR のレビュー・コメント・インラインコメント）、PR 作成後に積まれたコミット、
@@ -259,6 +260,8 @@ rejects: <数 | unknown>
 | ハーネス汎用（どのプロジェクトでも効く。スキル・hook・チェックリストの改善） | `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` の `repository` の repo（`jq -r .repository` で読む。本文に repo 名を焼き込まない） |
 | プロジェクト固有（そのリポジトリの契約テンプレート・チェックリスト・CI） | 対象リポジトリ（`gh repo view --json nameWithOwner -q .nameWithOwner`） |
 | 迷う | 対象リポジトリ |
+
+`destination=self` のときは表を使わず、すべて対象リポジトリに作る。対象リポジトリが public なら（`gh repo view --json visibility -q .visibility` が `PUBLIC`）、下のハーネス側と同じ自己検査をする（残ったら作らず、PR コメントの末尾にその旨を書く）。
 
 **ハーネス側（public）への issue は、作る前に自己検査する**（CONTRIBUTING の PR チェックと同じ基準）:
 固有名詞・内部の数値・固有のアーキテクチャ・private リポジトリへ辿れる情報（repo 名・ブランチ名・ファイルパス・issue 番号）が無いこと。

@@ -1,0 +1,19 @@
+{
+  "name": "factory",
+  "version": "0.1.0",
+  "description": "software factory。実行しているリポジトリの issue を作業票にして、受付(無人で仕様を起草→仕様の PR)→昇格(マージ検出で loop-ready)→製造(loop-engine で実装→司法→PR)→振り返り(post-merge retro)→改善(retro の再発を掲示)を下流から 1 巡ずつ進める。課題も retro もそのリポジトリに置く。人間の関門は factory:intake を付ける・仕様の PR をマージする・実装の PR をマージするの 3 つで、マージはしない。AI はサブスクだけ(発火の最初に従量課金の経路を確かめて止まる)。cloud routine か手元の factory-tick で発火。前提: spec-intake / loop-engine / dev-crew / review-judge、対象リポジトリに spec-kit。",
+  "author": {
+    "name": "MacoTasu",
+    "url": "https://github.com/MacoTasu"
+  },
+  "repository": "https://github.com/MacoTasu/agent-skills",
+  "license": "MIT",
+  "keywords": [
+    "software-factory",
+    "autonomous-loop",
+    "hotl",
+    "spec-driven",
+    "retro",
+    "subscription"
+  ]
+}

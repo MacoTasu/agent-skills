@@ -1,0 +1,60 @@
+#!/bin/bash
+# check-subscription — factory の AI 利用が Claude のサブスク（claude.ai のログイン）だけを通ることを確かめる。
+# 従量課金に流れる経路（API キー・トークン・別のエンドポイント・クラウド事業者）が開いていたら exit 1 で止める。
+#
+#   check-subscription          環境変数・設定ファイル・`claude auth status` を見る（手元の発火。claude が無ければ失敗）
+#   check-subscription --env    環境変数と設定ファイルだけを見る（cloud の routine。routine は claude.ai のアカウントで走るので、
+#                               セッション自身はサブスク。中から別の経路を開かないことだけを確かめる）
+#
+# 環境変数と設定ファイルを見るのは、Claude Code が claude.ai のログインよりそれらの認証を優先するため。
+# ログイン済みでも ANTHROPIC_API_KEY や apiKeyHelper が 1 つ残っていれば、`claude -p` は黙って従量課金になる。
+# 設定ファイルは cwd（対象リポジトリ）とユーザーのものを見る。cloud の routine はリポジトリの設定を読み込む。
+set -u
+
+MODE="full"
+case "${1:-}" in
+  --env) MODE="env" ;;
+  "") ;;
+  *) echo "usage: check-subscription [--env]" >&2; exit 2 ;;
+esac
+
+VARS="ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN ANTHROPIC_BASE_URL CLAUDE_CODE_USE_BEDROCK CLAUDE_CODE_USE_VERTEX CLAUDE_CODE_USE_FOUNDRY"
+
+FAIL=0
+for v in $VARS; do
+  if [ -n "${!v:-}" ]; then
+    echo "ng:      環境変数 ${v} が設定されている（サブスク以外の経路。値は表示しない）" >&2
+    FAIL=1
+  fi
+done
+
+# 設定ファイルの apiKeyHelper と env の上書き。jq が無くても止められるよう、キー名の出現で判定する（誤検知は安全側）
+for f in .claude/settings.json .claude/settings.local.json "${HOME:-/nonexistent}/.claude/settings.json"; do
+  [ -f "$f" ] || continue
+  for key in apiKeyHelper $VARS; do
+    if grep -q "\"${key}\"" "$f"; then
+      echo "ng:      設定ファイル ${f} に ${key} がある（サブスク以外の経路）" >&2
+      FAIL=1
+    fi
+  done
+done
+[ "$FAIL" = 0 ] && echo "ok:      従量課金の環境変数・設定なし"
+
+if [ "$MODE" = full ]; then
+  if ! command -v claude >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
+    echo "ng:      claude と jq が要る（ログインの方式を確かめられない）" >&2
+    exit 1
+  fi
+  # 上で拾えない経路（管理者の設定など）もここで弾ける（authMethod が claude.ai にならない）
+  STATUS=$(claude auth status 2>/dev/null) || { echo "ng:      claude auth status が失敗した（未ログイン）" >&2; exit 1; }
+  METHOD=$(printf '%s' "$STATUS" | jq -r '.authMethod // empty')
+  PLAN=$(printf '%s' "$STATUS" | jq -r '.subscriptionType // empty')
+  if [ "$METHOD" != "claude.ai" ] || [ -z "$PLAN" ]; then
+    echo "ng:      ログインが claude.ai のサブスクでない（authMethod=${METHOD:-なし} subscriptionType=${PLAN:-なし}）" >&2
+    FAIL=1
+  else
+    echo "ok:      claude.ai のサブスクでログイン（${PLAN}）"
+  fi
+fi
+
+exit "$FAIL"

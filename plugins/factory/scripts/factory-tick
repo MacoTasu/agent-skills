@@ -1,0 +1,31 @@
+#!/bin/bash
+# factory-tick — 手元のマシンで factory を 1 巡まわす（cron / launchd 用）。cloud routine の代わり、または併用。
+# サブスクのログインを確かめてから、非対話の claude -p で /factory:factory を起動する。
+# 確かめられなければ claude を起動しない（従量課金で走らせるくらいなら止まる）。
+#
+#   factory-tick <リポジトリのパス>
+#
+# 結果は一時ディレクトリに残し、パスを標準出力に出す（リポジトリには書かない）。
+set -eu
+
+REPO_DIR=${1:?usage: factory-tick <リポジトリのパス>}
+cd "$REPO_DIR"
+git rev-parse --show-toplevel >/dev/null
+
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+"$SCRIPT_DIR/check-subscription"
+
+DIR=$(mktemp -d)
+set +e
+claude -p --permission-mode auto --permission-prompts none --no-session-persistence \
+  --output-format json "/factory:factory" > "$DIR/out.json" 2> "$DIR/stderr.txt"
+echo $? > "$DIR/exit"
+set -e
+
+echo "結果:    $DIR"
+jq -r '.result // empty' "$DIR/out.json"
+# 拒否があっても claude は成功で終わるので、件数を自分で出す
+DENIED=$(jq -r '(.permission_denials // []) | length' "$DIR/out.json" 2>/dev/null || echo "?")
+echo "拒否:    $DENIED 件"
+# `.is_error // true` と書かない（jq の // は false も置き換えるので、成功が失敗になる）
+[ "$(cat "$DIR/exit")" = 0 ] && jq -e '.is_error == false' "$DIR/out.json" >/dev/null

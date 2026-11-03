@@ -1,0 +1,52 @@
+#!/bin/bash
+# factory-init — 実行しているリポジトリに factory のラベルと掲示板の issue を用意する。
+# 何度実行しても安全（既にあるラベル・掲示板は触らない。消す・書き換える操作はしない）。
+# 課題と retro はこのリポジトリの issue で管理する（宛先を外に持たない）。
+set -eu
+
+command -v gh >/dev/null 2>&1 || { echo "error: gh が要る" >&2; exit 1; }
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner) || { echo "error: gh でリポジトリを引けない" >&2; exit 1; }
+echo "対象:    $REPO"
+
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+"$SCRIPT_DIR/check-subscription" || echo "warn:    サブスク以外の経路が開いている。発火の前に直すこと（factory は発火の最初にも確かめて止まる）"
+
+EXISTING=$(gh label list --repo "$REPO" --limit 200 --json name -q '.[].name')
+
+# 名前<TAB>色<TAB>説明。loop-engine と retro のラベルは同じ名前のまま使う（あれば触らない）
+while IFS=$'\t' read -r name color desc; do
+  if printf '%s\n' "$EXISTING" | grep -qxF "$name"; then
+    echo "skip:    ラベル ${name}（既存）"
+  else
+    gh label create "$name" --repo "$REPO" --color "$color" --description "$desc" >/dev/null
+    echo "create:  ラベル $name"
+  fi
+done <<'EOF'
+factory:intake	FBCA04	仕様にしてよい（人間が付ける）。factory が無人で仕様を起草し、仕様の PR にする
+factory:drafting	D4C5F9	factory が仕様を起草中（ロック）
+factory:spec-review	C5DEF5	仕様の PR が人間のレビュー待ち。マージで loop-ready に進む
+factory:board	5319E7	factory の掲示板（発火ごとに本文を書き直す）
+loop-ready	0E8A16	承認済みの仕様があり、loop に投げてよい
+loop-running	1D76DB	loop が処理中（ロック）
+loop-escalated	B60205	人間の判断待ち。外すのは人間だけ
+retro	0E8A16	retro の提案（ハーネスの改善候補）
+EOF
+
+BOARD=$(gh issue list --repo "$REPO" --label factory:board --state open --json number -q '.[0].number // empty')
+if [ -n "$BOARD" ]; then
+  echo "skip:    掲示板 #${BOARD}（既存）"
+else
+  BODY=$(mktemp)
+  printf '%s\n' "factory の掲示板。発火ごとに本文を書き直す（記録はここではなく、各 issue と PR のラベル・コメントに残る）。" "" "まだ発火していない。" > "$BODY"
+  gh issue create --repo "$REPO" --title "factory: 掲示板" --label factory:board --body-file "$BODY"
+  rm -f "$BODY"
+fi
+
+cat <<'EOF'
+
+次にやること:
+  1. loop-engine の初期化がまだなら /loop-engine:init（spec-kit・hooks）
+  2. cloud routine を作る（本文は factory プラグインの skills/factory/reference/routine.md）
+     手元で回すなら factory-tick を cron / launchd に載せる
+  3. 仕様にしたい issue に factory:intake を付ける
+EOF
