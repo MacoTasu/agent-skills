@@ -72,10 +72,42 @@ issue: #<番号>（あれば）
 
 ### 上限
 
-親のタブに横に並ぶ列は親 1 ＋ 子 4 ＝ **5**、並行する worktree は **4** 本まで。
+親のタブに横に並ぶ列は親 1 ＋ 子 4 ＝ **5**、1 つのタブで並行する子は **4** まで。
 人間が 1 画面で親と子を全部見て、直接話しかけられる数に揃えている（画面幅 393 桁で 1 列 約 78 桁）。
 
-- `git worktree list` で本体以外の worktree が **4 本**あれば送り出さない（別セッションの worktree も数える）。
+- 親のタブで動いている子が **4** あれば送り出さない。子は、worktree 1 本を 1 と数える（列の節と同じ）。
+  親のタブの agent のうち、`cwd` か `foreground_cwd` が本体以外の worktree（その配下を含む）にあるものを、一致した worktree に写して
+  重複を除いた数にする。`via: herdr` の `impl-*` / `judge-*` は子と同じ worktree にいるので、子とは別に数えない。
+  他のタブ・他のセッションの worktree は数えない（親の画面に並ばないため）。
+  `HERDR_ENV=1` のときだけ検査する（herdr が無ければタブが無い。列の検査と同じ）。
+  終了コードが 0 のときだけ送り出してよい（`exit` は使わない。呼び元のシェルを閉じないため、関数にして `return` で返す）:
+  ```bash
+  child_limit_check() {
+    local tab list wts agents n
+    tab=$(herdr pane get "$HERDR_PANE_ID" | jq -er '.result.pane.tab_id // empty') && test -n "$tab" \
+      || { echo "子の数: 数えられない（親のタブを特定できない）"; return 1; }
+    list=$(git worktree list --porcelain) \
+      || { echo "子の数: 数えられない（git worktree list が失敗）"; return 1; }
+    wts=$(printf '%s\n' "$list" | sed -n 's/^worktree //p' | tail -n +2 | jq -Rn '[inputs]') \
+      || { echo "子の数: 数えられない（worktree の一覧を解釈できない）"; return 1; }
+    agents=$(herdr agent list) \
+      || { echo "子の数: 数えられない（herdr agent list が失敗）"; return 1; }
+    n=$(jq -e --arg tab "$tab" --argjson wts "$wts" '.result.agents
+      | if type == "array" then . else error("agents が配列でない") end
+      | [.[] | select(.tab_id == $tab) | [.cwd, .foreground_cwd] as $cs
+        | $wts[] | select(. as $w | $cs | any(. != null and (. == $w or startswith($w + "/"))))]
+      | unique | length' <<<"$agents") \
+      || { echo "子の数: 数えられない（herdr agent list を解釈できない）"; return 1; }
+    [ "$n" -ge 0 ] 2>/dev/null \
+      || { echo "子の数: 数えられない（結果が数値でない）"; return 1; }
+    [ "$n" -lt 4 ] \
+      || { echo "子の数: 親のタブで ${n} 本が並行している。上限の 4 に当たった"; return 1; }
+    echo "子の数: ${n}（4 未満）"
+  }
+  child_limit_check
+  ```
+  名前ではなく cwd で照合するのは、名前の無い agent がいるため。`$w + "/"` で比べるのは、`repo-a` と `repo-ab` のような前方一致の誤検出を避けるため。
+  各手順の検査に落ちたら、そこで止めて人間に伝える（数えられないときは送り出さない）。
 - 親のタブの列が **5** あれば送り出さない。列は上端に並ぶペインの x 座標の種類で数える（人間が開いたペインも画面を使うので数える）:
   `herdr pane layout --pane "$HERDR_PANE_ID" | jq '.result.layout | .area.y as $y | [.panes[] | select(.rect.y == $y) | .rect.x] | unique | length'`
   `via: herdr` で子が開く `impl-*` / `judge-*` のペインは子の列を上下に割って開く（`herdr-backend.md`）ので、列を増やさず、5 の対象外。
@@ -188,7 +220,7 @@ gh pr list --state merged --limit 30 --json number,comments --jq '[.[] | select(
 
 ### マージ済みの worktree の片付け（親）
 
-子の PR がマージされても worktree は残る。溜まると上限の 4 本に当たり、次の子を送り出せない。
+子の PR がマージされても worktree は残る。worktree を溜め続けると、ディスクを食い、`git worktree list` の見通しも悪くなる。
 手動の片付けはリモートで消えた（gone）ブランチしか拾わないので、マージ後もリモートにブランチが残るリポジトリでは何も消さない。
 そこで親が、retro の掃き出しと同じく**起動時と、子の様子の把握のたびに**、安全条件を満たす worktree だけを片付ける。
 子の worktree とそのブランチを消すのは、親がブランチを操作しない原則の例外で、この片付けの中だけで行う。
