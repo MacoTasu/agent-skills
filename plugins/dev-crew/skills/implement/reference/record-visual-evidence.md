@@ -143,12 +143,13 @@ cat "$out/before.status"; find "$out/before" -name '*.webm' -size +0 2>/dev/null
 
 `cd` を `|| exit` で守るのは、失敗して**元の worktree で `npm ci` や `record` が走ると行政自身の環境を壊す**ため。
 
-**before の行は `before.status` と動画の有無で分類する**（埋めればよい欄ではない）:
+**before の行は `before.status` と動画の有無で分類する**（埋めればよい欄ではない）。after が緑で実在する限り、before がどの行でも節は「録画あり」で書く:
 
 | `before.status` | 動画 | before の行 |
 |---|---|---|
 | `record rc=0` | あり | 緑 |
-| `record rc≠0` | **あり** | 対応画面なし（`<step>` で停止）— step は `before.log` の失敗したテストの出力から取る |
+| `record rc≠0` で、`before.log` の失敗した行（`<シナリオ>:<行>`）が `expect(` の行で、同じテストの中のそれより上に別の `expect(` がある（画面に辿り着いたあとの検査が失敗した） | **あり** | 赤（`<検査名>` が失敗。画面は base にもある）— 検査名は `before.log` の失敗したテストの出力から取る（`evidence-conditions` #85） |
+| `record rc≠0`（上の行に当たらない・当たるか分からない） | **あり** | 対応画面なし（`<step>` で停止）— step は `before.log` の失敗したテストの出力から取る |
 | `record rc≠0` | なし | 録画不能（<理由を `before.log` から: record 自体が失敗・webServer が起動せず など>） |
 | `record rc≠0` で base に録画 project が無い（この PR で配線を足した場合） | なし | 録画不能（base に録画 project なし）— `git show "$base":playwright.config.ts` に project が無いことを確かめて書く |
 | `setup_failed` | — | 録画不能（setup が失敗: <`before-setup.log` の要約>） |
@@ -156,7 +157,6 @@ cat "$out/before.status"; find "$out/before" -name '*.webm' -size +0 2>/dev/null
 | `copy_failed` | — | 録画不能（シナリオの複製に失敗） |
 
 - **before に対応画面が無くてもスキップしない。** 「対応画面なし」は**動画があるときだけ**。404 や旧画面が映った動画が「無かった」ことの証拠になる。
-- before が「録画不能」でも節は「録画あり」で書き、before の行に理由を書く（after が緑で実在する限り）。
 - `git worktree remove` を忘れない。残ると次の `git worktree add` が衝突し、他のセッションの邪魔になる。
   途中で止まったら `git worktree prune` と `$before_root` の削除で後始末する。
 
