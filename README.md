@@ -81,6 +81,43 @@ calendar-tasks  運用   依存: Google カレンダー連携（claude.ai コネ
 プラグインには依存を宣言する仕組みが無いので、`conductor:dev` は招集の前に
 前提プラグインの有無を自分で検査し、欠けていれば導入を促して止まる。
 
+### `dev-crew` が入れる hook（作業中の操作を確認に回す）
+
+`dev-crew` を入れると、**そのプラグインが有効な全セッション・全リポジトリ**（サブエージェントの中を含む）で、
+Bash の実行の前に `hooks/guard-broad-op.sh`（PreToolUse）が走る。次の形のコマンドは、実行の前に**確認**に回る
+（拒否ではない。理由と、代わりにすることを添える）。
+
+| 確認に回る形 | 回らない形（例） |
+|---|---|
+| `pkill` / `killall`、`kill $(pgrep ...)`・`kill $(lsof ...)`、`pgrep ... \| xargs kill` など、条件で探した相手を止める形 | `kill <pid>`、`kill "$PID"`、`kill $(cat <PID を控えたファイル>)` |
+| `gofmt -w` / `prettier --write` にディレクトリを渡す、`go fmt ./...` | ファイルを名指しで渡す、`gofmt -l .`、`prettier --check .` |
+| `git reset --soft origin/<ブランチ>`・`@{u}`（上流の先頭が HEAD の祖先でないとき） | `git reset --soft "$(git merge-base origin/<ブランチ> HEAD)"` |
+| `git add -A` / `--all` / `.`（未追跡のファイルがあるとき） | `git add <ファイル>`、`git add -u`、`git add -p .` |
+
+実際の動き:
+
+- **状態を見るのは、hook が受け取った作業ディレクトリのリポジトリだけ。** 同じコマンドの中で `cd` した後や、
+  `git -C`・`--git-dir`・`--work-tree`、前置きの `GIT_DIR=`・`GIT_WORK_TREE=`・`env -C` があるときは、
+  状態を見ずに常に確認に回す（未追跡が 0 件でも、祖先であっても）。git のリポジトリでない場所でも確認に回る。
+- **`git reset --soft` の祖先の判定は、実行する前の、手元にある上流に対するもの。** 同じコマンドの中で先に
+  `git fetch`・`git pull`・`git remote update` があるときは、判定せずに確認に回す。
+- 状態を見る git は読むだけ（index を書き換えない）。2 秒で返らないときは、確認に回す。
+- **見ていない形**: `bash -c "…"`・`sh -c`・`ssh <ホスト> "…"`・`eval`・`$(…)` の中の命令、スクリプトや `make`・`npm run` 経由、
+  `env -S`、`gofmt`・`prettier` 以外の整形、glob や変数で渡した対象、`git reset` の `--hard`、
+  `origin/`・`@{u}` 以外の上流の書き方（`upstream/…`・`refs/remotes/…`）、`git add *`・`git add <ディレクトリ>`。
+- `jq` が要る（無ければ検査せずに通す）。壊れた入力・20000 バイトを超えるコマンド・入れ子が深すぎるコマンドも通す。
+  最後の砦ではなく、取りこぼしを減らす仕組み。規則の足し方はスクリプトの先頭のコメント。
+
+人が答えられないとき:
+
+- `claude -p`（非対話）では、誰も確認に答えられないので、Claude Code が呼び出しを拒否し、理由が Claude に返る
+  （[公式の hooks の説明](https://code.claude.com/docs/en/hooks)の範囲）。
+- **未確認**: 権限モードが `bypassPermissions`・`dontAsk`・`acceptEdits` のとき、およびサブエージェントの中で、
+  hook の「確認」がどう扱われるか。実際のセッションに組み込んでの確認もしていない。
+
+無効にする: 環境変数 `DEV_CREW_GUARD_BROAD_OP=off`（**小文字の `off`** だけ。`settings.json` の `env` に書ける）。この hook だけが止まる。
+`"disableAllHooks": true` はすべての hook を、プラグインの無効化は `dev-crew` 全体を止める。
+
 ## Claude Code 以外で使う
 
 中身は [Agent Skills](https://code.claude.com/docs/en/skills) 形式の素の Markdown で、
