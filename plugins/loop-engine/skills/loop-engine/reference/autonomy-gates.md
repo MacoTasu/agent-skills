@@ -13,7 +13,7 @@
   - **`.specify/memory/constitution.md`（守るもの）** … プロジェクトの原則。**トリガ対象外**。
     司法・`/conductor:dev`・spec-kit の各コマンドが参照し enforcement する。
   - 雛形は spec-kit のテンプレート（対象リポジトリの `.specify/templates/`）。更新は人間の仕様の PR。版管理は git。
-- **出力** … ボットはリポジトリに記録ファイルを書かない。出力は PR（本文・司法判定と retro のコメント）と issue のラベル・コメントだけ（retro は `retro` ラベルの issue を作ることがある。宛先は dev-crew 同梱 `agents/retro.md` の宛先表）。
+- **出力** … ボットはリポジトリに記録ファイルを書かない。出力は PR（本文・司法判定と retro のコメント）と issue のラベル・コメントだけ（retro が残すのは記録の PR コメントだけで、issue は作らない）。
 - **ハーネス = `.claude/`** … 判事・本ゲート・検証カタログ・loop-engine（汎用・dotfiles で配布）。
 
 ## ループの状態は GitHub に置く（ファイルに持たない）

@@ -38,7 +38,7 @@ allowed-tools:
 - **操作対象（プロジェクト SSOT）** = **cwd の current repo** の spec-kit の成果物。
   作るもの＝`specs/<機能>/`（`spec.md` が契約、`plan.md` / `tasks.md` は派生）、
   守るもの＝`.specify/memory/constitution.md`。どちらも人間の所有物で、承認は仕様の PR のマージ。
-- **出力** = PR（ブランチ・本文・司法判定と retro のコメント）と issue のラベル・コメントだけ（retro は `retro` ラベルの issue を作ることがある。宛先は dev-crew 同梱 `agents/retro.md` の宛先表）。
+- **出力** = PR（ブランチ・本文・司法判定と retro のコメント）と issue のラベル・コメントだけ（retro が残すのは記録の PR コメントだけで、issue は作らない）。
   **リポジトリのファイルに記録を残さない**。
 
 ## 正とする参照（起動時に必ず Read。すべて skill 同梱 = `reference/`）
