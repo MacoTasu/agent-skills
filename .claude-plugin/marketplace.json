@@ -56,6 +56,12 @@
       "category": "documentation"
     },
     {
+      "name": "pr-kit",
+      "description": "PR まわりの道具 4 つ（PR 本文の書き方 / マージの危険度の見積もり / 衝突した箇所だけを取り出して解く手順 / 失敗した CI を調べて直す計画を出す）。外部の公開スキル集（MIT）から版を固定した写しとして借りている。各役が使う道具で、合否は出さない。前提: gh、衝突の解決は python3。",
+      "source": "./plugins/pr-kit",
+      "category": "workflow"
+    },
+    {
       "name": "calendar-tasks",
       "description": "Google カレンダー 1 本でタスクを管理する窓口と夜間処理。タスクは接頭辞付きの終日予定（☐ / ☑ / ⏸ / ✖）、属性は description、設定はカレンダーの説明欄。毎晩 未完了を次の営業日へ繰り越し、慢性的な繰越は保留にして月末に集める。通知なし。データは Google カレンダーの中だけ。前提: Google カレンダー連携。",
       "source": "./plugins/calendar-tasks",
