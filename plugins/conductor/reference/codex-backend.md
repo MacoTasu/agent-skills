@@ -126,10 +126,13 @@ git branch --show-current             # 空でなく、かつ main 等でない�
 
 ### 4. 起動する
 
+`<reference>` は**このファイルを Read したディレクトリ**（`codex-verdict.schema.json` はこのファイルと同じ場所にある。
+`CLAUDE_PLUGIN_ROOT` はシェルに渡らないことがあるので使わない）。
+
 ```bash
 codex exec -C "$PWD" -s read-only --ephemeral --ignore-user-config --ignore-rules \
   --color never --json [-m <model>] \
-  --output-schema "${CLAUDE_PLUGIN_ROOT}/reference/codex-verdict.schema.json" \
+  --output-schema "<reference>/codex-verdict.schema.json" \
   -o "<dir>/result.json" - < "<dir>/prompt.md" > "<dir>/events.jsonl" 2> "<dir>/stderr.txt"
 ```
 
