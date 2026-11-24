@@ -540,6 +540,25 @@ footer {
       </div>
     </div>
 
+    <p class="group-label">道具 — PR まわりで各役が使う</p>
+    <div class="register">
+      <div class="entry">
+        <div>
+          <div class="entry-name">pr-kit</div>
+          <div class="entry-meta">4 skills · 1 script</div>
+        </div>
+        <div class="entry-body">
+          PR 本文の書き方（<code>write-pr-description</code>）、マージの危険度の見積もり（<code>merge-risk</code>）、
+          衝突した箇所だけを取り出して解く手順（<code>resolve-merge-conflicts</code>）、
+          失敗した CI を調べて直す計画を出す（<code>diagnose-ci-failures</code>）。
+          外部の公開スキル集（MIT）から<strong>版を固定した写し</strong>として借りていて、出どころと直した箇所は同梱の <code>NOTICE.md</code> にある。
+          <strong>各役が使う道具で、合否は出さない</strong> — <code>merge-risk</code> は人間がマージを決めるときの材料で、
+          司法（<code>review-judge</code>）の判定の代わりではない。<code>diagnose-ci-failures</code> は調べて計画を出すだけで、直さない。
+          <div class="needs"><b>needs</b> — gh（GitHub CLI）/ python3（衝突の解決）</div>
+        </div>
+      </div>
+    </div>
+
     <p class="group-label">文書化 — 構造と理由を書き残す</p>
     <div class="register">
       <div class="entry">
@@ -849,7 +868,10 @@ footer {
 /plugin install loop-engine@macotasu-agent-skills
 
 <span class="c"># ドキュメント。依存ゼロ</span>
-/plugin install spec-page@macotasu-agent-skills</code></pre>
+/plugin install spec-page@macotasu-agent-skills
+
+<span class="c"># PR まわりの道具。依存は gh（衝突の解決は python3 も）</span>
+/plugin install pr-kit@macotasu-agent-skills</code></pre>
 
     <h3 style="margin-top:2.5rem">依存関係</h3>
     <div class="dep"><b>spec-intake</b>  立法支援

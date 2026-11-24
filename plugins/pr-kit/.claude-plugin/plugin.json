@@ -1,0 +1,18 @@
+{
+  "name": "pr-kit",
+  "version": "0.1.0",
+  "description": "PR まわりの道具 4 つ。外部の公開スキル集(warpdotdev/common-skills、MIT)から、版を固定した写しとして借りている。write-pr-description は PR 本文の書き方、merge-risk はマージの危険度を 5 つの観点で見積もる材料、resolve-merge-conflicts は衝突した箇所だけを同梱のスクリプトで取り出して解く手順、diagnose-ci-failures は失敗した CI のログを調べて直す計画を出す(直さない)。どれも各役が使う道具で、合否は出さない。merge-risk は人間がマージを決めるときの材料で、司法(review-judge)の判定の代わりではない。前提: gh(GitHub CLI)、resolve-merge-conflicts は python3。出どころと直した箇所は同梱の NOTICE.md。",
+  "author": {
+    "name": "MacoTasu",
+    "url": "https://github.com/MacoTasu"
+  },
+  "repository": "https://github.com/MacoTasu/agent-skills",
+  "license": "MIT",
+  "keywords": [
+    "pull-request",
+    "pr-description",
+    "merge-conflicts",
+    "ci",
+    "risk-assessment"
+  ]
+}
