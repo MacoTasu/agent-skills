@@ -181,6 +181,8 @@ claude -p --permission-mode auto --permission-prompts none \
   サブエージェントは親の権限を引き継ぐ（実測）ので、各観点にも効く。ただしシェル経由の書き込みは止めないので、
   保証は下のスナップショット。
 
+指示文を書く前に、指揮はこのファイルと同じディレクトリの `scribe-checklist.md` を Read し、その一覧に従う（省かない）。
+
 指示文 `<dir>/prompt.md` に書くこと:
 
 1. 差分の範囲（例: `origin/main...HEAD` と未コミットの変更）と契約
