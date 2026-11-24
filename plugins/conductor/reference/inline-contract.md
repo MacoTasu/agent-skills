@@ -1,10 +1,14 @@
 # インライン契約のテンプレート
 
 仕様を作らない小さな変更で、子（worktree の `/conductor:dev`）が Plan Mode で人間と合意する契約の書き方。
+**契約を書く役は、Plan Mode に入る前にこのファイルを Read し、この書き方で書く**（`SKILL.md`「大原則」、`parent-child.md`「種別: インライン契約（Plan Mode）」の 1.）。
 
 インライン契約についての決まりは、`SKILL.md`・`parent-child.md`・`codex-backend.md`、`dev-crew` 同梱 `skills/implement/SKILL.md`、
 `review-judge` 同梱 `agents/judge.md`・`reference/verification-surfaces.md` に分かれて書かれている。
-このファイルはそれを 1 か所に集めたもので、**ここで新しく決めたことは無い**。各項目の末尾の（）が元の場所。
+このファイルはそれを 1 か所に集めたもの。各項目の末尾の（）が元の場所。
+
+- **元の場所が書かれた項目**は写し。食い違ったら、元の手順書（`SKILL.md`・`parent-child.md` など）が正。このファイルのほうを直す。
+- **元の場所が書かれていない項目**（あとからこのファイルに足された項目）は、このファイルが正。
 
 > **振り返り（retro）の提案の置き場。** `dev-crew` 同梱 `agents/retro.md` の「契約テンプレート」のうち、ハーネス側のものはこのファイル。
 > 契約に必ず書く基準・検証方法を足す・変えるのは、人間がこのファイルへの変更をマージしたときだけ。

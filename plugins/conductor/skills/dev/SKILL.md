@@ -53,7 +53,9 @@ allowed-tools:
     振る舞いを変えるなら先に `spec.md` を直す)。実装 PR は `spec.md`・constitution を変えない。
   - **インライン契約** … 仕様を作らない小さな変更(typo・1箇所のバグ修正など)。Plan Mode で合意した
     完了基準に**検証方法(実行コマンド)を併記**し、招集時に司法へそのまま渡す。リポジトリのファイルには残さない
-    (記録は PR 本文の「契約」節だけ)。書き方は `${CLAUDE_PLUGIN_ROOT}/reference/inline-contract.md`。
+    (記録は PR 本文の「契約」節だけ)。契約を書く役(子。`parent-child.md`「herdr が無い場合」の例外では、子の手順を
+    自分で進める親)は、**Plan Mode に入る前に `${CLAUDE_PLUGIN_ROOT}/reference/inline-contract.md` を Read し、
+    その書き方で契約を書く**(省かない)。main で依頼を振り分ける親は契約を書かないので、読まない。
   どちらに当たるか迷ったら人間に1問だけ聞く。
 - **親は main、子は worktree** — 親(このスキルを main で起動したもの)は `main` から動かず、
   依頼の分類・spec-kit かインラインかの1問・送り出し・子の様子の把握に徹する。送り出す条件は
@@ -132,7 +134,12 @@ allowed-tools:
 
 コスト本体のため `/pr-review-toolkit:review-pr` コマンド誘導は**使わない**。
 `/conductor:dev` が**6サブエージェントを Task で直接・同一ターン並列起動**し、各 `model` を
-モデル階層ポリシー表どおり**明示上書き**する(上書きが frontmatter より優先):
+モデル階層ポリシー表どおり**明示上書き**する(上書きが frontmatter より優先)。
+
+書記を招集する指揮(子。既存 PR のレビューを Task で扱う親も)は、**招集の前に
+`${CLAUDE_PLUGIN_ROOT}/reference/scribe-checklist.md` を Read し、その一覧(渡すもの・観点・招集するときの決まり)に従う**(省かない)。
+
+招集する6サブエージェントと `model`:
 
 | サブエージェント(subagent_type) | model |
 |---|---|
@@ -166,8 +173,6 @@ allowed-tools:
   Task を一括並列起動**(CLAUDE.md「並列駆動」準拠)。
 - 全観点を毎回回す必要はない。差分の性質に無関係な観点は省きさらにコストを抑える
   (型変更なしなら type-design-analyzer を省く 等)。
-
-書記に渡すものと観点（上の表と条件）を 1 か所にまとめた一覧は `${CLAUDE_PLUGIN_ROOT}/reference/scribe-checklist.md`。
 
 ### 別ベンダーの所見(任意)
 
