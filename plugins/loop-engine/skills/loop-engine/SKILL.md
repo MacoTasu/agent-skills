@@ -38,7 +38,7 @@ allowed-tools:
 - **操作対象（プロジェクト SSOT）** = **cwd の current repo** の spec-kit の成果物。
   作るもの＝`specs/<機能>/`（`spec.md` が契約、`plan.md` / `tasks.md` は派生）、
   守るもの＝`.specify/memory/constitution.md`。どちらも人間の所有物で、承認は仕様の PR のマージ。
-- **出力** = PR（ブランチ・本文・司法判定と retro のコメント）と issue のラベル・コメントだけ（retro は `retro` ラベルの issue を作ることがある。宛先は dev-crew 同梱 `agents/retro.md` の宛先表）。
+- **出力** = PR（ブランチ・本文・司法判定と retro のコメント）と issue のラベル・コメントだけ（retro が残すのは記録の PR コメントだけで、issue は作らない）。
   **リポジトリのファイルに記録を残さない**。
 
 ## 正とする参照（起動時に必ず Read。すべて skill 同梱 = `reference/`）
@@ -101,6 +101,7 @@ allowed-tools:
      「書記: 招集なし」と明示。書記は pr-review 系・business・domain のことで、行政の自己レビューは含まない）、**人間の介入**（cloud は人間がいないので「介入: なし」と明示。手動起動で人間が発言したときだけ
      引用（`>`）で渡す。許可プロンプトの承認は含めない）。
      結果は待つが、retro の成否で ①〜③ と停止の手順は変えず、失敗したら報告に「Retro: 未取得（理由）」の 1 行を残すだけ。
+     **retro が返答に `severe` の出来事を載せていたら、報告に 1 件ずつ必ず書く**（1 回の被害が大きい出来事。書くだけで、停止の手順は変えない）。
      **PR を作らずに止めたもの（G1〜G4 の ESCALATE・N=3 超過）は retro しない**（retro は PR 単位。止めた理由は issue の `loop-escalated` コメントに残る）。
 6. **G6 手前で停止** — **マージはしない**（`gh pr merge` を実行しない）。人間が PR をレビューしてマージする。
 
