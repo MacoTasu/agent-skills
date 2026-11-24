@@ -120,7 +120,7 @@ allowed-tools:
 | 機能追加 / 振る舞いの変更の依頼(main 上) | dispatch(起草) | **親**: 依頼ファイルを書き、`spec-<名前>` を送り出す(`parent-child.md`「送り出し」入口 A)。起草と仕様の PR は子。承認(マージ)は人間 |
 | 小さな変更(typo・1箇所のバグ修正・軽いリファクタ)(main 上) | dispatch(インライン) | **親**: 依頼ファイルを書き、`child-<名前>` を送り出す(入口 B。Plan Mode は子) |
 | 「<仕様> を実装して」/ マージ済み仕様の送り出し(main 上) | dispatch | **親**: worktree を切って `child-<名前>` を起動する(入口 C) |
-| `/conductor:dev <依頼ファイル>`(worktree 上) | specify / implement(子) | **子**: 依頼ファイルの種別により、spec-kit で仕様を起草して仕様の PR を作る(マージも実装もしない)、または Plan Mode 合意(＝インライン契約。各基準に検証方法を併記) → 設計が要れば `feature-dev:code-architect` Task **@opus** → 実装は **`dev-crew:implement`**(インライン契約を渡す) → 書記 → 司法 → PR(`parent-child.md`「子の手順」) |
+| `/conductor:dev <依頼ファイル>`(worktree 上) | specify / implement(子) | **子**: 依頼ファイルの種別により、spec-kit で仕様を起草して仕様の PR を作る(マージも実装もしない)、または Plan Mode 合意(＝インライン契約) → 設計が要れば `feature-dev:code-architect` Task **@opus** → 実装は **`dev-crew:implement`**(インライン契約を渡す) → 書記 → 司法 → PR(`parent-child.md`「子の手順」) |
 | `/conductor:dev specs/<機能>/`(機能ブランチ・worktree 上) | implement(子) | **子**: 仕様は承認済みなので Plan Mode は省く → 実装は **`dev-crew:implement`**(契約=機能ディレクトリ。`via: herdr` ならペイン、`via: headless` なら `claude -p`) → 書記 → 司法 → PR(`parent-child.md`「子の手順」) |
 | herdr が無く、人間が現在のチェックアウトで進めるよう明示した | implement(直接) | 親が `parent-child.md`「herdr が無い場合」の例外どおりブランチを切り、「子の手順」を1件だけ自分で進める。行政は決定性の結果までを返し、合否は宣言しない |
 | UI / 画面 / コンポーネントを伴う実装 | implement(FE) | 上記 ＋ `frontend-design`(UI変更で自動発火) |
