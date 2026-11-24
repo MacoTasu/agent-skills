@@ -115,7 +115,7 @@ git branch --show-current             # 空でなく、かつ main 等でない�
 1. `<judge_root>/agents/judge.md` を読み、**frontmatter より下を自分の役割として従う**。
    文中の `${CLAUDE_PLUGIN_ROOT}` は `<judge_root>` に読み替える
 2. (a) 契約（spec-kit の機能ディレクトリのパス、またはインライン契約の本文）、
-   (b) 差分の範囲（例: `main...HEAD` と未コミットの変更）、
+   (b) 差分の範囲（`scribe-checklist.md`「渡すもの」の「差分の範囲」の行の形）、
    (c) 証拠 — 書記の所見、`<dir>/evidence/` の決定性の出力、指揮が取った `git diff --stat`、
    および**行政の申告（未検証）**
 3. **決定性チェックは指揮が実行済み。再実行しない。** 結果は `<dir>/evidence/` の生の出力から読む。
@@ -201,7 +201,7 @@ codex exec --color never review --base <base> --ephemeral --ignore-user-config -
   -o "<dir>/codex-review.md" </dev/null > "<dir>/review-events.txt" 2> "<dir>/review-stderr.txt"
 ```
 
-- `<base>` は差分の基点のブランチ（通常 `main`）。
+- `<base>` は差分の基点のブランチ。`git fetch origin` のあとの `origin/main`（PR の向き先が `main` でなければ、その枝）を渡し、ローカルの `main` は使わない。
 - `codex exec review` は `-s` を持たないので、サンドボックスは `-c 'sandbox_mode="read-only"'` で指定する。
 - `--color` は `exec` のオプションで `review` のオプションではないので、`review` より前に置く
   （後ろに置くと引数エラーで止まる）。

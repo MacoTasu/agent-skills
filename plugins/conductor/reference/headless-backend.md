@@ -185,7 +185,7 @@ claude -p --permission-mode auto --permission-prompts none \
 
 指示文 `<dir>/prompt.md` に書くこと:
 
-1. 差分の範囲（例: `origin/main...HEAD` と未コミットの変更）と契約
+1. 差分の範囲（`scribe-checklist.md`「渡すもの」の「差分の範囲」の行のとおり）と契約
 2. `SKILL.md`「レビュー招集ルール」の観点を、**Agent で同じターンに並列に**招集する。
    各観点の `subagent_type` と `model` は同節の表どおり指示文に書き写す（モデル階層ポリシー）。
    business / domain / プロダクト観点も、同節の条件に当たるものだけ書く

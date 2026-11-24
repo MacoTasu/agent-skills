@@ -204,6 +204,8 @@ allowed-tools:
    `/conductor:dev` はその出力をユーザーへのサマリに含める。
 3. `/conductor:dev` はその判定を**そのままルーティング**する(自分で結論を上書きしない):
    - `PASS` → ship フェーズへ(コミット/PR を案内。PR 本文は司法に渡した本文案のまま、動画は `--attach` で添付)。
+     **PR を作るのは PASS のあと。** 例外は 1 つ: 契約に `CI でのみ走る検証:` の行があるときだけ、下書き(draft)の PR を先に作ってから
+     司法を招集し、PASS のあとに ready にする(`parent-child.md`「実装から PR まで」の 3.・4.。自律ループ `/loop-engine` には適用しない)。(`evidence-conditions` #78)
    - `REJECT` / `RETRY` → 指摘を実装側(行政)へ戻す。フル自律 driver(Phase 3)なら
      自動で次ラウンド、現状(Phase 1)はユーザーへ差し戻し。
    - `ESCALATE` → ユーザー(立法)へ判断を仰ぐ。
@@ -219,7 +221,7 @@ allowed-tools:
 それを担うのが **`dev-crew:retro`**（PR 単位の振り返り）。三権のどこでもなく**立法への提案者**で、
 PR コメントと `retro` issue を書くだけ。反映は人間がハーネスの PR をマージしたときだけ（retro は PR を作れない）。
 
-1. 子が `gh pr create` を終え PR の URL が決まったら、Task で `dev-crew:retro`（**sonnet**）を招集する
+1. 子が `gh pr create` を終え PR の URL が決まったら(下書きの PR は、PASS のあと ready にしたら)、Task で `dev-crew:retro`（**sonnet**）を招集する
    （`parent-child.md`「実装から PR まで」の手順 5）。渡す事実は 3 種:
    **(a) 司法の全ラウンドの判定出力**（1 ラウンド目から最終まで。指揮が受け取った出力をそのまま）、
    **(b) 契約に無かった書記の所見**（6観点・business・domain の所見のうち、契約の完了基準に対応しないもの）、
