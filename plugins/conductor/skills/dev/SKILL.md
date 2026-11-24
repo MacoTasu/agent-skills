@@ -53,7 +53,7 @@ allowed-tools:
     振る舞いを変えるなら先に `spec.md` を直す)。実装 PR は `spec.md`・constitution を変えない。
   - **インライン契約** … 仕様を作らない小さな変更(typo・1箇所のバグ修正など)。Plan Mode で合意した
     完了基準に**検証方法(実行コマンド)を併記**し、招集時に司法へそのまま渡す。リポジトリのファイルには残さない
-    (記録は PR 本文の「契約」節だけ)。
+    (記録は PR 本文の「契約」節だけ)。書き方は `${CLAUDE_PLUGIN_ROOT}/reference/inline-contract.md`。
   どちらに当たるか迷ったら人間に1問だけ聞く。
 - **親は main、子は worktree** — 親(このスキルを main で起動したもの)は `main` から動かず、
   依頼の分類・spec-kit かインラインかの1問・送り出し・子の様子の把握に徹する。送り出す条件は
@@ -166,6 +166,8 @@ allowed-tools:
   Task を一括並列起動**(CLAUDE.md「並列駆動」準拠)。
 - 全観点を毎回回す必要はない。差分の性質に無関係な観点は省きさらにコストを抑える
   (型変更なしなら type-design-analyzer を省く 等)。
+
+書記に渡すものと観点（上の表と条件）を 1 か所にまとめた一覧は `${CLAUDE_PLUGIN_ROOT}/reference/scribe-checklist.md`。
 
 ### 別ベンダーの所見(任意)
 
