@@ -1,3 +1,14 @@
 #!/bin/sh
-# pre-commit — 公開物ガードの入口（本体は public-guard.sh）。有効化: git config core.hooksPath .githooks
-exec "$(dirname "$0")/public-guard.sh" commit
+# pre-commit — commit のときの検査の入口。有効化: git config core.hooksPath .githooks
+#   lint.sh --staged       指示文・スクリプトの機械的な誤り（コミットに入る中身を見る）
+#   lint.sh --self-test    lint.sh を変えるコミットのときだけ（規則が空振り・誤検出していないか。作業ツリーの lint.sh を見る）
+#   public-guard.sh commit 公開物ガード
+# どれかが止めても、残りは走らせる（直すものを 1 回で全部見せる）。どれかが失敗なら commit を止める。
+DIR=$(dirname "$0")
+RC=0
+"$DIR/lint.sh" --staged || RC=1
+if ! git diff --cached --quiet -- .githooks/lint.sh; then
+  OUT=$("$DIR/lint.sh" --self-test 2>&1) || { printf '%s\n' "$OUT" | grep -v '^ok ' >&2; echo "lint: 自己検査（.githooks/lint.sh --self-test）が通っていません" >&2; RC=1; }
+fi
+"$DIR/public-guard.sh" commit || RC=1
+exit $RC

@@ -184,10 +184,12 @@ Task の判事は **`Edit` / `Write` ツールを持たない**ことで「直�
 ### 1. judge.md を見つける
 
 判事の手順書は `review-judge` プラグインの `agents/judge.md`。conductor の隣にある
-（インストール時は `<marketplace>/review-judge/<version>/`、リポジトリ直下では `plugins/review-judge/`）:
+（インストール時は `<marketplace>/review-judge/<version>/`、リポジトリ直下では `plugins/review-judge/`）。
+`<reference>` は**このファイルを Read したディレクトリ**（conductor の `reference/`。その 1 つ上が conductor の root。
+`CLAUDE_PLUGIN_ROOT` はシェルに渡らないことがあるので使わない）:
 
 ```bash
-find "${CLAUDE_PLUGIN_ROOT}/.." "${CLAUDE_PLUGIN_ROOT}/../.." -maxdepth 4 \
+find "<reference>/../.." "<reference>/../../.." -maxdepth 4 \
      -path '*/review-judge*/agents/judge.md' 2>/dev/null \
   | while IFS= read -r f; do (cd "$(dirname "$f")/.." && pwd); done \
   | sort -uV | tail -1

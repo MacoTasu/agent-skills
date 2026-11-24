@@ -32,6 +32,7 @@ allowed-tools:
 **`grilling` skill を invoke して、そのとおりに実行する**。
 > `grilling` が導入されていない場合はその旨を告げ、ラウンド形式の詰めは省いて
 > 通常の質問で進める（導入は https://github.com/mattpocock/skills を参照）。
+
 本 skill はその上に「issue 固有の材料集め・終了条件・書き戻し」を足すだけ。
 
 grilling の大原則で、本 skill でも特に効くもの:

@@ -29,7 +29,7 @@
 | 契約に必ず書く基準・検証方法 | `conductor` 同梱 `reference/inline-contract.md` | 在る |
 | 実装のあとの確認 | `dev-crew` 同梱 `skills/implement/reference/post-checks.md` | 在る |
 | 書記に渡すもの・観点 | `conductor` 同梱 `reference/scribe-checklist.md` | 在る |
-| 機械的な検査（リポジトリの lint。commit のときに止める） | **次の段階で新設**（最初の規則と一緒に作る） | 無い |
+| 機械的な検査（リポジトリの lint。commit のときに止める） | ハーネスのリポジトリ直下の `.githooks/lint.sh`（`.githooks/pre-commit` が呼ぶ。規則の足し方はそのファイルの先頭。プラグインには同梱しない） | 在る |
 | 機械的な検査（作業中の操作を止める hook） | **次の段階で新設**（最初の規則と一緒に作る） | 無い |
 | 手順書の本文（指揮・親子・retro の手順など、上のどれにも入らない手順） | その手順書（retro の「反映先の序列」でいう「スキル文言」。最後の手段） | 在る |
 | 人が決めること | ファイルへの変更にしない（上の「この一覧のために新しく置いた決まり」の 3.） | — |

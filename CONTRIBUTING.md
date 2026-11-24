@@ -30,6 +30,15 @@
       （一般化した観点に落としてある）
 - [ ] 追加した項目に「どう検出するか」が実行可能な形で書かれている
 
+## lint（指示文・スクリプトの機械的な誤り）
+
+`.githooks/lint.sh` が、指示文（markdown）とスクリプトの、決まった形で見つかる誤りを検査する（規則の一覧と除外の印の書き方は、そのファイルの先頭）。
+hook を有効にした clone（`git config core.hooksPath .githooks`）では、commit のたびに `.githooks/pre-commit` がコミットに入る中身を検査し、違反があれば止める。
+
+- 手で走らせる: リポジトリの中で `.githooks/lint.sh`（作業ツリーの中身を見る）。
+- 規則を足す・変えるとき: `.githooks/lint.sh` の先頭の「規則の足し方」に従い、例を足してから `.githooks/lint.sh --self-test` を走らせる
+  （`lint.sh` を変えるコミットでは pre-commit も走らせる）。
+
 ## バージョニング
 
 **利用者に届けたい変更を入れたら、そのプラグインの `version` を必ず上げる。**
