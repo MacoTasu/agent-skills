@@ -140,7 +140,7 @@ herdr agent start <name> --kind <kind> --pane <pane_id> -- <起動引数>
 指示文ファイルに書くこと:
 
 1. `/dev-crew:implement` を実行し、その手順に従う（同じユーザー環境なのでスキルが使える）
-2. 契約 — spec-kit の機能ディレクトリのパス `specs/<機能>/`、またはインライン契約の本文
+2. 契約 — spec-kit の機能ディレクトリのパス `specs/<機能>/`（「仕様の変更を認める経路」の明示を添える）、またはインライン契約の本文
 3. **司法を呼ばない・合否を宣言しない**（implement の職責どおり。念押し）
 4. 最後は implement の「返す形式」で、`<dir>/result.md` に書いて終える
 
@@ -259,7 +259,7 @@ find "<reference>/../.." "<reference>/../../.." -maxdepth 4 \
 
 1. `<judge_root>/agents/judge.md` を読み、**frontmatter より下を自分の役割として従う**。
    文中の `${CLAUDE_PLUGIN_ROOT}` は `<judge_root>` に読み替える
-2. (a) 契約のパス、(b) 差分の範囲（`scribe-checklist.md`「渡すもの」の「差分の範囲」の行の形）、(c) 証拠（書記の所見・CI の結果・指揮が取った `git diff --stat`、
+2. (a) 契約のパス（spec-kit の機能ディレクトリなら、「仕様の変更を認める経路」の明示を添える）、(b) 差分の範囲（`scribe-checklist.md`「渡すもの」の「差分の範囲」の行の形）、(c) 証拠（書記の所見・CI の結果・指揮が取った `git diff --stat`、
    および**行政の申告（未検証）**。申告の緑・赤は自分で検証方法を実行して確かめる）
 3. リポジトリ内のファイルを作らない・変更しない・コミットしない（judge.md の分離原則の念押し）。
    **唯一の例外は `<dir>/result.md`**（リポジトリの外）。ファイル編集ツールは禁止されているので
