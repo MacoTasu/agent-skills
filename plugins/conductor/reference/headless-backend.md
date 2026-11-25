@@ -203,7 +203,7 @@ claude -p --permission-mode auto --permission-prompts none \
 
 | 役割 | 置き場 | 手順 |
 |---|---|---|
-| 行政 | `via: headless` または `via: herdr` | この文書「行政」／`herdr-backend.md` |
+| 行政 | `via: headless`、`via: command` または `via: herdr` | この文書「行政」／`command-backend.md`／`herdr-backend.md` |
 | 書記 | headless | この文書「書記」 |
 | 判事 | `via: codex` または `via: herdr` | `codex-backend.md`／`herdr-backend.md` |
 
