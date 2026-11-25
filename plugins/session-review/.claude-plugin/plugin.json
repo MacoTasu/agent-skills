@@ -1,0 +1,18 @@
+{
+  "name": "session-review",
+  "version": "0.1.0",
+  "description": "手元にあるエージェントの会話の履歴を集めて、効率・コードの質・手順の遵守・文章の量の 4 つの基準で採点し、使われたスキルが効いているかを見て、直す案をテキストで出す。外部の公開スキル集(warpdotdev/common-skills、MIT)の skill-doctor を、版を固定した写しとして、一部を外し名前を変えて借りている。直す案を出すだけで、スキルのファイルは書き換えず、変更の合否(司法の判定)も出さない(直すのは通常の開発の流れで行う)。Claude Code 本体の /skill-doctor(スキルの利用回数とコンテキストの費用のレポート)とは別物。集めた会話の抜粋は伏せ字にならないので、出力先はリポジトリの外の一時ディレクトリにする。前提: python3(3.9 以上)、git。出どころと直した箇所は同梱の NOTICE.md。",
+  "author": {
+    "name": "MacoTasu",
+    "url": "https://github.com/MacoTasu"
+  },
+  "repository": "https://github.com/MacoTasu/agent-skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "session-history",
+    "scoring",
+    "retrospective",
+    "skill-improvement"
+  ]
+}

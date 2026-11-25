@@ -62,6 +62,12 @@
       "category": "workflow"
     },
     {
+      "name": "session-review",
+      "description": "手元の会話の履歴を集めて 4 つの基準（効率 / コードの質 / 手順の遵守 / 文章の量）で採点し、使われたスキルが効いているかを見て、直す案をテキストで出す。外部の公開スキル集（MIT）から版を固定した写しとして、一部を外して借りている。案を出すだけで、スキルのファイルは書き換えず、変更の合否（司法の判定）も出さない。Claude Code 本体の /skill-doctor（利用回数と費用のレポート）とは別物。前提: python3、git。",
+      "source": "./plugins/session-review",
+      "category": "workflow"
+    },
+    {
       "name": "calendar-tasks",
       "description": "Google カレンダー 1 本でタスクを管理する窓口と夜間処理。タスクは接頭辞付きの終日予定（☐ / ☑ / ⏸ / ✖）、属性は description、設定はカレンダーの説明欄。毎晩 未完了を次の営業日へ繰り越し、慢性的な繰越は保留にして月末に集める。通知なし。データは Google カレンダーの中だけ。前提: Google カレンダー連携。",
       "source": "./plugins/calendar-tasks",
