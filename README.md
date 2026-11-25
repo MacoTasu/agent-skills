@@ -183,6 +183,13 @@ read-only では書き込み（キャッシュ・ビルド成果物・`$TMPDIR`�
 書記も同じ手段で回す。判事の `via: codex` とは独立に組み合わせられる。
 手順と制約は [`plugins/conductor/reference/headless-backend.md`](plugins/conductor/reference/headless-backend.md)。
 
+**隔離環境の中で実装させたいときは、利用者が設定したコマンドに担わせられる。** `implement` を `via: command` にし、
+コマンドは利用者の `~/.claude/conductor.json` の `commands.<名前>`（配列）に書く。対象リポジトリの設定には名前だけを書き、
+リポジトリの側に書かれたコマンドは読まない（他人のリポジトリを開いただけで任意のコマンドが動かないようにするため）。
+コマンドは、worktree を作業ディレクトリに、依頼を標準入力で受け取り、実装をコミットされていない変更として入れ、報告を標準出力に出して 0 で終わる。
+コミットはせず、実装は変更として届く。指揮は事実を取り直す。利用者の設定の `commands` には、実装の役のためのコマンドだけを置く（リポジトリ側は、登録済みの名前のどれでも指名できる）。守られるのは実装の役だけで、受け取ったあとの手元での実行には隔離は及ばない。
+手順と制約は [`plugins/conductor/reference/command-backend.md`](plugins/conductor/reference/command-backend.md)。
+
 ## spec-kit との分担
 
 立法（仕様）には [spec-kit](https://github.com/github/spec-kit) を使い、そのレールに乗る。
