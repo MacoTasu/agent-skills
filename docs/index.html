@@ -558,6 +558,26 @@ footer {
       </div>
     </div>
 
+    <p class="group-label">道具 — 会話の履歴からスキルを見直す</p>
+    <div class="register">
+      <div class="entry">
+        <div>
+          <div class="entry-name">session-review</div>
+          <div class="entry-meta">1 skill · 2 scripts（＋テスト 1）· 4 scorers</div>
+        </div>
+        <div class="entry-body">
+          手元の会話の履歴を集めて、効率・コードの質・手順の遵守・文章の量の 4 つの基準で採点し、
+          失敗と判定した会話を根拠に、<strong>使われたスキルが効いているか</strong>を見て直す案をテキストで返す。
+          案ごとに戻し先（できなくする / 機械で止める / そのプロジェクトに書く / スキルの文面）を選ぶ。
+          外部の公開スキル集（MIT）から<strong>版を固定した写し</strong>として、一部を外して借りていて、出どころと直した箇所は同梱の <code>NOTICE.md</code> にある。
+          <strong>案を出すだけで、ファイルは書き換えず、変更の合否（司法の判定）も出さない</strong>（会話に付ける点数は、案の根拠）。
+          Claude Code 本体の <code>/skill-doctor</code>（何が使われていないか — 利用回数とコンテキストの費用）とは別物。
+          集めた抜粋は伏せ字にならないので、出力先はリポジトリの外に置く。
+          <div class="needs"><b>needs</b> — python3（3.9 以上）/ git</div>
+        </div>
+      </div>
+    </div>
+
     <p class="group-label">文書化 — 構造と理由を書き残す</p>
     <div class="register">
       <div class="entry">
@@ -870,7 +890,10 @@ footer {
 /plugin install spec-page@macotasu-agent-skills
 
 <span class="c"># PR まわりの道具。依存は gh（衝突の解決は python3 も）</span>
-/plugin install pr-kit@macotasu-agent-skills</code></pre>
+/plugin install pr-kit@macotasu-agent-skills
+
+<span class="c"># 会話の履歴からスキルを見直す道具。依存は python3 と git</span>
+/plugin install session-review@macotasu-agent-skills</code></pre>
 
     <h3 style="margin-top:2.5rem">依存関係</h3>
     <div class="dep"><b>spec-intake</b>  立法支援

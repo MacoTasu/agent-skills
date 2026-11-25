@@ -23,6 +23,7 @@ AI エージェント向けのレビュー知識パック集。
 | `loop-engine` | 人間が承認した spec-kit の仕様を起点に、拾い上げ→実装→司法検証→PR を回す自律ループ（HOTL）。必ず PR で停止する |
 | `spec-page` | 説明書・仕様書・設計文書を HTML 1枚にまとめる。一覧ではなく**構造と決定の理由**を伝える形式に落とす |
 | `pr-kit` | **PR まわりの道具 4 つ**（`write-pr-description` / `merge-risk` / `resolve-merge-conflicts` / `diagnose-ci-failures`）。外部の公開スキル集（MIT）から、版を固定した写しとして借りている。各役が使う道具で、**合否は出さない**。`merge-risk` は人間がマージを決めるときの材料で、司法（`review-judge:judge`）の判定の代わりではない。`diagnose-ci-failures` は調べて計画を出すだけで、直さない |
+| `session-review` | **手元の会話の履歴を採点して、スキルを直す案を出す**。効率 / コードの質 / 手順の遵守 / 文章の量の 4 つの基準で採点し、失敗と判定した会話を根拠に、戻し先（できなくする / 機械で止める / そのプロジェクトに書く / スキルの文面）を選んだ案をテキストで返す。外部の公開スキル集（MIT）から、版を固定した写しとして、一部を外して借りている。**案を出すだけで、ファイルは書き換えず、変更の合否（司法の判定）も出さない**（会話に付ける点数は、案の根拠）。Claude Code 本体の `/skill-doctor` は「何が使われていないか」（利用回数とコンテキストの費用）を見るもので、これは「使われたスキルが効いているか」を会話の中身から見る別物。集めた抜粋は伏せ字にならないので、出力先はリポジトリの外に置く |
 | `calendar-tasks` | **Google カレンダー 1 本でタスクを管理**する窓口と夜間処理。タスクは接頭辞付きの終日予定、毎晩 未完了を次の営業日へ繰り越し、慢性的な繰越は保留にして月末に集める。データは Google カレンダーの中だけ |
 
 レビュー観点の2つの境界は「**マルチテナントで課金して継続提供するという事業形態に固有か**」で
@@ -45,6 +46,9 @@ AI エージェント向けのレビュー知識パック集。
 
 # PR まわりの道具。依存は gh（衝突の解決は python3 も）
 /plugin install pr-kit@macotasu-agent-skills
+
+# 会話の履歴からスキルを見直す道具。依存は python3 と git
+/plugin install session-review@macotasu-agent-skills
 
 # 個人の運用。依存は Google カレンダー連携（夜間処理を自動で回すなら cloud routine も）
 /plugin install calendar-tasks@macotasu-agent-skills
@@ -70,6 +74,9 @@ loop-engine     自律   必須: dev-crew / review-judge ／ spec-kit（外部�
                        （自律モードでは loop-engine 自身が指揮の席に座る）
 
 pr-kit          道具   依存: gh（GitHub CLI）／ python3（resolve-merge-conflicts の同梱スクリプト）
+
+session-review  道具   依存: python3（3.9 以上。同梱スクリプト）／ git
+                       直す案を実際に反映するとき: conductor（任意）
 
 calendar-tasks  運用   依存: Google カレンダー連携（claude.ai コネクタ）／ cloud routine（夜間処理を自動で回すとき）
 ```
@@ -230,3 +237,4 @@ MIT
 
 `pr-kit` のスキルは外部の公開スキル集から借りた写しで、元のライセンス（MIT）の全文と出どころを
 [plugins/pr-kit/NOTICE.md](plugins/pr-kit/NOTICE.md) と同じディレクトリの `LICENSE-THIRD-PARTY*` に同梱している。
+`session-review` も同じ形で、[plugins/session-review/NOTICE.md](plugins/session-review/NOTICE.md) と `LICENSE-THIRD-PARTY` にある。
