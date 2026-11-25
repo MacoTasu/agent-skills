@@ -19,7 +19,7 @@ AI エージェント向けのレビュー知識パック集。
 | `review-judge` | レビューの**拘束力ある最終判定だけ**を下す司法。`Edit` / `Write` を持たないので直せない。PR 本文の「要注意の変更」「見た目の証拠」の申告が差分と一致するかも検査する |
 | `spec-intake` | **立法の支援**。issue での議論を、実装根拠になる spec-kit の仕様まで持ち上げる。`grill-issue` が曖昧な issue を詰め、`spec-draft` が spec-kit で仕様を起草して仕様の PR にする。承認は必ず人間 |
 | `conductor` | 開発の単一フロントドア＝**指揮**。`main` の親は依頼を分類して worktree の子に送り出し、子が仕様の起草、または Plan Mode 合意→実装→書記→司法→PR を回す。子は行政に実装させ、書記に証拠を出させ、**司法に持ち込む**。自分ではコードを書かず、判定も出さない |
-| `dev-crew` | **行政（実務）**。契約に沿って実装し、ビルド・型・lint・テストの決定性証拠を揃えるところまで。UI に触れたら before / after の動画（見た目の証拠）も撮る。判定は出さず、証拠を揃えて指揮に返す。出荷・運用と書記の職能エージェント、PR 単位の振り返りを、失敗の基準に当てはめた PR コメントに記録する**学ぶループ**（`dev-crew:retro`。記録だけで、課題は作らない。マージ後は親が自動で下書きし人間が確認して投稿、手動の入口は `/dev-crew:retro <PR番号>`）も同梱 |
+| `dev-crew` | **行政（実務）**。契約に沿って実装し、ビルド・型・lint・テストの決定性証拠を揃えるところまで。UI に触れたら before / after の動画（見た目の証拠）も撮る。判定は出さず、証拠を揃えて指揮に返す。出荷・運用と書記の職能エージェントも同梱 |
 | `loop-engine` | 人間が承認した spec-kit の仕様を起点に、拾い上げ→実装→司法検証→PR を回す自律ループ（HOTL）。必ず PR で停止する |
 | `spec-page` | 説明書・仕様書・設計文書を HTML 1枚にまとめる。一覧ではなく**構造と決定の理由**を伝える形式に落とす |
 | `pr-kit` | **PR まわりの道具 4 つ**（`write-pr-description` / `merge-risk` / `resolve-merge-conflicts` / `diagnose-ci-failures`）。外部の公開スキル集（MIT）から、版を固定した写しとして借りている。各役が使う道具で、**合否は出さない**。`merge-risk` は人間がマージを決めるときの材料で、司法（`review-judge:judge`）の判定の代わりではない。`diagnose-ci-failures` は調べて計画を出すだけで、直さない |
@@ -99,7 +99,6 @@ Bash の実行の前に `hooks/guard-broad-op.sh`（PreToolUse）が走る。次
 | `gofmt -w` / `prettier --write` にディレクトリを渡す、`go fmt ./...` | ファイルを名指しで渡す、`gofmt -l .`、`prettier --check .` |
 | `git reset --soft origin/<ブランチ>`・`@{u}`（上流の先頭が HEAD の祖先でないとき） | `git reset --soft "$(git merge-base origin/<ブランチ> HEAD)"` |
 | `git add -A` / `--all` / `.`（未追跡のファイルがあるとき） | `git add <ファイル>`、`git add -u`、`git add -p .` |
-| `gh pr comment` / `gh issue comment` で、本文（`--body <文字列>`・`-b <文字列>`・`--body=<文字列>`、`--body-file <パス>`・`-F <パス>`・`--body-file=<パス>`。`=` でつなげられるのは長いフラグだけ）に、振り返りの記録の印 `<!-- retro-record` と穴埋めの記号 `{{` の両方があるとき | 印だけ・`{{` だけの本文、`gh pr create`・`gh pr edit`・`gh api` |
 
 実際の動き:
 
@@ -112,13 +111,6 @@ Bash の実行の前に `hooks/guard-broad-op.sh`（PreToolUse）が走る。次
 - **見ていない形**: `bash -c "…"`・`sh -c`・`ssh <ホスト> "…"`・`eval`・`$(…)` の中の命令、スクリプトや `make`・`npm run` 経由、
   `env -S`、`gofmt`・`prettier` 以外の整形、glob や変数で渡した対象、`git reset` の `--hard`、
   `origin/`・`@{u}` 以外の上流の書き方（`upstream/…`・`refs/remotes/…`）、`git add *`・`git add <ディレクトリ>`。
-- **コメントの本文は、コマンドに書いてある文字と、名指しされたファイルだけを見る。** `--body "$(cat <<'EOF' … EOF)"` の本文は見る。
-  ファイルは読むだけで、1 回の実行で 4 つまで、1 つ 20000 バイトまで。
-- **コメントの本文で見ていない形**（どれも通す）: 短いフラグに `=` や値を直につなげた形（`-b=…`・`-F=…`・`-F<パス>`・`-b'…'`）、
-  `~` で始まるパス、同じコマンドの中で `cd`・`pushd` などで作業ディレクトリを変えたあとの相対パス、`xargs`・`bash -c`・スクリプト経由、
-  標準入力（`--body-file -`）、変数や `$( )` で組み立てた本文・パス（`--body "$BODY"`・`--body "$(cat <ファイル>)"`・`-F "$DIR/…"`）、
-  `gh api` での投稿・書き換え、20000 バイトを超えるファイル・5 つ目から後のファイル（この 2 つは標準エラーに 1 行出す）、
-  無いファイル・読めないファイル・ふつうのファイルでないもの、印の表記ゆれ（`<!--retro-record` など、`<!-- retro-record` と一字でも違うもの）。
 - `jq` が要る（無ければ検査せずに通す）。壊れた入力・20000 バイトを超えるコマンド・入れ子が深すぎるコマンドも通す。
   最後の砦ではなく、取りこぼしを減らす仕組み。規則の足し方はスクリプトの先頭のコメント。
 - スクリプトの部品（`hooks/lib/`・`hooks/rules/` のファイル）が読み込めないときは、検査の対象になるコマンドを、中身を見ずに確認に回す（それ以外のコマンドは通す）。
@@ -151,14 +143,11 @@ Bash の実行の前に `hooks/guard-broad-op.sh`（PreToolUse）が走る。次
 | **司法** | `review-judge:judge` | **`Edit` / `Write` ツール**。直せない |
 | 指揮 | `conductor:dev`（手動） / `loop-engine`（自律） | コードを書かない。判定も出さない |
 | 書記 | pr-review 6観点 / `business-reviewer` / `domain-architect` / `saas-review` / `architecture-review` | 拘束力。所見を出すだけ |
-| retro | `dev-crew:retro`（PR 作成後に指揮が招集／マージ後は親が自動で下書きし、人間が確認して投稿。手動は `/dev-crew:retro`）。記録係 | 拘束力・**PR を作る権限**・SSOT の書き換え・課題の作成。PR コメント（記録）まで |
 
 **それぞれの「持たないもの」が分離を支えている。**
 判事が `Edit` / `Write` を持たないのは、修正できてしまえば実行と検証が同一主体になるから。
 行政が司法を呼べないのは、実装した主体が「これは軽微だ」と判定を回避できてしまうから。
 どちらも規約で禁じるのではなく、**権限を与えないことで構造的に強制している**。
-retro も `Edit` / `Write` を持たないのでハーネスのファイルは書けない（構造）。PR を作らないのは規約で、
-ハーネスの自己改変の経路を人間のマージだけに限るため。
 
 ### 任意: 行政と司法を herdr のペインで動かす
 
@@ -184,7 +173,7 @@ read-only では書き込み（キャッシュ・ビルド成果物・`$TMPDIR`�
 行政を非対話の `claude -p` で動かし、プロセスが終われば何も残らない。権限は承認待ちで止めない設定にし、
 拒否された操作は結果の JSON から事実として拾う。拒否ルールは前方一致ですり抜けうるので、
 保証は事後の確認（HEAD と作業ツリーの取り直し）に置く。指揮が Task を呼べない（Claude Code でない）ときは、
-書記と retro も同じ手段で回す。判事の `via: codex` とは独立に組み合わせられる。
+書記も同じ手段で回す。判事の `via: codex` とは独立に組み合わせられる。
 手順と制約は [`plugins/conductor/reference/headless-backend.md`](plugins/conductor/reference/headless-backend.md)。
 
 ## spec-kit との分担

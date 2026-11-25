@@ -6,7 +6,7 @@
 |---|---|---|
 | どこで | `main` のチェックアウト | 仕事ごとの worktree（ブランチ `spec/<名前>` か `feat/<名前>`） |
 | 起動 | `/conductor:dev <依頼>` | `/conductor:dev <依頼ファイルの絶対パス>` または `/conductor:dev specs/<機能>/`（親が送る、または人間が打つ） |
-| 仕事 | 依頼の分類、spec-kit かインラインかの 1 問、依頼ファイルの作成、送り出し、子の様子の把握、マージ後の retro の掃き出し、マージ済みの worktree の片付け | **仕様の起草** → 仕様の PR ／ **Plan Mode 合意（インライン契約）** → 実装 → 書記 → 司法 → PR ／ **承認済み仕様の実装** → 書記 → 司法 → PR |
+| 仕事 | 依頼の分類、spec-kit かインラインかの 1 問、依頼ファイルの作成、送り出し、子の様子の把握、マージ済みの worktree の片付け | **仕様の起草** → 仕様の PR ／ **Plan Mode 合意（インライン契約）** → 実装 → 書記 → 司法 → PR ／ **承認済み仕様の実装** → 書記 → 司法 → PR |
 | しないこと | コードを書く・**ブランチを切る**（自分のチェックアウトで。子の worktree を作るのは送り出しの一部、マージ済みの子の worktree とブランチを消すのは片付けの一部）・`main` にコミットする・長い対話を抱える・PR をマージする | constitution を変える・`spec.md` を申告なしに変える（実装の子）・`main` に触る |
 
 親を `main` に置き、差分を作る仕事をすべて子に出すのは、人間が親と話し続けている間も子が並行して動けるように
@@ -203,36 +203,11 @@ bash "<reference>/equalize-columns.sh" "$HERDR_PANE_ID"
 - 仕様の PR のマージ後の渡し先は2通り。人間が親に「実装して」と言えば入口 C、`loop-engine` に任せるなら
   issue に `Spec: specs/<機能>/` のコメントと `loop-ready` ラベルを付ける（`loop-engine` の手順）。
 
-### マージ後の retro の掃き出し（親）
-
-マージ後の振り返りを打ち忘れて、レビューでの指摘という一番大きな学びが消えないように、親が**起動時と、子の様子の把握のたびに**掃き出す。
-候補は「`trigger: pr-created` の retro コメントがあり、`trigger: post-merge` の retro コメントが無いマージ済み PR」。
-照合は ```` ```retro ```` ブロックの中だけにする（本文の引用で外れないように）:
-
-```bash
-gh pr list --state merged --limit 30 --json number,comments --jq '[.[] | select(any(.comments[]; .body | test("```retro[^`]*trigger: pr-created")) and (any(.comments[]; .body | test("```retro[^`]*trigger: post-merge")) | not)) | .number] | sort'
-```
-
-- pr-created の retro が無い PR（この仕組みより前のもの）は対象外。人間が手動の入口（retro スキルに PR 番号を渡す）で拾う。
-- 1 回で扱うのは、番号の小さい（古い）順に**先頭の 3 件**。4 件目以降と `--limit 30` の外は「Retro 掃き出し: 残り N 件」と 1 行で伝え、手動の入口で拾えると添える。
-- **二重起動を防ぐ。** 親はこのセッションで下書きを招集した PR 番号（処理中・確認待ち・「あとで」と答えたもの）を覚え、検出結果から外す。
-  「あとで」は、そのセッション中は再び出さない（次に起動したときにまた挙がる）。投稿側も守る（retro は最初に同じ `trigger` の記録を確かめ、あれば何も書かない）。
-- **親の主作業を妨げない。** 下書きは retro エージェントを Task **@sonnet** の**バックグラウンド**で、
-  `trigger=post-merge mode=draft` で招集する（PR 番号だけ渡す。事実は retro が集め、先行する retro コメントが無ければ `interventions` は `unknown` になる）。
-  親は人間の依頼の処理を優先し、下書きが揃ったら確認を出す。
-- **確認は投稿の前で、PR ごとに 1 件ずつ。** retro が返した記録の本文（ブロックの値と出来事の表）をそのまま見せ、人間に 2 択で聞く:
-  **投稿する** ／ **あとで**（何も出さない）。**`severe` の付いた出来事があれば、表の前に 1 件ずつ書く**（1 回の被害が大きい出来事。回数を待たない）。
-- 「投稿する」なら、`mode=publish-draft` で招集して投稿する。渡すもの: PR 番号、`trigger=post-merge`、下書きのディレクトリ、`choice=record-only`
-  （`choice` は、旧い版の retro が入っている環境で課題（issue）を作らせないための指定。いまの retro は読まない）。
-  retro は見せた本文を書き換えずに投稿し、課題は作らない。「あとで」は何も残らないので、次に起動したときにまた挙がる。
-- **非ブロッキング。** `gh` が失敗したら「Retro 掃き出し: 未実施（理由）」の 1 行を添えて、人間の依頼を続ける。
-  下書きが「Retro: 未取得」を返したら「Retro 掃き出し: PR #n の下書きに失敗（理由）」を 1 行出し、そのセッションでは再試行しない。
-
 ### マージ済みの worktree の片付け（親）
 
 子の PR がマージされても worktree は残る。worktree を溜め続けると、ディスクを食い、`git worktree list` の見通しも悪くなる。
 手動の片付けはリモートで消えた（gone）ブランチしか拾わないので、マージ後もリモートにブランチが残るリポジトリでは何も消さない。
-そこで親が、retro の掃き出しと同じく**起動時と、子の様子の把握のたびに**、安全条件を満たす worktree だけを片付ける。
+そこで親が、**起動時と、子の様子の把握のたびに**、安全条件を満たす worktree だけを片付ける。
 子の worktree とそのブランチを消すのは、親がブランチを操作しない原則の例外で、この片付けの中だけで行う。
 
 **前提は `HERDR_ENV=1`。** 生きた子が居ないことを `herdr agent list` で確かめられないので、無ければ**片付けず、報告だけ**にする。
@@ -246,7 +221,7 @@ gh pr list --state merged --limit 30 --json number,comments --jq '[.[] | select(
    （`herdr worktree list` は cwd ではなくいまの workspace のリポジトリを列挙し、`git worktree add` で作ったものも載るので、判別には使わない）
 2. **`locked` / `prunable` でない** — 人間が錠をかけたもの・実体の無いものには触れない。
 3. **生きた子が居ない** — `herdr agent list` の agent の `cwd` か `foreground_cwd` が、その worktree かその配下のものが無い。
-   名前の無い agent もいるので、名前ではなく cwd で照合する。居れば「生きた子がいる: <名前か pane_id>（ペインを閉じれば次の掃き出しで片付く）」。
+   名前の無い agent もいるので、名前ではなく cwd で照合する。居れば「生きた子がいる: <名前か pane_id>（ペインを閉じれば次の片付けのときに片付く）」。
    `herdr agent list` の出力を解釈できない（`.result.agents` が配列でない、jq が失敗した）ときは、生きた子を確かめられないので**何も片付けない**。
 4. **ローカルの先端が PR の `headRefOid` と同じ** — push していないコミットも、マージ後に積んだコミットも無い。
    違えば「先端が PR と違う（<先端> ≠ <headRefOid>）」。
@@ -285,7 +260,7 @@ sweep_detect() {
       | select(any(.cwd, .foreground_cwd; . != null and (. == $wt or startswith($wt + "/"))))
       | (.name // .pane_id | tostring)] | join(",")' <<<"$agents") \
       || { echo "worktree の片付け: 未実施（herdr agent list の解釈に失敗）"; return 0; }
-    [ -z "$live" ] || { echo "片付けなかった: ${wt}（生きた子がいる: ${live}。ペインを閉じれば次の掃き出しで片付く）"; continue; }
+    [ -z "$live" ] || { echo "片付けなかった: ${wt}（生きた子がいる: ${live}。ペインを閉じれば次の片付けのときに片付く）"; continue; }
     [ "$head" = "$oid" ] || { echo "片付けなかった: ${wt}（先端が PR と違う（${head} ≠ ${oid}））"; continue; }
     st=$(git -C "$wt" status --porcelain --ignored) || { echo "片付けなかった: ${wt}（git status が失敗）"; continue; }
     ig=$(printf '%s\n' "$st" | grep '^!! ' | head -n 3 | cut -c4- | paste -sd, -)
@@ -452,11 +427,7 @@ sha が違うもの（マージ後に誰かが push した）は報告だけ。�
    PR に push したあとと、人間にマージの可否を伝える前に、`gh pr view <番号> --json headRefOid -q .headRefOid` を確かめる。その sha の判定が無ければ「未判定」（修正・レビュー指摘への対応・基点の取り込み。中身が同じでも）で、
    差分を司法に出し直し（PASS だった先頭から変わったときに始まる 1 つの持ち込み。REJECT・RETRY を直して push した分は同じ持ち込みの次のラウンドで、3 ラウンドを超えたら人間へ。1 に戻るのは、PASS のあとにまた先頭が変わったときだけ）、判定出力を、結果によらず同じ形で添付する。判定済みは「PR の先頭の sha について、最新の判定が PASS」のときだけ。それ以外（REJECT・RETRY・ESCALATE・未判定）の間は
    「マージしてよい」と言わず、勧めない。伝えるのは「いまの先頭は未判定／REJECT のまま」という事実だけ（マージするかを決めるのは人間で、止めない）。
-5. **retro（非ブロッキング）** — 4. を終えて PR の URL が決まったら（下書きの PR は、ready にしたあと。そのときは、人間の介入を拾う範囲の終わりを、PR 作成ではなく ready にした時点とする）、`dev-crew:retro` を Task **@sonnet** で招集し、
-   `SKILL.md`「学ぶループ」1. の事実（PR 番号、`trigger=pr-created`、(a) (b) (c)）を渡す（(a) を最終ラウンドだけにしない。差し戻しの中身が消える）。
-   失敗したときの扱いは同 2.（**PR も報告も止めない**）。成功を返しても、記録が PR に在ることを確かめる（同 3.）。
-   指揮が Task を呼べないなら、`headless-backend.md`「retro」の `claude -p --agent dev-crew:retro` で。
-6. 終わったら人間（と親）に PR のリンクを伝える（司法の出力の「うち要件を消した・弱めたもの M 件」が 1 以上なら、報告の先頭に件数と `[仕様の変更・要件を弱めた]` の行を出す。retro のコメント URL か「Retro: 未取得（理由）」も添える。retro が `severe` を付けた出来事は 1 件ずつ必ず書く）。
+5. 終わったら人間（と親）に PR のリンクを伝える（司法の出力の「うち要件を消した・弱めたもの M 件」が 1 以上なら、報告の先頭に件数と `[仕様の変更・要件を弱めた]` の行を出す）。
    worktree の後始末は、マージ後に親の片付け（「マージ済みの worktree の片付け」）が拾う。
    手で行うなら `/commit-commands:clean_gone`（マージ時にリモートのブランチが消える運用のときだけ効く）。
    子のペインは人間が閉じる（親も子も閉じない）。
