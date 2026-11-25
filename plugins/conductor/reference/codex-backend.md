@@ -114,7 +114,7 @@ git branch --show-current             # 空でなく、かつ main 等でない�
 
 1. `<judge_root>/agents/judge.md` を読み、**frontmatter より下を自分の役割として従う**。
    文中の `${CLAUDE_PLUGIN_ROOT}` は `<judge_root>` に読み替える
-2. (a) 契約（spec-kit の機能ディレクトリのパス、またはインライン契約の本文）、
+2. (a) 契約（spec-kit の機能ディレクトリのパスと「仕様の変更を認める経路」の明示、またはインライン契約の本文）、
    (b) 差分の範囲（`scribe-checklist.md`「渡すもの」の「差分の範囲」の行の形）、
    (c) 証拠 — 書記の所見、`<dir>/evidence/` の決定性の出力、指揮が取った `git diff --stat`、
    および**行政の申告（未検証）**

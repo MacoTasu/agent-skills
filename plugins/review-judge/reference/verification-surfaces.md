@@ -23,7 +23,7 @@
 | **infra・config** | 構文(plan/validate)／dry-run／**秘匿情報の非混入** |
 | **docs のみ** | リンク・整合の確認／**コード変更を伴わないことの確認** |
 | **横断（cross-cutting）** | 該当時必須: **security**（OWASP/入力検証/秘匿情報）・**perf**（N+1/退行） |
-| **正典の不可侵**（spec-kit 契約の実装 PR） | 差分に `spec.md` / `.specify/memory/constitution.md` の変更が**含まれない**こと。含まれれば ESCALATE（振る舞いの変更は先に仕様の PR で行う＝Living Spec） |
+| **正典の不可侵**（spec-kit 契約の実装 PR） | 差分に `spec.md` / `.specify/memory/constitution.md` の変更が**含まれない**こと。含まれれば ESCALATE（振る舞いの変更は先に仕様の PR で行う＝Living Spec）。招集した側の依頼文に「仕様の変更を認める経路」と在るときの、契約の機能ディレクトリの `spec.md`・`plan.md` の変更だけは、`contract-speckit.md`「正典の不可侵と仕様の変更」の手順で、PR 本文案の申告と突き合わせる |
 
 各行の証拠"種類"に対する**具体コマンドは契約側で指定**する（例: フロントの「視覚確認」を
 Playwright のどのフローで取るか、は spec-kit なら `quickstart.md` やテストに、インライン契約なら検証方法に書く）。

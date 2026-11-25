@@ -183,6 +183,7 @@ read-only では書き込み（キャッシュ・ビルド成果物・`$TMPDIR`�
 立法（仕様）には [spec-kit](https://github.com/github/spec-kit) を使い、そのレールに乗る。
 `/speckit-specify` → `clarify` → `plan` → `tasks` → `analyze` で仕様を作り、**仕様を先に PR にして人間がマージ**
 してから実装する（Living Spec: `spec.md` が契約で、振る舞いを変えるなら先に `spec.md` を直す）。
+実装の途中で気づいた仕様の誤り・不足や、人間が途中で出した範囲の変わる指示は、`/conductor:dev` では同じ PR の中で `spec.md` を直してよい（変更は PR 本文で申告し、判事が申告と差分を突き合わせる。自律ループでは直さず止まる）。
 小さな変更は仕様を作らないが、これも `/conductor:dev` の親が worktree の子に送り出し、子の pane で Plan Mode 合意→実装と進める。
 
 **実装コマンドの `/speckit-implement` は、`dev-crew:implement` の枠の中で使う。** コードを書く部分は spec-kit に任せ、
