@@ -1,6 +1,6 @@
 #!/bin/bash
 # guard-broad-op.sh — PreToolUse hook（Bash）。範囲の広い操作・取り返しのつきにくい操作を、実行の前に確認へ回す。
-# 失敗の基準 `unguarded-broad-op`（reference/failure-criteria.md）の手当ての置き場。
+# 失敗の基準 `unguarded-broad-op`（reference/failure-criteria.md）の手当ての置き場。規則 retro だけは `retro-reliability` の手当て。
 #
 # なぜ「確認（ask）」で、「拒否（deny）」ではないか:
 #   このプラグインを入れた全リポジトリ・全セッションで効くので、誤検出で作業を止めると被害が大きい。
@@ -12,6 +12,8 @@
 #
 # 状態を見る git は読むだけにする（--no-optional-locks。利用者の index を書き換えない）。回数と時間に上限を置き、
 #   上限で判定できなかったときは「実害が無い」と言えないので、確認に回す。
+# コメントの本文のファイル（規則 retro）も読むだけで、読む数と大きさに上限を置く。こちらは、上限を超えた分を検査せずに通す
+#   （標準エラーに 1 行）。
 #
 # 無効にする: 環境変数 DEV_CREW_GUARD_BROAD_OP=off（小文字の off だけ。settings.json の `env` でもよい）。
 # 確かめる:   bash guard-broad-op.sh --self-test（jq と git が要る）
@@ -48,6 +50,7 @@ MAX_COMMAND_BYTES=20000
 MAX_DEPTH=40          # 引用符と $(...) の入れ子。深い再帰で bash が落ちる前にやめる
 MAX_GIT_CALLS=6       # 1 回の実行で状態を見る git の回数
 GIT_LIMIT_SECONDS=2   # 状態を見る git 1 回の上限
+MAX_BODY_FILES=4      # 1 回の実行で読む、コメントの本文のファイルの数
 
 CMD=""; N=0; I=0
 WORD=""; HAVE=0
@@ -58,6 +61,7 @@ DEPTH=0; TOO_DEEP=0
 PIPELINE=""           # いまのパイプラインで、ここまでに出た命令の名前
 FETCHED=0             # 同じコマンドの中で、先に origin を更新する命令があったか
 GIT_CALLS=0; GIT_OUT=""
+BODY_FILES=0
 U_ALL="-"; U_DOT="-"  # 未追跡の件数の控え（"-" = まだ見ていない、"" = 判定できなかった）
 RESET_SEEN=""
 
@@ -75,7 +79,7 @@ hit() {  # $1 = 規則の名前（同じ規則は 1 回だけ載せる） $2 = �
 # ---- 部品の読み込み -------------------------------------------------------
 
 # 規則の名前。rules/<名前>.sh を読み込み、自己検査では self-test/<名前>.sh の self_test_<名前> をこの順に呼ぶ
-RULES="kill format git"
+RULES="kill format git retro"
 
 # 部品は、このスクリプト自身の場所から探す（作業ディレクトリにも CLAUDE_PLUGIN_ROOT にも頼らない）。
 # 場所が分からないとき（標準入力や -c で渡された、など）は空にして、部品が欠けているときと同じ扱いにする
@@ -199,6 +203,7 @@ check_segment() {
     pkill | killall | kill | xargs) rule_kill "$cmd" "${A[@]:$i}" ;;
     gofmt | go | prettier) rule_format "$cmd" "${A[@]:$i}" ;;
     git) rule_git "$located" "${A[@]:$i}" ;;
+    gh) rule_retro "${A[@]:$i}" ;;
   esac
   PIPELINE="$PIPELINE $cmd"
   return 0
@@ -242,7 +247,7 @@ main() {
   }
   # 規則が見る命令の名前がどこにも無ければ、語の切り出しをしない（ほとんどの呼び出しはここで終わる）
   case $CMD in
-    *kill* | *gofmt* | *"go "* | *prettier* | *git*) ;;
+    *kill* | *gofmt* | *"go "* | *prettier* | *git* | *gh*comment*) ;;
     *) exit 0 ;;
   esac
   N=${#CMD}
