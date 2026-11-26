@@ -2,8 +2,7 @@
 name: spec-draft
 description: |
   GitHub issue から spec-kit の仕様（specs/<機能>/ の spec.md・plan.md・tasks.md）を起草し、仕様の PR にするスキル。
-  昇格プロトコルの「② 仕様の執筆」だけを担う（③ Spec: コメント・④ loop-ready label は
-  仕様が main にマージされた後に人間が行う）。起草できない issue は拒否して /conductor:dev へ回す。
+  仕様の執筆と仕様の PR の作成までを担う（マージ＝承認は人間が行う）。起草できない issue は拒否して /conductor:dev へ回す。
   手動起動: /spec-intake:spec-draft <issue番号>。
 disable-model-invocation: true
 allowed-tools:
@@ -19,22 +18,17 @@ allowed-tools:
 
 # /spec-intake:spec-draft — issue から仕様を起草して PR にする
 
-`/loop-engine:loop-engine` が **仕様を実行する**のに対し、これは **仕様を作る**。役割が違うので別コマンド。
+これは **仕様を作る**コマンドで、実装はしない（実装は、仕様のマージ後に `/conductor:dev` で行う）。
 起草そのものは **spec-kit のコマンド**（`/speckit-specify` ほか）で行う。このスキルが足すのは、
 issue とコードベースからの材料集め・起草してよいかの門番・書いた検証が嘘でないことの確認・仕様の PR。
 
-昇格プロトコル（`loop-engine` skill の「issue 経由の起動」）のうち、**② だけ**を担当する:
+issue での議論から実装までの流れのうち、**② だけ**を担当する:
 
 | # | 誰 | やること | このコマンド |
 |---|---|---|---|
 | ① | 人間 | issue で議論する | 対象外 |
 | **②** | 人間 / **本コマンド** | **spec-kit で仕様を書いて仕様の PR → main マージ** | **✅ ここ（PR 作成まで。マージは人間）** |
-| ③ | 人間 | issue に `Spec: specs/<機能>/` コメント投稿 | 対象外（最後に貼れる形で出力する） |
-| ④ | 人間 | issue に `loop-ready` label 付与 | 同上 |
-| ⑤ | 人間 / routine | `/loop-engine:loop-engine <issue番号>` | 対象外 |
-
-> **なぜ ③④ をやらないか**: ループは仕様が **main にマージ済み**であることを要求する。マージ前に
-> label を付けるとループが main に無い仕様を指して落ちる。③④ は**マージ後**が正しいタイミング。
+| ③ | 人間 | main 上の `/conductor:dev` に「specs/<機能>/ を実装して」と頼む | 対象外（最後に案内する） |
 
 ## 大原則
 
@@ -50,7 +44,7 @@ issue とコードベースからの材料集め・起草してよいかの門�
 
 - `gh auth status` が OK。`gh issue view <N>` が引けること。引けなければ停止。
 - current repo に spec-kit が初期化されている（`.specify/` と `.claude/skills/speckit-specify/`）。
-  無ければ `/loop-engine:init` か `specify init` を案内して終了する。
+  無ければ `specify init` を案内して終了する。
 - `.specify/init-options.json` の `feature_numbering` が `"timestamp"` でなければ警告する（並行する仕様の PR の番号衝突）。
 - constitution に自動テストの原則（各 FR と受け入れシナリオは自動テストで検証する）が無ければ**強く警告**する。
   無いと `/speckit-tasks` がテストのタスクを作らず、司法が毎回 RETRY する。
@@ -70,10 +64,9 @@ issue とコードベースからの材料集め・起草してよいかの門�
 
 ### 3. トリアージ（起草してよい issue かを判定する）
 
-`loop-engine` プラグインが導入されていれば、同梱の `loop-intake-triage.md` を Read し、
-その3トリアージに照らす。導入されていない場合は下の要点で判断する（全部を仕様駆動にしない）。
+下の要点で判断する（全部を仕様駆動にしない）。
 
-> **3トリアージの要点** — ① 各基準を自動テストで二値判定できるなら仕様化する。
+> **トリアージの要点** — ① 各基準を自動テストで二値判定できるなら仕様化する。
 > ② 探索や設計の議論が先に要るもの（原因不明のバグ・方針が割れている提案）は仕様化せず
 > `/conductor:dev` か人間駆動へ回す。③ 曖昧なまま昇格させない（偽の仕様を作らない）。
 > ④ 1箇所の明らかな修正は仕様を作らず `/conductor:dev` で直す。
@@ -98,7 +91,7 @@ issue とコードベースからの材料集め・起草してよいかの門�
 4. `/speckit-plan` → `/speckit-tasks`。`tasks.md` には**各基準のテストタスクを、対応する実装タスクより前に**置く。
 5. `/speckit-analyze` で整合性を確かめる（読み取りのみ）。CRITICAL の指摘は直してから進む。
 6. **要注意の変更** — security・課金・破壊的変更/不可逆マイグレーション・公開 API の互換破壊に触れるなら、
-   `spec.md` にそう書く（起草は拒否しない）。ループは PR まで進めて、PR 本文の先頭で申告する。
+   `spec.md` にそう書く（起草は拒否しない）。実装の PR では、本文の先頭で申告する。
 7. 迷ったら**薄く**書く。バグ修正なら、ユーザーストーリー1つと、再現手順を Given/When/Then にした受け入れシナリオで足りる。
 
 ### 5. 自己検証（起草した仕様が"嘘"でないことを確かめる）
@@ -203,19 +196,9 @@ issue とコードベースからの材料集め・起草してよいかの門�
 
 ### 8. マージ後の手順を出力して終了
 
-最後に、**人間が仕様の PR をマージした後に流すコマンド**をそのまま貼れる形で出す:
+最後に、**人間が仕様の PR をマージした後の進め方**を案内する:
 
-```bash
-# ③ issue に仕様を指すコメントを投稿（行頭 Spec: が固定書式）
-gh issue comment <N> --body "Spec: specs/<機能>/"
-
-# ④ loop に投げてよいという意思表示
-gh issue edit <N> --add-label loop-ready
-
-# ⑤ 起動（実装→司法→PR まで進んで PR で停止。cloud routine が回っていれば次の発火で拾われる）
-# /loop-engine:loop-engine <N>
-# 手で進めるなら main 上の /conductor:dev に「specs/<機能>/ を実装して」と頼む（子に送り出される）
-```
+- main 上の `/conductor:dev` に「specs/<機能>/ を実装して」と頼む（子に送り出される）。
 
 ## アンチパターン
 
@@ -224,5 +207,4 @@ gh issue edit <N> --add-label loop-ready
 - **曖昧な issue を無理に仕様化する**（拒否が正しい動作。`/conductor:dev`／人間駆動へ回す）。
 - **既存の機能の振る舞いを変えるのに、別の仕様ディレクトリを新設する**（Living Spec では既存の `spec.md` を直す）。
 - **仕様と一緒に実装してしまう**（このコマンドは立法のみ。`/speckit-implement` も呼ばない）。
-- **③④ まで代行する**（仕様が main にマージされる前に label が付くとループが落ちる）。
 - **issue の議論を仕様の代わりにする**（仕様に書かれていないことは実装根拠にならない）。

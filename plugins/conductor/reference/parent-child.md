@@ -200,8 +200,7 @@ bash "<reference>/equalize-columns.sh" "$HERDR_PANE_ID"
 
 - 子が `blocked`（承認待ち）なら、代わりに答えず「`<子の名前>` のペインで承認待ち」と人間に伝える。
 - **子の出力を中継しない。** ペインは人間が直接覗き、割り込む場所。
-- 仕様の PR のマージ後の渡し先は2通り。人間が親に「実装して」と言えば入口 C、`loop-engine` に任せるなら
-  issue に `Spec: specs/<機能>/` のコメントと `loop-ready` ラベルを付ける（`loop-engine` の手順）。
+- 仕様の PR のマージ後は、人間が親に「実装して」と言えば入口 C。
 
 ### マージ済みの worktree の片付け（親）
 
@@ -416,8 +415,8 @@ sha が違うもの（マージ後に誰かが push した）は報告だけ。�
    - `ESCALATE` → 止まって人間へ。
 4. **PASS なら PR** — 変更したファイルを明示してコミットし、`git push -u origin HEAD` で push して `gh pr create`
    （worktree の upstream が `origin/main` になっている環境で `main` へ push しないため、push 先を明示する）。
-   本文には種別ごとの記載（`Spec: specs/<機能>/`、または「契約」節）と「⚠️ 要注意の変更」節（`loop-engine` 同梱
-   `autonomy-gates.md` の書式）、「🎬 見た目の証拠」節（司法に渡した本文案のまま）を入れる。
+   本文には種別ごとの記載（`Spec: specs/<機能>/`、または「契約」節）と「⚠️ 要注意の変更」節（`review-judge` 同梱
+   `reference/flagged-changes.md` の書式）、「🎬 見た目の証拠」節（司法に渡した本文案のまま）を入れる。
    動画の添付は `review-judge` 同梱 `reference/visual-evidence.md`「添付手順」:
    - 該当なし／未録画で動画が無い → `--attach` なしで `gh pr create --body-file <本文>`。
    - 録画あり → 同「添付手順」の 1.〜4. のとおり（機能の確認、`max_attach_mb` 以内のファイルだけ `--attach`、作成後の読み戻し、添付できないときは本文の「添付」の行に書く。黙って省かない）。

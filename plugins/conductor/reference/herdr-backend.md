@@ -57,7 +57,6 @@ command -v <kind>                     # 指定ツールがある（copilot / cla
 
 加えて、`kind` が上の対応表にあること。judge なら後述の `judge.md` が見つかること。
 
-- **cloud の routine（`loop-engine`）には適用しない。** herdr が無く、この設定も読まない。
 - herdr の外（普通の端末）から herdr のセッションを操作しない。`HERDR_ENV` の検査はそのため。
 
 ## 前提: 指揮・行政・司法は同じディレクトリで動く

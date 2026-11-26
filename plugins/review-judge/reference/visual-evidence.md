@@ -50,7 +50,7 @@ before の行は **緑 ／ 赤（`<検査名>` が失敗。画面は base にも
 ```
 
 未録画の理由の例: 配線なし（config はあるが `scenarios` に該当するシナリオが無い／`record` が走らない）、
-実行環境にブラウザなし（cloud の loop など）、after の `record` が赤で止まった、判定不能（下記の計算が失敗した）。
+実行環境にブラウザなし、after の `record` が赤で止まった、判定不能（下記の計算が失敗した）。
 **「録画が面倒だった」は理由にならず、理由の無い・曖昧な未録画は司法が RETRY にする**。撮れる環境では撮る。
 
 添付できなかったときは「添付」の行にそう書く（後述の「添付手順」）。黙って省かない。
@@ -148,7 +148,7 @@ if [ -n "$hits" ]; then echo "該当:"; echo "$hits"; else echo "該当なし（
 
 ## config: `.claude/visual-evidence.json`
 
-雛形は `loop-engine` 同梱 `reference/visual-evidence.json.example`（`/loop-engine:init` が有無と必須キーを確認して案内する。書かない）。
+雛形は本プラグイン同梱 `reference/visual-evidence.json.example`。
 JSON なのでコメントは書けない。各キーの意味はここが正。**計算に使うのは base の config**（上記）。config を変える PR は
 それ自体が人間の判断を要する（ESCALATE）ので、UI の変更とは別の PR にする。
 
@@ -166,7 +166,7 @@ JSON なのでコメントは書けない。各キーの意味はここが正。
 
 ## 添付手順（指揮向け）
 
-添付するのは**指揮**（`conductor` / `loop-engine`）で、司法の PASS の後に行う。行政は撮って場所を返すだけ。
+添付するのは**指揮**（`conductor`）で、司法の PASS の後に行う。行政は撮って場所を返すだけ。
 `--attach` は **gh 2.99.0 以上**で `gh pr create / edit / comment`（と `gh issue …`）に付く。対応形式は PNG / JPEG / GIF / WebP / SVG /
 MP4 / MOV / WebM、動画は free プランで 1 本 **10MB**、paid で **100MB**（画像・GIF は 10MB）。認証は gh の通常のトークン
 （OAuth・classic PAT）。GHES では使えない。private リポジトリの添付はリポジトリの閲覧権限で制御される。
@@ -188,15 +188,15 @@ gh pr create --title "<題>" --body-file <本文ファイル> \
    - `gh` が `--attach` を持たない → `添付不可（gh に --attach なし）。手元 <path>`。PR 作成後に人間へ `gh` の更新（2.99.0 以上）を案内する
      （更新後に `gh pr comment --attach <path>` で後から添付できる）。
    - 上限超過 → `サイズ超過（<size>MB）。手元 <path>`。行政は次回 `record` の解像度・長さで上限内に収める。
-   - `gh` が無い環境（cloud の loop）→ `添付不可（gh なし）。手元 <path>`（cloud では通常そもそも未録画になる。後述）。
+   - `gh` が無い環境 → `添付不可（gh なし）。手元 <path>`。
 5. `/commit-commands:commit-push-pr` のように `gh pr create` を自分で打たない経路で PR を作ったときは、作成後に
    `gh pr comment --attach <動画>…` で添付する（本文には「添付: コメント参照」と書く）。
 
-## cloud（ブラウザが無い環境）
+## ブラウザが無い環境
 
-cloud の `loop-engine` はブラウザを起動できないので、行政は「未録画: 実行環境にブラウザなし」と申告する。
+ブラウザを起動できない環境では、行政は「未録画: 実行環境にブラウザなし」と申告する。
 司法は**再試行で変わらない環境要因**として初回で ESCALATE する（N=3 ラウンドの opus を無駄にしない）。
-UI に触れる仕様は人間が手元で `/conductor:dev` を回すか、下の CI 録画で補う。
+UI に触れる変更は、ブラウザのある環境で `/conductor:dev` を回すか、下の CI 録画で補う。
 
 ## CI 録画（プロジェクトの任意）
 
