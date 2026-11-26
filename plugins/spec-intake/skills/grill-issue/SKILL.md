@@ -17,10 +17,10 @@ allowed-tools:
 
 # /spec-intake:grill-issue — issue を詰めて spec に落とせる状態にする
 
-昇格プロトコルの **① issue で議論する**を支援する。曖昧な issue を**質問攻めで鋭くする**のが仕事。
+仕様を書く前の **issue での議論**を支援する。曖昧な issue を**質問攻めで鋭くする**のが仕事。
 
 ```
-曖昧な issue ──/spec-intake:grill-issue──▶ 鋭い issue ──/spec-intake:spec-draft──▶ spec ──/loop-engine:loop-engine──▶ 実装PR
+曖昧な issue ──/spec-intake:grill-issue──▶ 鋭い issue ──/spec-intake:spec-draft──▶ spec ──/conductor:dev──▶ 実装PR
 ```
 
 `/spec-intake:spec-draft` は「二値で機械判定できる完了基準が書けない issue」を**拒否**する門番だが、
@@ -52,8 +52,8 @@ grilling の大原則で、本 skill でも特に効くもの:
 | `/spec-intake:grill-issue`（引数なし） | issue がまだ無い状態から詰める。最後に `gh issue create` で新規作成 |
 
 既存 issue の場合は `gh issue view <N> --json title,body,comments,labels,state` で現状を把握する。
-**すでに `loop-ready` label が付いている issue は詰め直す前に警告する**（spec が既にある＝
-詰め直すと spec と食い違う。spec 側の更新が要るかを人間に確認する）。
+**その issue から起草した仕様が既にあるとき（手順 2 の「既存の仕様」で見つかる）は、詰め直す前に警告する**
+（詰め直すと spec と食い違う。spec 側の更新が要るかを人間に確認する）。
 
 ### 2. 事実収集（**質問する前に**やる）
 
@@ -91,11 +91,11 @@ grilling の既定は「フロンティアが空になるまで」だが、本 s
 - [ ] **スコープ In / Out** が言える
 - [ ] **触る面（検証サーフェス）**が言える
 - [ ] **制約・ガードレール**が言える（無ければ「無し」と言い切れる）
-- [ ] **要注意の変更**（security・課金・破壊的変更・認証認可）に触れるかが判定できる（触れても loop に載せてよい。spec に書いておけば PR で申告される）
+- [ ] **要注意の変更**（security・課金・破壊的変更・認証認可）に触れるかが判定できる（触れても仕様にしてよい。spec に書いておけば PR で申告される）
 
 > 揃わないまま詰め続けても**いい issue にはならない**ケースがある（＝探索が要る・判断が重い）。
-> その場合は正直に「これは loop 向きではない。`/conductor:dev`／人間駆動へ」と結論を出して終わる。
-> **全部を spec 駆動にしない**（`loop-intake-triage.md` の3トリアージ）。
+> その場合は正直に「これは仕様化に向かない。`/conductor:dev`／人間駆動へ」と結論を出して終わる。
+> **全部を spec 駆動にしない**（`/spec-intake:spec-draft` の手順 3「トリアージ」）。
 
 ### 5. 書き戻し（**必ず人間の確認を取ってから**）
 
@@ -129,8 +129,7 @@ HTML タグが普通に含まれるため、シェル変数やヒアドキュメ
    issue 本文は**現在の合意を示す anchor** であるべきで、雑な初稿が残っていると実装時に
    どれが正か迷う。だから追記ではなく置き換える（元は 1 で退避済み）。
 
-3. 引数なしで始めた場合は、ここで `gh issue create --body-file "/tmp/grill-issue-new.md"` する
-   （**label は付けない**＝`loop-ready` は spec がマージされた後）。
+3. 引数なしで始めた場合は、ここで `gh issue create --body-file "/tmp/grill-issue-new.md"` する。
 
 書き戻す本文の形（`/spec-intake:spec-draft` が spec-kit の `spec.md` に写しやすい並びにしておく）:
 
@@ -169,7 +168,7 @@ HTML タグが普通に含まれるため、シェル変数やヒアドキュメ
 /spec-intake:spec-draft <N>
 ```
 
-loop 向きでないと結論した場合は `/conductor:dev` を案内する。
+仕様化に向かないと結論した場合は `/conductor:dev` を案内する。
 
 ## アンチパターン
 
@@ -177,6 +176,5 @@ loop 向きでないと結論した場合は `/conductor:dev` を案内する。
 - **質問を小出しにする**（フロンティアは1ラウンドでまとめて出す）。
 - **推奨解を添えずに丸投げする**（「どうしますか?」だけの質問は人間の負荷を上げるだけ）。
 - **確認なしに issue 本文を書き換える**（外向きの破壊的操作。元本文の退避と合意が先）。
-- **`loop-ready` label を付ける**（ここではまだ付けない。spec がマージされた後＝昇格プロトコル④）。
 - **spec をここで書く**（本 skill のゴールは鋭い issue。spec 化は `/spec-intake:spec-draft`）。
 - **詰まらないものを無理に詰め続ける**（`/conductor:dev`／人間駆動へ回すのが正しい結論のこともある）。

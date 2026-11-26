@@ -25,7 +25,6 @@ allowed-tools:
 
 > **三権のどこにも属さない。** 実装するのは行政（`dev-crew:implement`）、判定するのは
 > 司法（`review-judge:judge`）。指揮がやるのは「誰に何をさせ、**いつ司法に持ち込むか**」だけ。
-> 自律モードでは `loop-engine` がこの席に座る（人間がループの外に出るため）。
 
 > **前提プラグインの検査（招集前に必ず行う）** — プラグインには依存を宣言する仕組みが
 > 無いため、欠落は自分で検出する。`feature-dev` / `pr-review-toolkit` / `commit-commands`
@@ -52,8 +51,7 @@ allowed-tools:
     **仕様を先に PR にし、人間のマージで承認**してから実装する(Living Spec: `spec.md` が契約で、
     振る舞いを変えるなら先に `spec.md` を直す)。実装 PR は constitution を変えない。`spec.md` は、実装の途中で気づいた仕様の誤り・不足と、
     人間が途中で出した範囲の変わる指示については、同じ PR の中で直して進めてよい(行政と司法に「仕様の変更を認める経路」と明示して渡し、変更は
-    PR 本文案で申告する。`parent-child.md`「実装から PR まで」の 1.・3.)。自律ループ `/loop-engine` は今までどおり `spec.md` も
-    変えない(人が見ていない間に採点の基準が動くのを、止める人がいないため)。
+    PR 本文案で申告する。`parent-child.md`「実装から PR まで」の 1.・3.)。
   - **インライン契約** … 仕様を作らない小さな変更(typo・1箇所のバグ修正など)。Plan Mode で合意した
     完了基準に**検証方法(実行コマンド)を併記**し、招集時に司法へそのまま渡す。リポジトリのファイルには残さない
     (記録は PR 本文の「契約」節だけ)。契約を書く役(子。`parent-child.md`「herdr が無い場合」の例外では、子の手順を
@@ -104,7 +102,7 @@ allowed-tools:
 | `code-simplifier`(単体エージェント) | **haiku** | 機械的な簡素化 |
 | `dev-crew:business-reviewer` | **sonnet** | frontmatter 既定(限定推論レビュー) |
 | `dev-crew:domain-architect` | **opus** | frontmatter 既定(設計職能・一方向ドア) |
-| `review-judge:judge`(司法・最終判定) | **opus** | 司法の最終チェック。フル自律(HOTL)で誤判コストが高い一方向ドア=安全網。重い証拠収集(pr-review 6観点)は haiku/sonnet のまま、判事は消化済み所見+決定性結果を束ねる薄い最終判定のみ=総コストは増えない |
+| `review-judge:judge`(司法・最終判定) | **opus** | 司法の最終チェック。人間は判定の後(PR)でしか見ないので、誤判コストが高い一方向ドア=安全網。重い証拠収集(pr-review 6観点)は haiku/sonnet のまま、判事は消化済み所見+決定性結果を束ねる薄い最終判定のみ=総コストは増えない |
 
 **機構Bが届かない残課題(隠さない)**: `/feature-dev:feature-dev` の**実装ステップ
 本体(コード生成)はユーザー実行コマンド**で、内部 Task は公式側 frontmatter
@@ -204,7 +202,7 @@ allowed-tools:
    本文案の突き合わせの結果も含める: 合わなかった申告ごとの「直した」「直していない(理由)」と、確かめられなかった申告ごとの「指揮が確かめた(結果)」「確かめられない(理由)」。両方とも無いときだけ「合わない申告: 0 件、確かめられない申告: 0 件」。招集に失敗したら「本文案の突き合わせ: 未取得(理由)」)、
    **(d) PR 本文案**(**必須の引数**。「⚠️ 要注意の変更」節と「🎬 見た目の証拠」節。後者は行政が返した「見た目の証拠（案）」をそのまま使う。
    実装 PR が契約の `spec.md`・`plan.md` を変えていれば、前者に行政の報告の「仕様の変更」の行をそのまま写す(この分の書式の正は `review-judge` 同梱 `reference/contract-speckit.md`「正典の不可侵と仕様の変更」)。
-   書式は `loop-engine` 同梱 `autonomy-gates.md` と `review-judge` 同梱 `reference/visual-evidence.md`。渡さないと司法は差分 ∩ `ui_paths` を
+   書式は `review-judge` 同梱 `reference/flagged-changes.md` と `reference/visual-evidence.md`。渡さないと司法は差分 ∩ `ui_paths` を
    自分で計算し、UI に触れていれば RETRY で本文案を求める)。
    司法は契約の各完了基準に併記された検証方法を、自分の決定性チェックに対応づけ、本文案の申告が差分と一致するかを検査する
    (書記の突き合わせを済ませていても、司法は自分で検査する)。
@@ -214,9 +212,8 @@ allowed-tools:
 3. `/conductor:dev` はその判定を**そのままルーティング**する(自分で結論を上書きしない):
    - `PASS` → ship フェーズへ(コミット/PR を案内。PR 本文は司法に渡した本文案のまま、動画は `--attach` で添付)。
      **PR を作るのは PASS のあと。** 例外は 1 つ: 契約に `CI でのみ走る検証:` の行があるときだけ、下書き(draft)の PR を先に作ってから
-     司法を招集し、PASS のあとに ready にする(`parent-child.md`「実装から PR まで」の 3.・4.。自律ループ `/loop-engine` には適用しない)。(`evidence-conditions` #78)
-   - `REJECT` / `RETRY` → 指摘を実装側(行政)へ戻す。フル自律 driver(Phase 3)なら
-     自動で次ラウンド、現状(Phase 1)はユーザーへ差し戻し。
+     司法を招集し、PASS のあとに ready にする(`parent-child.md`「実装から PR まで」の 3.・4.)。(`evidence-conditions` #78)
+   - `REJECT` / `RETRY` → 指摘を実装側(行政)へ戻す。自動では次ラウンドに進めず、ユーザーへ差し戻す。
    - `ESCALATE` → ユーザー(立法)へ判断を仰ぐ。
 - **アンチパターン**: `/conductor:dev` メインが review-judge:judge を飛ばして自分で PASS 相当の結論を
   出す(=司法の分離が崩れる)。各観点の生レポートを連結して丸投げする(判事が束ねる)。
@@ -307,7 +304,7 @@ allowed-tools:
 `headless-backend.md`(「書記」「Task を呼べない指揮のときの置き場」)の手順で `claude -p` に回す。
 前提が欠けたら Task へのフォールバックではなく、止まって人間へ。
 
-`loop-engine`(自律・cloud)はこの設定を読まない。herdr / Codex / claude が無い環境では常に Task。
+herdr / Codex / claude が無い環境では常に Task。
 
 ## Agent Teams(言及のみ)
 

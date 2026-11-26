@@ -24,7 +24,7 @@ TODO=""
 if [ -z "$HP" ]; then
   TODO="${TODO}  git -C \"$TOP\" config core.hooksPath .githooks\n"
 elif [ ! -f "$HP/pre-commit" ]; then   # 設定はあるが hook の実体が無い（この作業ツリーに .githooks/ が無い など）
-  TODO="${TODO}  core.hooksPath は設定済みですが ${HP}/pre-commit がありません。.githooks/ を用意する（それを含むブランチをチェックアウトする / /loop-engine:init を実行する）\n"
+  TODO="${TODO}  core.hooksPath は設定済みですが ${HP}/pre-commit がありません。.githooks/ を用意する（それを含むブランチをチェックアウトする）\n"
 fi
 command -v gitleaks >/dev/null 2>&1 || TODO="${TODO}  brew install gitleaks（ほかの方法: https://github.com/gitleaks/gitleaks#installing）\n"
 [ -z "$TODO" ] && exit 0

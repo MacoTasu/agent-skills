@@ -21,13 +21,13 @@
     },
     {
       "name": "review-judge",
-      "description": "レビューの拘束力ある最終判定だけを下す司法エージェント。観点別の所見と決定性チェックを束ね、PASS / REJECT / RETRY / ESCALATE を返す。Edit / Write を持たないため直すことができない。dev-conductor と loop-engine の双方が依存する共有基盤。",
+      "description": "レビューの拘束力ある最終判定だけを下す司法エージェント。観点別の所見と決定性チェックを束ね、PASS / REJECT / RETRY / ESCALATE を返す。Edit / Write を持たないため直すことができない。指揮(conductor)が依存する基盤。",
       "source": "./plugins/review-judge",
       "category": "review"
     },
     {
       "name": "spec-intake",
-      "description": "立法の支援。GitHub issue での議論を、実装根拠になる spec-kit の仕様(specs/<機能>/)まで持ち上げる。grill-issue が曖昧な issue を質問攻めで詰め、spec-draft が spec-kit のコマンドで仕様を起草して仕様の PR にする。承認は必ず人間。自律ループを回さなくても単体で使える。",
+      "description": "立法の支援。GitHub issue での議論を、実装根拠になる spec-kit の仕様(specs/<機能>/)まで持ち上げる。grill-issue が曖昧な issue を質問攻めで詰め、spec-draft が spec-kit のコマンドで仕様を起草して仕様の PR にする。承認は必ず人間。",
       "source": "./plugins/spec-intake",
       "category": "workflow"
     },
@@ -41,12 +41,6 @@
       "name": "dev-crew",
       "description": "行政(実務)の一式。契約に沿って実装し決定性証拠を揃える implement、出荷/運用の create-issue、書記の職能エージェント。判定は出さず、証拠を揃えて指揮に返す。",
       "source": "./plugins/dev-crew",
-      "category": "workflow"
-    },
-    {
-      "name": "loop-engine",
-      "description": "人間が承認した spec-kit の仕様を起点に拾い上げ→実装→司法検証→PR を回す自律ループ(HOTL)。loop-ready の issue を PR まで進め、必ず PR で停止する。dev-crew と review-judge が前提。",
-      "source": "./plugins/loop-engine",
       "category": "workflow"
     },
     {

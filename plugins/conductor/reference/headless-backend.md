@@ -62,7 +62,6 @@ git branch --show-current             # 空でなく、かつ main 等でない�
 
 - **指揮が Task を呼べないなら、「Task で続行」を「止まって人間へ」に読み替える。** フォールバック先が無いので、
   理由を1行表示して止まる。書記の手順でも同じ。
-- **cloud の routine（`loop-engine`）には適用しない。** この設定を読まない。
 
 ## 前提: 指揮・行政・司法は同じディレクトリで動く
 
@@ -219,4 +218,3 @@ claude -p --permission-mode auto --permission-prompts none \
   `permission_denials` を必ず読む。
 - **`auto` の外部への書き込みの判定は文脈に依存する。** 外部への投稿（PR へのコメントなど）が拒否されうる（追跡中）。
 - **人間が途中を見られない。** ペインと違い、作業を目視して割り込めない。見たいなら行政は `via: herdr`。
-- **cloud の routine（`loop-engine`）には適用しない。** この設定を読まない。

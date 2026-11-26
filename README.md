@@ -20,7 +20,6 @@ AI エージェント向けのレビュー知識パック集。
 | `spec-intake` | **立法の支援**。issue での議論を、実装根拠になる spec-kit の仕様まで持ち上げる。`grill-issue` が曖昧な issue を詰め、`spec-draft` が spec-kit で仕様を起草して仕様の PR にする。承認は必ず人間 |
 | `conductor` | 開発の単一フロントドア＝**指揮**。`main` の親は依頼を分類して worktree の子に送り出し、子が仕様の起草、または Plan Mode 合意→実装→書記→司法→PR を回す。子は行政に実装させ、書記に証拠を出させ、**司法に持ち込む**。自分ではコードを書かず、判定も出さない |
 | `dev-crew` | **行政（実務）**。契約に沿って実装し、ビルド・型・lint・テストの決定性証拠を揃えるところまで。UI に触れたら before / after の動画（見た目の証拠）も撮る。判定は出さず、証拠を揃えて指揮に返す。出荷・運用と書記の職能エージェントも同梱 |
-| `loop-engine` | 人間が承認した spec-kit の仕様を起点に、拾い上げ→実装→司法検証→PR を回す自律ループ（HOTL）。必ず PR で停止する |
 | `spec-page` | 説明書・仕様書・設計文書を HTML 1枚にまとめる。一覧ではなく**構造と決定の理由**を伝える形式に落とす |
 | `pr-kit` | **PR まわりの道具 4 つ**（`write-pr-description` / `merge-risk` / `resolve-merge-conflicts` / `diagnose-ci-failures`）。外部の公開スキル集（MIT）から、版を固定した写しとして借りている。各役が使う道具で、**合否は出さない**。`merge-risk` は人間がマージを決めるときの材料で、司法（`review-judge:judge`）の判定の代わりではない。`diagnose-ci-failures` は調べて計画を出すだけで、直さない |
 | `session-review` | **手元の会話の履歴を採点して、スキルを直す案を出す**。効率 / コードの質 / 手順の遵守 / 文章の量の 4 つの基準で採点し、失敗と判定した会話を根拠に、戻し先（できなくする / 機械で止める / そのプロジェクトに書く / スキルの文面）を選んだ案をテキストで返す。外部の公開スキル集（MIT）から、版を固定した写しとして、一部を外して借りている。**案を出すだけで、ファイルは書き換えず、変更の合否（司法の判定）も出さない**（会話に付ける点数は、案の根拠）。Claude Code 本体の `/skill-doctor` は「何が使われていないか」（利用回数とコンテキストの費用）を見るもので、これは「使われたスキルが効いているか」を会話の中身から見る別物。集めた抜粋は伏せ字にならないので、出力先はリポジトリの外に置く |
@@ -39,7 +38,6 @@ AI エージェント向けのレビュー知識パック集。
 /plugin install spec-intake@macotasu-agent-skills
 /plugin install dev-crew@macotasu-agent-skills
 /plugin install conductor@macotasu-agent-skills
-/plugin install loop-engine@macotasu-agent-skills
 
 # ドキュメント。依存ゼロ
 /plugin install spec-page@macotasu-agent-skills
@@ -69,9 +67,6 @@ conductor       指揮   必須: dev-crew / review-judge
                              saas-review / architecture-review
 
                        仕様を作るなら: spec-kit（外部）／ 並行実行: herdr（外部・任意）
-
-loop-engine     自律   必須: dev-crew / review-judge ／ spec-kit（外部）
-                       （自律モードでは loop-engine 自身が指揮の席に座る）
 
 pr-kit          道具   依存: gh（GitHub CLI）／ python3（resolve-merge-conflicts の同梱スクリプト）
 
@@ -148,7 +143,7 @@ Bash の実行の前に `hooks/guard-broad-op.sh`（PreToolUse）が走る。次
 | **立法** | 人間が承認した spec-kit の仕様 `specs/<機能>/` と constitution（起草は `conductor` の親が送り出す子（`spec-<名前>`）か `spec-intake`） | — ボットは承認しない |
 | **行政** | `dev-crew:implement`（＋公式 feature-dev）。**自己レビューまでが仕事** | **司法を呼ぶ権限**と**合否を宣言する権限** |
 | **司法** | `review-judge:judge` | **`Edit` / `Write` ツール**。直せない |
-| 指揮 | `conductor:dev`（手動） / `loop-engine`（自律） | コードを書かない。判定も出さない |
+| 指揮 | `conductor:dev` | コードを書かない。判定も出さない |
 | 書記 | pr-review 6観点 / `business-reviewer` / `domain-architect` / `saas-review` / `architecture-review` | 拘束力。所見を出すだけ |
 
 **それぞれの「持たないもの」が分離を支えている。**
@@ -195,7 +190,7 @@ read-only では書き込み（キャッシュ・ビルド成果物・`$TMPDIR`�
 立法（仕様）には [spec-kit](https://github.com/github/spec-kit) を使い、そのレールに乗る。
 `/speckit-specify` → `clarify` → `plan` → `tasks` → `analyze` で仕様を作り、**仕様を先に PR にして人間がマージ**
 してから実装する（Living Spec: `spec.md` が契約で、振る舞いを変えるなら先に `spec.md` を直す）。
-実装の途中で気づいた仕様の誤り・不足や、人間が途中で出した範囲の変わる指示は、`/conductor:dev` では同じ PR の中で `spec.md` を直してよい（変更は PR 本文で申告し、判事が申告と差分を突き合わせる。自律ループでは直さず止まる）。
+実装の途中で気づいた仕様の誤り・不足や、人間が途中で出した範囲の変わる指示は、`/conductor:dev` では同じ PR の中で `spec.md` を直してよい（変更は PR 本文で申告し、判事が申告と差分を突き合わせる）。
 小さな変更は仕様を作らないが、これも `/conductor:dev` の親が worktree の子に送り出し、子の pane で Plan Mode 合意→実装と進める。
 
 **実装コマンドの `/speckit-implement` は、`dev-crew:implement` の枠の中で使う。** コードを書く部分は spec-kit に任せ、

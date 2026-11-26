@@ -475,7 +475,7 @@ footer {
         <div class="entry-body">
           レビューの<strong>拘束力ある最終判定だけ</strong>を下す司法。観点別の所見と決定性チェックを束ね、
           4つの判定のいずれか1つを返す。<code>Edit</code> / <code>Write</code> を持たないので直せない。
-          下の2つが共に依存する共有基盤で、<strong>独立した配布単位にしてある</strong>。
+          指揮（<code>conductor</code>）が依存する基盤で、<strong>独立した配布単位にしてある</strong>。
           <div class="needs"><b>needs</b> — なし</div>
         </div>
       </div>
@@ -493,7 +493,7 @@ footer {
           <strong>立法の支援</strong>。issue での議論を、実装根拠になる spec-kit の仕様まで持ち上げる。
           <code>grill-issue</code> が曖昧な issue を質問攻めで詰め、<code>spec-draft</code> が
           spec-kit のコマンドで仕様を起草し、書いたテストの器が正しいかを流して確かめてから仕様の PR にする。
-          <strong>承認は必ず人間</strong>。自律ループを回さなくても単体で使える。
+          <strong>承認は必ず人間</strong>。
           <div class="needs"><b>needs</b> — spec-kit（外部）/ grilling（外部・任意）</div>
         </div>
       </div>
@@ -523,18 +523,6 @@ footer {
           証拠を揃えて指揮に返す。spec-kit の仕様では <code>/speckit-implement</code> を枠の中で呼び、
           前後の確認（仕様の確定・範囲外の変更・自己レビュー・証拠表）を受け持つ。出荷・運用と書記の職能エージェントも同梱。
           <div class="needs"><b>needs</b> — feature-dev / spec-kit（仕様を契約にするとき）</div>
-        </div>
-      </div>
-
-      <div class="entry">
-        <div>
-          <div class="entry-name">loop-engine</div>
-          <div class="entry-meta">1 skill · 1 command · 2 scripts</div>
-        </div>
-        <div class="entry-body">
-          人間が承認した spec-kit の仕様を起点に、拾い上げ→実装→司法検証→PR を回す自律ループ（HOTL）。
-          <code>loop-ready</code> の issue を実装まで進め、<strong>必ず PR で停止する</strong>——自動マージはしない。
-          <div class="needs"><b>needs</b> — dev-crew / review-judge / spec-kit（外部）</div>
         </div>
       </div>
     </div>
@@ -660,8 +648,7 @@ footer {
         <rect x="40" y="234" width="250" height="46" rx="3" fill="var(--surface)" stroke="var(--rule-strong)" stroke-width="1.5"></rect>
         <text x="54" y="252" class="svg-role" font-size="13">指揮</text>
         <text x="96" y="252" class="svg-name">conductor:dev</text>
-        <text x="54" y="270" class="svg-note">手動なら人間、自律なら</text>
-        <text x="186" y="270" class="svg-name">loop-engine</text>
+        <text x="54" y="270" class="svg-note">三権のどこにも属さない</text>
 
         <path d="M 294 248 C 340 248, 350 232, 396 232" stroke="var(--rule-strong)" stroke-width="1.25" fill="none" marker-end="url(#fl)"></path>
         <path d="M 294 266 C 340 266, 350 286, 396 286" stroke="var(--rule-strong)" stroke-width="1.25" fill="none" marker-end="url(#fl)"></path>
@@ -692,10 +679,7 @@ footer {
 
       <p class="court-caption">
         <strong>人間が止める点は2つ。</strong>仕様の承認（②のマージ）と、最後の PR のマージ。
-        自律で回していても、この2点は必ず人間を通る。<code>③ Spec:</code> コメントと
-        <code>loop-ready</code> ラベルの付与も人間が行う——仕様が main にマージされる前に
-        ラベルが付くと、ループが存在しない仕様を指して落ちるため、代行させない。
-        手動で進めるときは、<code>main</code> の親は依頼を分類して worktree の子（同じ
+        <code>main</code> の親は依頼を分類して worktree の子（同じ
         <code>conductor:dev</code>）に送り出し、子が仕様の起草、または Plan Mode 合意→実装→書記→司法→PR を回す。
         仕様の起草も実装も、指揮の席に座るのはその子。
       </p>
@@ -721,7 +705,7 @@ footer {
         <div class="role-who"><code>review-judge:judge</code></div>
         <div class="role-lacks"><strong><code>Edit</code> / <code>Write</code> ツール</strong>。直せない</div></div>
       <div class="role-row"><div class="role-name">指揮</div>
-        <div class="role-who"><code>conductor:dev</code>（手動）／ <code>loop-engine</code>（自律）</div>
+        <div class="role-who"><code>conductor:dev</code></div>
         <div class="role-lacks">コードを書かない。判定も出さない</div></div>
       <div class="role-row"><div class="role-name">書記</div>
         <div class="role-who">pr-review 6観点 ／ business-reviewer ／ domain-architect ／ saas-review ／ architecture-review</div>
@@ -730,7 +714,7 @@ footer {
 
     <p class="roles-note">
       左が役、中央が担い手、<strong>右が「持たないもの」</strong>。分離を支えているのは右の列。
-      指揮だけが三権のどこにも属さず、手動なら人間が、自律なら <code>loop-engine</code> がその席に座る。
+      指揮だけが三権のどこにも属さない。
       行政と司法を herdr のペインで別ツールに担わせた場合、判事の右の列は「持たない」から
       「禁止され、破れば検出される」に弱まる（下の決定の記録）。
     </p>
@@ -781,9 +765,7 @@ footer {
         <text x="320" y="13" class="svg-note">— 三権のどこにも属さない</text>
         <rect x="268" y="116" width="182" height="94" rx="3" fill="var(--surface)" stroke="var(--rule-strong)" stroke-width="1.5"></rect>
         <text x="282" y="142" class="svg-name">conductor:dev</text>
-        <text x="282" y="161" class="svg-name">loop-engine</text>
-        <text x="282" y="182" class="svg-note">手動なら人間、自律ならループ</text>
-        <text x="282" y="198" class="svg-note">持ち込む権限を持つのはここだけ</text>
+        <text x="282" y="166" class="svg-note">持ち込む権限を持つのはここだけ</text>
 
         <path d="M 454 163 L 508 163" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#ar-strong)"></path>
 
@@ -884,7 +866,6 @@ footer {
 /plugin install spec-intake@macotasu-agent-skills
 /plugin install dev-crew@macotasu-agent-skills
 /plugin install conductor@macotasu-agent-skills
-/plugin install loop-engine@macotasu-agent-skills
 
 <span class="c"># ドキュメント。依存ゼロ</span>
 /plugin install spec-page@macotasu-agent-skills
@@ -909,10 +890,7 @@ footer {
 <b>conductor</b>    指揮
   <span class="req">必須</span>  dev-crew / review-judge ＋ 公式 pr-review-toolkit / commit-commands
   <span class="opt">任意</span>  frontend-design / code-simplifier / saas-review / architecture-review
-            spec-kit（仕様を作るとき・外部）／ herdr（並行実行・外部）
-
-<b>loop-engine</b>  自律
-  <span class="req">必須</span>  dev-crew / review-judge / spec-kit（外部。自律モードでは loop-engine が指揮の席に座る）</div>
+            spec-kit（仕様を作るとき・外部）／ herdr（並行実行・外部）</div>
     <p style="margin-top:1.25rem; font-size:.9rem; color:var(--muted)">
       <strong>行政から司法への矢印が無いのが要点。</strong>実装した主体は、自分の成果を判事に
       持ち込む権限を持たない。「これは軽微だから判定は不要」という判断自体が判定であり、
@@ -971,8 +949,7 @@ footer {
       <dd>
         当初は指揮役のプラグインに同梱していた。循環依存を避けるための消極的な配置だったが、
         それだと<strong>行政が司法を配る</strong>形になり、分離を主張しながら梱包が主張と食い違う。
-        指揮も自律ループも判事なしに仕事を終えられず、
-        <strong>どちらも依存するが、どちらも所有していない</strong>。
+        指揮は判事なしに仕事を終えられず、<strong>依存するが、所有していない</strong>。
         判事が読む検証カタログも、プラグインを跨ぐとパスが解決できないので判事と同じ側に置いてある。
       </dd>
 
@@ -983,8 +960,7 @@ footer {
         決められる</strong>ということで、「軽微だから判定は不要」という逃げ道が実際に規約に書かれていた。
         判断自体が判定なので、行政には属さない。
         いまは<strong>行政（実装と自己検査）</strong>・<strong>司法（判定）</strong>・
-        <strong>指揮（誰に何をさせ、いつ司法に持ち込むか）</strong>に分かれ、
-        指揮の席には手動なら人間が、自律なら loop-engine が座る。
+        <strong>指揮（誰に何をさせ、いつ司法に持ち込むか）</strong>に分かれている。
       </dd>
 
       <dt>退会時の削除はマスキングでもよい</dt>
@@ -1006,70 +982,6 @@ footer {
       <dd>
         プラグインの実体はインストール先のキャッシュで、<strong>読み取り専用として扱うべき場所</strong>。
         ユーザー設定は使う側のリポジトリに置く（例: <code>.claude/conductor.json</code>）。
-      </dd>
-
-      <dt>ループの状態をファイルではなく GitHub に置く</dt>
-      <dd>
-        定期発火を cloud で回すと、毎回まっさらな clone から始まるので、作業ツリーに書いた状態は
-        次の発火に残らない。着手ロックとエスカレーションは <strong>issue のラベル</strong>が持つ。
-        副次的に、ボットがリポジトリへ状態を書き込む必要がなくなり、push 権限を PR ブランチだけに
-        絞れる。<code>Watching</code> にラベルを与えないのは、PR の存在が既に GitHub 上の事実で、
-        ラベルで二重に持つと必ずズレるため。
-      </dd>
-
-      <dt>試行回数は保存しない</dt>
-      <dd>
-        判事に3回差し戻されたら人間に上げる、という上限は残っている。だが
-        <strong>1回の発火が終わると、その issue はどの経路でも走査から除外される</strong>
-        （3回使い切り＝escalated ラベル／PR 作成＝<code>Closes #N</code> の open PR が存在／
-        途中終了＝ロックが残る）。次の発火で拾い直さない以上、前回の回数を持ち越す相手がいない。
-        状態をラベルに移した副産物として、カウンタの永続化そのものが不要になった。
-      </dd>
-
-      <dt>止まったロックは自動で解除しない</dt>
-      <dd>
-        発火が途中で死ぬとロックのラベルが残り、その issue は二度と拾われず<strong>静かに止まる</strong>。
-        一定時間を超えたものは検出して報告するが、<strong>ループはロックを取り直さない</strong> —
-        落ちた原因が残っているかもしれず、死んだ実行がブランチや PR を作りかけていれば自動再開は
-        二重作業になる。報告には残骸（ブランチ・PR・経過時間）を添えて、人間が後始末できるようにする。
-        ルールは一行: <strong>ラベルを外せるのは、正常完了したループと人間だけ。</strong>
-      </dd>
-
-      <dt>定期発火は cloud routine で行い、手元の繰り返し実行はやめた</dt>
-      <dd>
-        セッションが起きている間しか回らないという制約が、自律ループの前提と噛み合わない。
-        ただし routine の定義は claude.ai アカウント側に保存され git に残らないので、
-        <strong>routine に置くのは「同梱の手順書を読んで従え」というポインタだけ</strong>にして、
-        実質的な手順はプラグイン側（＝版管理下）に残している。
-      </dd>
-
-      <dt>cloud にプラグインは届かないので、ハーネスは発火時に clone する</dt>
-      <dd>
-        当初は「対象リポジトリの <code>.claude/settings.json</code> に marketplace と
-        <code>enabledPlugins</code> を宣言すれば cloud セッションに届く」と書いていた。
-        <strong>実測で誤りだった</strong> — 宣言したリポジトリで routine を2回走らせたが、
-        どちらも <code>installed_plugins.json</code> が空のまま、ハーネス不在で停止した。
-        セッションは settings.json を読めているので宣言は届いているが、インストールの
-        トリガーにはなっていない。同期先が <code>&lt;env&gt;_&lt;account&gt;</code> という
-        命名であることから、<strong>同期はアカウント単位</strong>でリポジトリ設定とは無関係と見られる。
-        そこで、このリポジトリが public であることを使って
-        <strong>発火プロンプトの最初にハーネスを直接 clone する</strong>。
-        各プロジェクトにハーネスを複製する（vendoring）案は採らなかった —
-        loop を回す全リポジトリに同じものが散り、更新のたびに乖離する。
-      </dd>
-
-      <dt>司法は「登録された型」ではなく「分離された文脈」で担保する</dt>
-      <dd>
-        clone したところで <code>review-judge:judge</code> が <code>subagent_type</code> として
-        登録されるわけではない。だが<strong>登録は司法の要件ではない</strong>。
-        分離を担保しているのは「別 Task の独立した文脈で、コードを書かず、証拠に照らして判定する」
-        ことであって、型名ではない。だから
-        <strong>clone した <code>judge.md</code> を手順書として汎用サブエージェントに読ませる</strong>。
-        <code>subagent_type</code> は読み取り専用の <code>Explore</code> を第一候補にする —
-        <strong>「司法はコードを書かない」を指示ではなくツールの欠如で保証できる</strong>から。
-        <code>general-purpose</code> に落とす場合、その保証は指示だけになるので判定コメントに明記させる。
-        対象リポジトリに <code>judge.md</code> を置く案は採らなかった。ハーネスがプロジェクト空間に
-        侵入し、<strong>行政の持ち物の中に司法が置かれる</strong>形になって、分離の主張と梱包が食い違う。
       </dd>
 
       <dt>判事を別ベンダーのツールで動かすときは、禁止ではなく事後検出で担保する</dt>
@@ -1114,7 +1026,7 @@ footer {
         <strong>正典が2つになり、翻訳が必ずずれる</strong>ので採らなかった。使うなら形式ごと乗る。
         仕様の持ち方は spec-kit の <strong>Living Spec</strong>（<code>spec.md</code> が契約で、振る舞いを変えるなら
         先に <code>spec.md</code> を直す）を選び、<strong>仕様を先に PR にして人間がマージしてから実装する</strong>。
-        これで手動も自律ループも同じ流れになり、承認済みの仕様が <code>main</code> に並んで「着手待ちの一覧」になる。
+        これで承認済みの仕様が <code>main</code> に並んで「着手待ちの一覧」になる。
         spec-kit ではテストが任意なので、constitution に「各要件は自動テストで確かめる（MUST）」を入れ、
         判事はテストの無い要件を RETRY にする。番号はタイムスタンプ方式にして、並行する仕様の PR の衝突を避ける。
         小さな変更まで仕様にすると割に合わないので、それは仕様を作らず直接進める。
@@ -1215,7 +1127,7 @@ footer {
         <strong>子</strong>（同じ <code>conductor:dev</code>）が worktree の中で行政・書記・司法・PR を回す。
         判事を呼ぶのは子であって実装者ではないので、「行政は司法を呼べない」は保たれる。
         人間は子に直接指示してよい。実装の途中で気づいた仕様の誤り・不足や、人間が途中で出した範囲の変わる指示は、同じ PR の中で
-        <code>spec.md</code> を直して進め、変更を PR 本文で申告する（判事が申告と差分を突き合わせる。自律ループは人が見ていないので、<code>spec.md</code> を変えれば今までどおり ESCALATE）。
+        <code>spec.md</code> を直して進め、変更を PR 本文で申告する（判事が申告と差分を突き合わせる）。
       </dd>
 
       <dt>送り出しの条件を「仕様があるか」から「差分が発生するか」に変え、仕様の起草も子に出した</dt>
