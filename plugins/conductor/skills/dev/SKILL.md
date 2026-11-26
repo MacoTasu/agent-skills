@@ -102,7 +102,7 @@ allowed-tools:
 | `code-simplifier`(単体エージェント) | **haiku** | 機械的な簡素化 |
 | `dev-crew:business-reviewer` | **sonnet** | frontmatter 既定(限定推論レビュー) |
 | `dev-crew:domain-architect` | **opus** | frontmatter 既定(設計職能・一方向ドア) |
-| `review-judge:judge`(司法・最終判定) | **opus** | 司法の最終チェック。人間は判定の後(PR)でしか見ないので、誤判コストが高い一方向ドア=安全網。重い証拠収集(pr-review 6観点)は haiku/sonnet のまま、判事は消化済み所見+決定性結果を束ねる薄い最終判定のみ=総コストは増えない |
+| `review-judge:judge`(司法・最終判定) | **opus** | 司法の最終チェック。判定を誤ると、誤りを抱えたまま PR に進む(次に人間が見るのは PR)ため、誤判コストが高い一方向ドア=安全網。重い証拠収集(pr-review 6観点)は haiku/sonnet のまま、判事は消化済み所見+決定性結果を束ねる薄い最終判定のみ=総コストは増えない |
 
 **機構Bが届かない残課題(隠さない)**: `/feature-dev:feature-dev` の**実装ステップ
 本体(コード生成)はユーザー実行コマンド**で、内部 Task は公式側 frontmatter
