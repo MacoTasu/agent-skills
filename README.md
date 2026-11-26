@@ -101,6 +101,7 @@ Bash の実行の前に `hooks/guard-broad-op.sh`（PreToolUse）が走る。次
 | `gofmt -w` / `prettier --write` にディレクトリを渡す、`go fmt ./...` | ファイルを名指しで渡す、`gofmt -l .`、`prettier --check .` |
 | `git reset --soft origin/<ブランチ>`・`@{u}`（上流の先頭が HEAD の祖先でないとき） | `git reset --soft "$(git merge-base origin/<ブランチ> HEAD)"` |
 | `git add -A` / `--all` / `.`（未追跡のファイルがあるとき） | `git add <ファイル>`、`git add -u`、`git add -p .` |
+| `git stash`（引数なし・`push`・`save`・`-u` など退避する形）、`git stash pop`・`apply`・`drop`・`clear`（stash の置き場は worktree をまたいで共有） | `git stash list`、`git stash show`、`git show <rev>:<path>`（前の版と比べるとき） |
 
 実際の動き:
 

@@ -5,7 +5,7 @@
 
 # 場面（t・raw の実行。quick は t を呼ぶ。t・raw を通らない確認は、その場で count を足している）の総数。場面が黙って減ったら赤にするために、数を直に書く。
 # 場面を足したり減らしたりしたら、--self-test が出す「場面の数」に書き換える
-SCENARIOS=148
+SCENARIOS=170
 
 self_test() {
   local self=$1 tmp fail=0 T_PATH="" many deep pad
