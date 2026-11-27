@@ -1,5 +1,5 @@
 #!/bin/bash
-# rules/git.sh — 規則 add・reset（git の下位命令ごと）。guard-broad-op.sh が読み込む部品（単体では実行しない）。
+# rules/git.sh — 規則 add・reset・stash（git の下位命令ごと）。guard-broad-op.sh が読み込む部品（単体では実行しない）。
 # 自己検査は self-test/git.sh。状態を見る git の上限（MAX_GIT_CALLS・GIT_LIMIT_SECONDS）は入口で決めている。
 
 git_look() {  # 状態を読むだけの git。出力は GIT_OUT。戻り値が 0 と 1 以外なら「判定できなかった」
@@ -110,6 +110,18 @@ rule_git() {  # $1 = 1 なら、前置きで git の対象が変えられてい�
         if git_look merge-base --is-ancestor "$ref" HEAD; then RESET_SEEN="$RESET_SEEN $ref"; return 0; fi
       fi
       hit reset "git reset --soft ${ref} は、上流が先に進んでいると、基点の側で入った変更を巻き戻すコミットになります。まとめ直すなら、分岐点へ戻してください: git reset --soft \"\$(git merge-base ${ref} HEAD)\""
+      ;;
+    stash)
+      # 2026-11-26（課題番号は無い）: 差分を読むだけの役が、前の版と比べるために git stash を打ち、同じ worktree で別の役が
+      # 書いている途中の変更が一度消えた。退避する形（引数なし・push・save・オプションから始まる形）と、pop・apply・drop・clear だけを見る。
+      # 読むだけの形（list・show）、ヘルプ、ほかの下位命令（branch・create・store）は通す
+      case ${1:-} in
+        "" | push | save | pop | apply | drop | clear) ;;
+        -h | --help) return 0 ;;
+        -*) ;;
+        *) return 0 ;;
+      esac
+      hit stash "git stash（退避・pop・apply・drop・clear）は、作業ツリーか stash の置き場を書き換えます。stash の置き場は worktree をまたいで共有で、ほかの役の作業中の変更を巻き込むことがあります。前の版と比べるなら git show <rev>:<path> の出力を作業フォルダの外に写し、作業を退けるなら一時的なコミットにしてください。"
       ;;
   esac
 }

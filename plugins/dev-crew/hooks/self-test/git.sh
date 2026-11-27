@@ -73,6 +73,31 @@ EOF
 git add -A'
   t pass "$d" '# git add -A はしない
 git status --short'
+
+  echo "# git stash（2026-11-26）"
+  t ask  "$c" 'git stash'
+  t ask  "$c" 'git stash push'
+  t ask  "$c" 'git stash save wip'
+  t ask  "$c" 'git stash -u'
+  t ask  "$c" 'git stash push -u -m wip -- a.txt'
+  t ask  "$c" 'git stash pop'
+  t ask  "$c" 'git stash apply stash@{0}'
+  t ask  "$c" 'git stash drop'
+  t ask  "$c" 'git stash clear'
+  t ask  "$c" 'git stash && git diff HEAD~1 && git stash pop'
+  t ask  "$p" 'git -C ../other stash'
+  t ask  "$c" 'git -c core.quotepath=off stash --include-untracked'
+  t pass "$c" 'git stash list'
+  t pass "$c" 'git stash show -p stash@{0}'
+  t pass "$c" 'git stash --help'
+  t pass "$c" 'git show stash@{0}:a.txt'
+  t pass "$c" 'git show HEAD~1:a.txt > "$TMPDIR/a.txt.prev"'
+  t pass "$c" 'git log --grep stash'
+  t pass "$c" 'echo git stash'
+  t pass "$c" 'echo "git stash pop"'
+  t pass "$c" 'git commit -m "git stash を確認に回す"'
+  t pass "$c" '# git stash はしない
+git status --short'
 }
 
 LOADED="$LOADED self-test/git.sh"  # 最後まで読めた印（入口の load_parts が見る。この行はファイルの最後に置く）
