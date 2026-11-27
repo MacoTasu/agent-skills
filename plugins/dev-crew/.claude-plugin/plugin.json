@@ -1,7 +1,7 @@
 {
   "name": "dev-crew",
-  "version": "0.14.0",
-  "description": "行政(実務)の一式。合意済みの契約に沿って実装し、ビルド・型・lint・テストの決定性証拠を揃えるところまでを担う implement と、出荷/運用の create-issue、そして書記の職能エージェント(business-reviewer / domain-architect)。範囲の広い操作・取り返しのつきにくい操作(条件でのプロセス停止、ディレクトリ全体への書き込みの整形、基点を巻き戻すリセット、未追跡ファイルを巻き込む一括のステージ、作業ツリーを書き換える git stash)を Bash の実行の前に確認へ回す PreToolUse hook も同梱(入れた全セッションで効く。DEV_CREW_GUARD_BROAD_OP=off で無効)。指揮も判定も行わない — 自分の成果を自分で合格と宣言せず、証拠を揃えて指揮に返す。単体でも「実装して検査するだけ」として使える。spec-kit の機能ディレクトリを契約にするときは、対象リポジトリの spec-kit の /speckit-implement を枠の中で呼び(前の確認→書く→後の確認)、/speckit-converge で作り残しを点検する。",
+  "version": "0.15.0",
+  "description": "行政(実務)の一式。合意済みの契約に沿って実装し、ビルド・型・lint・テストの決定性証拠を揃えるところまでを担う implement と、出荷/運用の create-issue、そして書記の職能エージェント(business-reviewer / domain-architect)。範囲の広い操作・取り返しのつきにくい操作(条件でのプロセス停止、ディレクトリ全体への書き込みの整形、基点を巻き戻すリセット、未追跡ファイルを巻き込む一括のステージ、作業ツリーを書き換える git stash)を Bash の実行の前に確認へ回す PreToolUse hook も同梱(入れた全セッションで効く。DEV_CREW_GUARD_BROAD_OP=off で無効)。1 つの会話がサブエージェントを起動し続けるのを回数(既定 30 回)と時間(既定 3 時間)で数え、上限を超える起動を確認へ回す PreToolUse hook も同梱(すでに走っている役は止められない。DEV_CREW_AGENT_LAUNCH_GUARD=off で無効)。指揮も判定も行わない — 自分の成果を自分で合格と宣言せず、証拠を揃えて指揮に返す。単体でも「実装して検査するだけ」として使える。spec-kit の機能ディレクトリを契約にするときは、対象リポジトリの spec-kit の /speckit-implement を枠の中で呼び(前の確認→書く→後の確認)、/speckit-converge で作り残しを点検する。",
   "author": {
     "name": "MacoTasu",
     "url": "https://github.com/MacoTasu"

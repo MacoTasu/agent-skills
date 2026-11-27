@@ -1,5 +1,5 @@
 {
-  "description": "範囲の広い操作・取り返しのつきにくい操作（条件でのプロセス停止、ディレクトリ全体への書き込みの整形、基点を巻き戻すリセット、未追跡ファイルを巻き込む一括のステージ、作業ツリーを書き換える git stash）を、Bash の実行の前に確認へ回す。",
+  "description": "範囲の広い操作・取り返しのつきにくい操作（条件でのプロセス停止、ディレクトリ全体への書き込みの整形、基点を巻き戻すリセット、未追跡ファイルを巻き込む一括のステージ、作業ツリーを書き換える git stash）を、Bash の実行の前に確認へ回す。加えて、1 つの会話がサブエージェントを起動し続けるのを、回数（既定 30 回）と時間（既定 3 時間）で数え、上限を超える起動を確認へ回す（すでに走っている役は止められない）。",
   "hooks": {
     "PreToolUse": [
       {
@@ -9,6 +9,16 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/guard-broad-op.sh\"",
             "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/guard-agent-launch.sh\"",
+            "timeout": 5
           }
         ]
       }
