@@ -34,8 +34,8 @@ Playwright のどのフローで取るか、は spec-kit なら `quickstart.md` 
   シナリオは `.claude/visual-evidence.json` の `scenarios` に置く通常のテストで、行政が before / after を録画し
   （`dev-crew` 同梱 `record-visual-evidence.md`）、司法はシナリオを自分で実行して緑を確かめる（`visual-evidence.md`）。
   `frontend-design` skill が UI 変更で自動発火するプロジェクトでは、それも設計面の補助になる。
-- 司法は証拠が**無い**ことを検知して RETRY するだけで、証拠を**取りに行く（自動実行）のは Phase 3**
-  (driver)。本フェーズ(2.1)は「宣言を正とし、欠落を指摘する」ところまで。
+- 司法は証拠が**無い**ことを検知して RETRY するだけで、証拠を**取りに行く（自動実行）ことは、しない**。
+  司法がやるのは「宣言を正とし、欠落を指摘する」ところまで。
 
 ## 司法での使い方（手順）
 
